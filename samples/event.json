@@ -1,0 +1,20 @@
+{
+    "attributes": {
+        "specversion": "1.0",
+        "id": "{id}",
+        "source": "//pubsub.googleapis.com/projects/{project}/topics/{topic}",
+        "type": "google.cloud.pubsub.topic.v1.messagePublished",
+        "datacontenttype": "application/json",
+        "time": "2022-11-18T18:01:18.272Z"
+    },
+    "data": {
+        "message": {
+            "data": "{base64_message}",
+            "messageId": "{id}",
+            "message_id": "{id}",
+            "publishTime": "2022-11-18T18:01:18.272Z",
+            "publish_time": "2022-11-18T18:01:18.272Z"
+        },
+        "subscription": "projects/{project}/subscriptions/{subscription}"
+    }
+}
