@@ -50,10 +50,11 @@ resource "google_cloudfunctions2_function" "notification_email_send" {
         available_memory      = "256Mi"
         timeout_seconds       = 60
         environment_variables = {
-            ENV                     = var.env
-            OPERATOR_IMPORT         = "from airless.operator.notification.email import EmailSendOperator"
-            GCP_PROJECT             = var.project_id
-            PUBSUB_TOPIC_ERROR      = google_pubsub_topic.error_reprocess.name
+            ENV                       = var.env
+            OPERATOR_IMPORT           = "from airless.operator.notification.email import EmailSendOperator"
+            GCP_PROJECT               = var.project_id
+            PUBSUB_TOPIC_ERROR        = google_pubsub_topic.error_reprocess.name
+            PUBSUB_TOPIC_PUBSUB_TO_BQ = google_pubsub_topic.pubsub_to_bq
         }
     }
 
@@ -187,6 +188,7 @@ resource "google_cloudfunctions2_function" "gcs_query_to_bigquery" {
             OPERATOR_IMPORT         = "from airless.operator.google.bigquery import GcsQueryToBigqueryOperator"
             GCP_PROJECT             = var.project_id
             PUBSUB_TOPIC_ERROR      = google_pubsub_topic.error_reprocess.name
+            GCS_BUCKET_SQL          = "${var.project_id}-sql"
         }
     }
 
@@ -201,5 +203,90 @@ resource "google_cloudfunctions2_function" "gcs_query_to_bigquery" {
         google_storage_bucket.function_bucket,  # declared in `storage.tf`
         google_storage_bucket_object.zip,
         google_pubsub_topic.gcs_query_to_bigquery
+    ]
+}
+
+resource "google_cloudfunctions2_function" "redirect" {
+    name                  = "${var.env}-redirect"
+    location              = var.region 
+    description           = "Cloud functions that receives one pubsub event and transforms it into multiple pubsub events"
+
+    build_config {
+        runtime           = "python39"  # of course changeable
+        entry_point       = "route"
+        source {
+            storage_source {
+                bucket = google_storage_bucket.function_bucket.name
+                object = google_storage_bucket_object.zip.name    
+            }
+        }
+    }
+
+    service_config {
+        max_instance_count    = 10
+        available_memory      = "128Mi"
+        timeout_seconds       = 540
+        environment_variables = {
+            ENV                     = var.env
+            OPERATOR_IMPORT         = "from airless.operator.redirect import RedirectOperator"
+            GCP_PROJECT             = var.project_id
+            PUBSUB_TOPIC_ERROR      = google_pubsub_topic.error_reprocess.name
+        }
+    }
+
+    event_trigger {
+        trigger_region = var.region
+        event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
+        pubsub_topic   = google_pubsub_topic.redirect.id
+        retry_policy   = "RETRY_POLICY_DO_NOT_RETRY"
+    }
+
+    depends_on         = [
+        google_storage_bucket.function_bucket,  # declared in `storage.tf`
+        google_storage_bucket_object.zip,
+        google_pubsub_topic.redirect
+    ]
+}
+
+
+resource "google_cloudfunctions2_function" "pubsub_to_bq" {
+    name                  = "${var.env}-pubsub-to-bq"
+    location              = var.region 
+    description           = "Cloud functions that writes pubsub messages to Bigquery"
+
+    build_config {
+        runtime           = "python39"  # of course changeable
+        entry_point       = "route"
+        source {
+            storage_source {
+                bucket = google_storage_bucket.function_bucket.name
+                object = google_storage_bucket_object.zip.name    
+            }
+        }
+    }
+
+    service_config {
+        max_instance_count    = 50
+        available_memory      = "256Mi"
+        timeout_seconds       = 180
+        environment_variables = {
+            ENV                     = var.env
+            OPERATOR_IMPORT         = "from airless.operator.google.bigquery import PubsubToBqOperator"
+            GCP_PROJECT             = var.project_id
+            PUBSUB_TOPIC_ERROR      = google_pubsub_topic.error_reprocess.name
+        }
+    }
+
+    event_trigger {
+        trigger_region = var.region
+        event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
+        pubsub_topic   = google_pubsub_topic.pubsub_to_bq.id
+        retry_policy   = "RETRY_POLICY_DO_NOT_RETRY"
+    }
+
+    depends_on         = [
+        google_storage_bucket.function_bucket,  # declared in `storage.tf`
+        google_storage_bucket_object.zip,
+        google_pubsub_topic.pubsub_to_bq
     ]
 }

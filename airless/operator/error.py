@@ -5,7 +5,7 @@ import time
 from datetime import datetime
 
 from airless.config import get_config
-from airless.hook.google.bigquery import BigqueryHook
+from airless.dto.pubsub_to_bq import PubsubToBqDto
 from airless.hook.google.pubsub import PubsubHook
 from airless.operator.base import BaseEventOperator
 
@@ -16,7 +16,6 @@ class ErrorReprocessOperator(BaseEventOperator):
         super().__init__()
 
         self.pubsub_hook = PubsubHook()
-        self.bigquery_hook = BigqueryHook()
 
     def execute(self, data, topic):
 
@@ -39,28 +38,34 @@ class ErrorReprocessOperator(BaseEventOperator):
                 data=original_data)
 
         else:
-            rows = self.prepare_rows(data, message_id, origin)
-            self.bigquery_hook.write(
+            dto = PubsubToBqDto(
+                event_id=message_id,
+                resource=origin,
+                to_project=get_config('GCP_PROJECT'),
+                to_dataset=get_config('BIGQUERY_DATASET_ERROR'),
+                to_table=get_config('BIGQUERY_TABLE_ERROR'),
+                to_schema=None,
+                to_partition_column='_created_at',
+                data=data)
+            self.pubsub_hook.publish(
                 project=get_config('GCP_PROJECT'),
-                dataset=get_config('BIGQUERY_DATASET_ERROR'),
-                table=get_config('BIGQUERY_TABLE_ERROR'),
-                rows=rows
-            )
+                topic=get_config('PUBSUB_TOPIC_PUBSUB_TO_BQ'),
+                data=dto.as_dict())
 
             email_send_topic = get_config('PUBSUB_TOPIC_EMAIL_SEND', False)
             if email_send_topic and (origin != email_send_topic):
-                self.notify_email(origin, message_id, original_data)
+                self.notify_email(origin, message_id, data)
 
             slack_send_topic = get_config('PUBSUB_TOPIC_SLACK_SEND', False)
             if slack_send_topic and (origin != slack_send_topic):
-                self.notify_slack(origin, message_id, original_data)
+                self.notify_slack(origin, message_id, data)
 
     def notify_email(self, origin, message_id, data):
         email_message = {
             'sender': get_config('EMAIL_SENDER_ERROR'),
             'recipients': eval(get_config('EMAIL_RECIPIENTS_ERROR')),
             'subject': f'{origin} | {message_id}',
-            'content': json.dumps(data)
+            'content': f'Input Type: {data["input_type"]} Origin: {origin}\nMessage ID: {message_id} {json.dumps(data["data"])}\n\n{data["error"]}'
         }
         self.pubsub_hook.publish(
             project=get_config('GCP_PROJECT'),
@@ -70,7 +75,7 @@ class ErrorReprocessOperator(BaseEventOperator):
     def notify_slack(self, origin, message_id, data):
         slack_message = {
             'channels': eval(get_config('SLACK_CHANNELS_ERROR')),
-            'message': f'{origin} | {message_id}\n\n{json.dumps(data)}'
+            'message': f'{origin} | {message_id}\n\n{json.dumps(data["data"])}\n\n{data["error"]}'
         }
         self.pubsub_hook.publish(
             project=get_config('GCP_PROJECT'),

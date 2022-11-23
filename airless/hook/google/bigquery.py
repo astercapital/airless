@@ -22,31 +22,27 @@ class BigqueryHook(BaseHook):
             print('dataset created')
         return bq_dataset
 
-    def get_table(self, project, dataset, table):
+    def get_table(self, project, dataset, table, schema, partition_column):
         table_id = self.build_table_id(project, dataset, table)
         try:
             bq_table = self.bigquery_client.get_table(table_id)
         except NotFound:
             table = bigquery.Table(
                 table_id,
-                schema=[
-                    bigquery.SchemaField('_created_at', 'timestamp', mode='REQUIRED'),
-                    bigquery.SchemaField('_json', 'string', mode='REQUIRED'),
-                    bigquery.SchemaField('_event_id', 'int64', mode='REQUIRED'),
-                    bigquery.SchemaField('_resource', 'string', mode='REQUIRED')
-                ]
+                schema=[bigquery.SchemaField(s['key'], s['type'], mode=s['mode']) for s in schema]
             )
-            table.time_partitioning = bigquery.TimePartitioning(
-                type_=bigquery.TimePartitioningType.DAY,
-                field='_created_at'
-            )
+            if partition_column:
+                table.time_partitioning = bigquery.TimePartitioning(
+                    type_=bigquery.TimePartitioningType.DAY,
+                    field=partition_column
+                )
             bq_table = self.bigquery_client.create_table(table, timeout=30)
             print('table created')
         return bq_table
 
-    def write(self, project, dataset, table, rows):
+    def write(self, project, dataset, table, schema, partition_column, rows):
         _ = self.get_dataset(dataset)
-        bq_table = self.get_table(project, dataset, table)
+        bq_table = self.get_table(project, dataset, table, schema, partition_column)
         bq_table = self.update_table_schema(bq_table, rows)
 
         errors = self.bigquery_client.insert_rows_json(bq_table, json_rows=rows)

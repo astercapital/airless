@@ -14,3 +14,11 @@ resource "google_pubsub_topic" "gcs_query_to_bigquery" {
 resource "google_pubsub_topic" "error_reprocess" {
   name = "${var.env}-error-reprocess"
 }
+
+resource "google_pubsub_topic" "redirect" {
+  name = "${var.env}-redirect"
+}
+
+resource "google_pubsub_topic" "pubsub_to_bq" {
+  name = "${var.env}-pubsub-to-bq"
+}
