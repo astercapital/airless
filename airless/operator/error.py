@@ -65,7 +65,7 @@ class ErrorReprocessOperator(BaseEventOperator):
             'sender': get_config('EMAIL_SENDER_ERROR'),
             'recipients': eval(get_config('EMAIL_RECIPIENTS_ERROR')),
             'subject': f'{origin} | {message_id}',
-            'content': f'Input Type: {data["input_type"]} Origin: {origin}\nMessage ID: {message_id} {json.dumps(data["data"])}\n\n{data["error"]}'
+            'content': f'Input Type: {data["input_type"]} Origin: {origin}\nMessage ID: {message_id}\n\n {json.dumps(data["data"])}\n\n{data["error"]}'
         }
         self.pubsub_hook.publish(
             project=get_config('GCP_PROJECT'),

@@ -145,7 +145,7 @@ resource "google_cloudfunctions2_function" "error_reprocess" {
             EMAIL_SENDER_ERROR        = var.error.email.sender
             EMAIL_RECIPIENTS_ERROR    = jsonencode(var.error.email.recipients)
             SLACK_CHANNELS_ERROR      = jsonencode(var.error.slack.channels)
-            PUBSUB_TOPIC_PUBSUB_TO_BQ = google_pubsub_topic.pubsub_to_bq
+            PUBSUB_TOPIC_PUBSUB_TO_BQ = google_pubsub_topic.pubsub_to_bq.name
         }
     }
 
