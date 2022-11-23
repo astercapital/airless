@@ -54,7 +54,6 @@ resource "google_cloudfunctions2_function" "notification_email_send" {
             OPERATOR_IMPORT           = "from airless.operator.notification.email import EmailSendOperator"
             GCP_PROJECT               = var.project_id
             PUBSUB_TOPIC_ERROR        = google_pubsub_topic.error_reprocess.name
-            PUBSUB_TOPIC_PUBSUB_TO_BQ = google_pubsub_topic.pubsub_to_bq
         }
     }
 
@@ -135,17 +134,18 @@ resource "google_cloudfunctions2_function" "error_reprocess" {
         available_memory      = "256Mi"
         timeout_seconds       = 540
         environment_variables = {
-            ENV                     = var.env
-            OPERATOR_IMPORT         = "from airless.operator.error import ErrorReprocessOperator"
-            GCP_PROJECT             = var.project_id
-            PUBSUB_TOPIC_ERROR      = google_pubsub_topic.error_reprocess.name
-            PUBSUB_TOPIC_EMAIL_SEND = google_pubsub_topic.notification_email_send.name
-            PUBSUB_TOPIC_SLACK_SEND = google_pubsub_topic.notification_slack_send.name
-            BIGQUERY_DATASET_ERROR  = var.error.bigquery.dataset
-            BIGQUERY_TABLE_ERROR    = var.error.bigquery.table
-            EMAIL_SENDER_ERROR      = var.error.email.sender
-            EMAIL_RECIPIENTS_ERROR  = jsonencode(var.error.email.recipients)
-            SLACK_CHANNELS_ERROR    = jsonencode(var.error.slack.channels)
+            ENV                       = var.env
+            OPERATOR_IMPORT           = "from airless.operator.error import ErrorReprocessOperator"
+            GCP_PROJECT               = var.project_id
+            PUBSUB_TOPIC_ERROR        = google_pubsub_topic.error_reprocess.name
+            PUBSUB_TOPIC_EMAIL_SEND   = google_pubsub_topic.notification_email_send.name
+            PUBSUB_TOPIC_SLACK_SEND   = google_pubsub_topic.notification_slack_send.name
+            BIGQUERY_DATASET_ERROR    = var.error.bigquery.dataset
+            BIGQUERY_TABLE_ERROR      = var.error.bigquery.table
+            EMAIL_SENDER_ERROR        = var.error.email.sender
+            EMAIL_RECIPIENTS_ERROR    = jsonencode(var.error.email.recipients)
+            SLACK_CHANNELS_ERROR      = jsonencode(var.error.slack.channels)
+            PUBSUB_TOPIC_PUBSUB_TO_BQ = google_pubsub_topic.pubsub_to_bq
         }
     }
 
