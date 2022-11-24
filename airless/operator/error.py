@@ -6,7 +6,6 @@ from datetime import datetime
 
 from airless.config import get_config
 from airless.dto.pubsub_to_bq import PubsubToBqDto
-from airless.hook.google.pubsub import PubsubHook
 from airless.operator.base import BaseEventOperator
 
 
@@ -14,8 +13,6 @@ class ErrorReprocessOperator(BaseEventOperator):
 
     def __init__(self):
         super().__init__()
-
-        self.pubsub_hook = PubsubHook()
 
     def execute(self, data, topic):
 

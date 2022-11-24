@@ -1,7 +1,9 @@
 
 import json
+import re
 
 from datetime import datetime
+from unidecode import unidecode
 
 from airless.config import get_config
 from airless.dto.pubsub_to_bq import PubsubToBqDto
@@ -73,14 +75,38 @@ class PubsubToBqOperator(BaseEventOperator):
             partition_column=dto.to_partition_column,
             rows=prepared_rows)
 
-    def prepare_row(self, row, event_id, resource):
-        return {
+    def prepare_row(self, row, event_id, resource, extract_to_cols, keys_format):
+        prepared_row = {
             '_event_id': event_id,
             '_resource': resource,
             '_json': json.dumps(row),
             '_created_at': str(datetime.now())
         }
 
+        if extract_to_cols:
+            for key in row.keys():
+                if (key not in ['_event_id', '_resource', '_json', '_created_at']) and (row[key] is not None):
+                    new_key = key
+                    if keys_format == 'lowercase':
+                        new_key = key.lower()
+                        new_key = self.format_key(new_key)
+                    elif keys_format == 'snakecase':
+                        new_key = self.camel_to_snake(key)
+                        new_key = self.format_key(new_key)
+
+                    if isinstance(row[key], list) or isinstance(row[key], dict):
+                        prepared_row[new_key] = json.dumps(row[key])
+                    else:
+                        prepared_row[new_key] = str(row[key])
+
+        return prepared_row
+
     def prepare_rows(self, dto):
         prepared_rows = dto.data if isinstance(dto.data, list) else [dto.data]
-        return [self.prepare_row(row, dto.event_id, dto.resource) for row in prepared_rows]
+        return [self.prepare_row(row, dto.event_id, dto.resource, dto.to_extract_to_cols, dto.to_keys_format) for row in prepared_rows]
+
+    def camel_to_snake(self, s):
+        return ''.join(['_' + c.lower() if c.isupper() else c for c in s]).lstrip('_')
+
+    def format_key(self, key):
+        return re.sub(r'[^a-z0-9_]', '', unidecode(key.lower().replace(' ', '_')))

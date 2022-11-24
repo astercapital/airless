@@ -1,7 +1,6 @@
 
 from airless.operator.base import BaseEventOperator
 
-from airless.hook.google.pubsub import PubsubHook
 from airless.config import get_config
 
 
@@ -22,7 +21,6 @@ class RedirectOperator(BaseEventOperator):
 
     def __init__(self):
         super().__init__()
-        self.pubsub_hook = PubsubHook()
 
     def execute(self, data, topic):
         to_project = data.get('project', get_config('GCP_PROJECT'))

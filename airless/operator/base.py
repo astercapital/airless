@@ -74,7 +74,6 @@ class BaseEventOperator(BaseOperator):
 
     def __init__(self):
         super().__init__()
-        self.pubsub_hook = PubsubHook()
 
         self.trigger_type = 'event'
         self.trigger_event_topic = None
