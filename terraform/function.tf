@@ -54,6 +54,7 @@ resource "google_cloudfunctions2_function" "notification_email_send" {
             OPERATOR_IMPORT           = "from airless.operator.notification.email import EmailSendOperator"
             GCP_PROJECT               = var.project_id
             PUBSUB_TOPIC_ERROR        = google_pubsub_topic.error_reprocess.name
+            LOG_LEVEL                 = var.log_level
         }
     }
 
@@ -96,6 +97,7 @@ resource "google_cloudfunctions2_function" "notification_slack_send" {
             OPERATOR_IMPORT         = "from airless.operator.notification.slack import SlackSendOperator"
             GCP_PROJECT             = var.project_id
             PUBSUB_TOPIC_ERROR      = google_pubsub_topic.error_reprocess.name
+            LOG_LEVEL               = var.log_level
         }
     }
 
@@ -138,6 +140,7 @@ resource "google_cloudfunctions2_function" "error_reprocess" {
             OPERATOR_IMPORT           = "from airless.operator.error import ErrorReprocessOperator"
             GCP_PROJECT               = var.project_id
             PUBSUB_TOPIC_ERROR        = google_pubsub_topic.error_reprocess.name
+            LOG_LEVEL                 = var.log_level
             PUBSUB_TOPIC_EMAIL_SEND   = google_pubsub_topic.notification_email_send.name
             PUBSUB_TOPIC_SLACK_SEND   = google_pubsub_topic.notification_slack_send.name
             BIGQUERY_DATASET_ERROR    = var.error.bigquery.dataset
@@ -188,6 +191,7 @@ resource "google_cloudfunctions2_function" "gcs_query_to_bigquery" {
             OPERATOR_IMPORT         = "from airless.operator.google.bigquery import GcsQueryToBigqueryOperator"
             GCP_PROJECT             = var.project_id
             PUBSUB_TOPIC_ERROR      = google_pubsub_topic.error_reprocess.name
+            LOG_LEVEL               = var.log_level
             GCS_BUCKET_SQL          = "${var.project_id}-sql"
         }
     }
@@ -231,6 +235,7 @@ resource "google_cloudfunctions2_function" "redirect" {
             OPERATOR_IMPORT         = "from airless.operator.redirect import RedirectOperator"
             GCP_PROJECT             = var.project_id
             PUBSUB_TOPIC_ERROR      = google_pubsub_topic.error_reprocess.name
+            LOG_LEVEL               = var.log_level
         }
     }
 
@@ -274,6 +279,7 @@ resource "google_cloudfunctions2_function" "pubsub_to_bq" {
             OPERATOR_IMPORT         = "from airless.operator.google.bigquery import PubsubToBqOperator"
             GCP_PROJECT             = var.project_id
             PUBSUB_TOPIC_ERROR      = google_pubsub_topic.error_reprocess.name
+            LOG_LEVEL               = var.log_level
         }
     }
 

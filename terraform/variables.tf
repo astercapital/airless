@@ -11,6 +11,10 @@ variable "region" {
     default = "{region}"
 }
 
+variable "log_level" {
+    default = "INFO"
+}
+
 variable "error" {
     type = object({
         bigquery = object({

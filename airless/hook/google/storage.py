@@ -121,4 +121,4 @@ class GcsDatalakeHook(GcsHook):
                 filename='tmp.json',
                 add_timestamp=True)
         else:
-            print(f'[DEV] Uploading to {dataset}.{table}, Data: {data}')
+            self.logger.debug(f'[DEV] Uploading to {dataset}.{table}, Data: {data}')

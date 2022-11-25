@@ -24,7 +24,7 @@ class PubsubHook(BaseHook):
 
             publish_future = self.publisher.publish(topic_path, data=message_bytes)
             publish_future.result(timeout=10)
-            print(f'published to {project}.{topic}')
+            self.logger.info(f'published to {project}.{topic}')
             return 'Message published.'
         else:
-            print(f'[DEV] Message published to Project {project}, Topic {topic}: {data}')
+            self.logger.debug(f'[DEV] Message published to Project {project}, Topic {topic}: {data}')
