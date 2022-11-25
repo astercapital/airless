@@ -19,7 +19,7 @@ class BigqueryHook(BaseHook):
             bq_dataset = self.bigquery_client.get_dataset(dataset)
         except NotFound:
             bq_dataset = self.bigquery_client.create_dataset(dataset, timeout=30)
-            print('dataset created')
+            self.logger.debug(f'BQ dataset created {dataset}')
         return bq_dataset
 
     def get_table(self, project, dataset, table, schema, partition_column):
@@ -37,7 +37,7 @@ class BigqueryHook(BaseHook):
                     field=partition_column
                 )
             bq_table = self.bigquery_client.create_table(table, timeout=30)
-            print('table created')
+            self.logger.debug(f'BQ table created {project}.{dataset}.{table}')
         return bq_table
 
     def write(self, project, dataset, table, schema, partition_column, rows):
@@ -124,7 +124,7 @@ class BigqueryHook(BaseHook):
         self.execute_load_job(dataset, table, file_uri, job_config)
 
         destination_table = self.get_table(dataset, table)
-        print(f'Loaded {destination_table.num_rows} rows')
+        self.logger.debug(f'Loaded {destination_table.num_rows} rows')
 
     def execute_query_job(
             self, query, to_project, to_dataset, to_table, to_write_disposition, to_time_partitioning):

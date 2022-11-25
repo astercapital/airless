@@ -1,5 +1,6 @@
 
 import json
+import logging
 import time
 import traceback
 
@@ -12,7 +13,9 @@ from airless.hook.google.pubsub import PubsubHook
 class BaseOperator():
 
     def __init__(self):
-        print(f'Class instance {self.__class__.__name__}')
+        self.logger = logging.getLogger(f'{self.__class__.__module__}.{self.__class__.__name__}')
+        logging.basicConfig(level=logging.getLevelName(get_config('LOG_LEVEL')))
+        logging.debug(f'Created class instance {self.__class__.__name__}')
         self.pubsub_hook = PubsubHook()
         self.trigger_type = None
         self.message_id = None
@@ -22,9 +25,9 @@ class BaseOperator():
 
     def report_error(self, message):
         if get_config('ENV') == 'prod':
-            print(f'Error {message}')
+            logging.error(f'Error {message}')
         else:
-            print(f'[DEV] Error {message}')
+            logging.debug(f'[DEV] Error {message}')
 
         error_obj = self.build_error_message(message)
         self.pubsub_hook.publish(
