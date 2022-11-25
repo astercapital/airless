@@ -2,13 +2,13 @@
 import json
 import os
 
+from datetime import datetime
 from google.cloud import storage
+from itertools import zip_longest
 
+from airless.config import get_config
 from airless.hook.base import BaseHook
 from airless.hook.local.file import FileHook
-
-
-from itertools import zip_longest
 
 
 def natatime(n, iterable, fillvalue=None):
@@ -78,3 +78,47 @@ class GcsHook(BaseHook):
                 with self.storage_client.batch():
                     for blob in tmp_list:
                         blob.delete()
+
+
+class GcsDatalakeHook(GcsHook):
+
+    def __init__(self):
+        super().__init__()
+
+    def build_metadata(self, message_id, origin):
+        return {
+            'event_id': message_id or 1234,
+            'resource': origin or 'local'
+        }
+
+    def prepare_row(self, row, metadata):
+        return {
+            '_event_id': metadata['event_id'],
+            '_resource': metadata['resource'],
+            '_json': json.dumps({'data': row, 'metadata': metadata}),
+            '_created_at': str(datetime.now())
+        }
+
+    def prepare_rows(self, data, metadata):
+        prepared_rows = data if isinstance(data, list) else [data]
+        return [self.prepare_row(row, metadata) for row in prepared_rows]
+
+    def send_to_landing_zone(self, data, dataset, table, message_id, origin):
+
+        if isinstance(data, list) and (len(data) == 0):
+            raise Exception(f'Trying to send empty list to landing zone: {dataset}.{table}')
+
+        if isinstance(data, dict) and (data == {}):
+            raise Exception(f'Trying to send empty dict to landing zone: {dataset}.{table}')
+
+        if get_config('ENV') == 'prod':
+            metadata = self.build_metadata(message_id, origin)
+            prepared_rows = self.prepare_rows(data, metadata)
+            self.upload_from_memory(
+                data=prepared_rows,
+                bucket=get_config('LANDING_ZONE_BUCKET'),
+                directory=f'{dataset}/{table}',
+                filename='tmp.json',
+                add_timestamp=True)
+        else:
+            print(f'[DEV] Uploading to {dataset}.{table}, Data: {data}')

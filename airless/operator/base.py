@@ -45,7 +45,7 @@ class BaseFileOperator(BaseOperator):
         self.trigger_origin = None
         self.cloud_event = None
 
-    def execute(self, message_id, origin):
+    def execute(self, origin):
         raise NotImplementedError()
 
     def run(self, cloud_event):

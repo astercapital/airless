@@ -43,6 +43,8 @@ class ErrorReprocessOperator(BaseEventOperator):
                 to_table=get_config('BIGQUERY_TABLE_ERROR'),
                 to_schema=None,
                 to_partition_column='_created_at',
+                to_extract_to_cols=False,
+                to_keys_format=None,
                 data=data)
             self.pubsub_hook.publish(
                 project=get_config('GCP_PROJECT'),
