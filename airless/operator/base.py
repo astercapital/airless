@@ -48,7 +48,7 @@ class BaseFileOperator(BaseOperator):
         self.trigger_origin = None
         self.cloud_event = None
 
-    def execute(self, origin):
+    def execute(self, bucket, filepath):
         raise NotImplementedError()
 
     def run(self, cloud_event):
@@ -58,7 +58,7 @@ class BaseFileOperator(BaseOperator):
             trigger_file_bucket = cloud_event['bucket']
             trigger_file_path = cloud_event['subject']
             self.trigger_origin = f'{trigger_file_bucket}/{trigger_file_path}'
-            self.execute(self.trigger_origin)
+            self.execute(trigger_file_bucket, trigger_file_path)
 
         except Exception as e:
             self.report_error(f'{str(e)}\n{traceback.format_exc()}')

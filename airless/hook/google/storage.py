@@ -32,8 +32,9 @@ class GcsHook(BaseHook):
         blob = bucket.blob(filepath)
         content = blob.download_as_string()
         if encoding:
-            content = content.decode(encoding)
-        return content
+            return content.decode(encoding)
+        else:
+            return content.decode()
 
     def read_json(self, bucket, filepath, encoding=None):
         return json.loads(self.read(bucket, filepath, encoding))

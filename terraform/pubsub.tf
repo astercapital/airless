@@ -22,3 +22,7 @@ resource "google_pubsub_topic" "redirect" {
 resource "google_pubsub_topic" "pubsub_to_bq" {
   name = "${var.env}-pubsub-to-bq"
 }
+
+resource "google_pubsub_topic" "file_to_bq" {
+  name = "${var.env}-file-to-bq"
+}

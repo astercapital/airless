@@ -69,46 +69,49 @@ class BigqueryHook(BaseHook):
     def get_all_columns(self, rows):
         return set([key for row in rows for key in list(row.keys())])
 
-    def setup_job_config(self, mode, file_format, separator, schema, skip_leading_rows, quote_character, encoding, time_partitioning):
+    def setup_job_config(
+            self,
+            from_file_format, from_separator, from_skip_leading_rows, from_quote_character, from_encoding,
+            to_mode, to_schema, to_time_partitioning):
         job_config = bigquery.LoadJobConfig(
-            write_disposition='WRITE_TRUNCATE' if mode == 'overwrite' else 'WRITE_APPEND',
+            write_disposition='WRITE_TRUNCATE' if to_mode == 'overwrite' else 'WRITE_APPEND',
             max_bad_records=0)
 
-        if schema is None:
+        if to_schema is None:
             job_config.autodetect = True
         else:
-            job_config.schema = schema
+            job_config.schema = to_schema
 
-        if time_partitioning:
+        if to_time_partitioning:
             job_config.time_partitioning = bigquery.table.TimePartitioning(
-                type_=time_partitioning['type'],
-                field=time_partitioning['field']
+                type_=to_time_partitioning['type'],
+                field=to_time_partitioning['field']
             )
 
-        if file_format == 'csv':
+        if from_file_format == 'csv':
             job_config.source_format = bigquery.SourceFormat.CSV
-            job_config.field_delimiter = separator
+            job_config.field_delimiter = from_separator
             job_config.allow_quoted_newlines = True
-            if skip_leading_rows is not None:
-                job_config.skip_leading_rows = skip_leading_rows
-            if quote_character is not None:
-                job_config.quote_character = quote_character
-            if encoding is not None:
-                job_config.encoding = encoding
+            if from_skip_leading_rows is not None:
+                job_config.skip_leading_rows = from_skip_leading_rows
+            if from_quote_character is not None:
+                job_config.quote_character = from_quote_character
+            if from_encoding is not None:
+                job_config.encoding = from_encoding
 
-        elif file_format == 'json':
+        elif from_file_format == 'json':
             job_config.source_format = bigquery.SourceFormat.NEWLINE_DELIMITED_JSON
 
         else:
             raise Exception('File format not supported')
 
-        if mode == 'WRITE_APPEND':
+        if to_mode == 'WRITE_APPEND':
             job_config.schema_update_options = ['ALLOW_FIELD_ADDITION']
 
         return job_config
 
-    def execute_load_job(self, from_filepath, project, dataset, table, job_config):
-        table_id = self.build_table_id(project, dataset, table)
+    def execute_load_job(self, from_filepath, to_project, to_dataset, to_table, job_config):
+        table_id = self.build_table_id(to_project, to_dataset, to_table)
         load_job = self.bigquery_client.load_table_from_uri(
             from_filepath, table_id,
             job_config=job_config,
@@ -116,14 +119,30 @@ class BigqueryHook(BaseHook):
         )
         load_job.result()  # Waits for the job to complete.
 
-    def load_file_to_bq(self, file_uri, dataset, table, mode, file_format, separator, schema, skip_leading_rows, quote_character, encoding, time_partitioning):
-        _ = self.get_dataset(dataset)
+    def load_file(self,
+                  from_filepath, from_file_format, from_separator, from_skip_leading_rows,
+                  from_quote_character, from_encoding,
+                  to_project, to_dataset, to_table, to_mode, to_schema, to_time_partitioning):
+        _ = self.get_dataset(to_dataset)
 
-        job_config = self.setup_job_config(mode, file_format, separator, schema, skip_leading_rows, quote_character, encoding, time_partitioning)
+        job_config = self.setup_job_config(
+            from_file_format=from_file_format,
+            from_separator=from_separator,
+            from_skip_leading_rows=from_skip_leading_rows,
+            from_quote_character=from_quote_character,
+            from_encoding=from_encoding,
+            to_mode=to_mode,
+            to_schema=to_schema,
+            to_time_partitioning=to_time_partitioning)
 
-        self.execute_load_job(dataset, table, file_uri, job_config)
+        self.execute_load_job(
+            from_filepath=from_filepath,
+            to_project=to_project,
+            to_dataset=to_dataset,
+            to_table=to_table,
+            job_config=job_config)
 
-        destination_table = self.get_table(dataset, table)
+        destination_table = self.get_table(to_dataset, to_table)
         self.logger.debug(f'Loaded {destination_table.num_rows} rows')
 
     def execute_query_job(
