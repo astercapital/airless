@@ -1,6 +1,7 @@
 
 import json
 import logging
+import re
 import time
 import traceback
 
@@ -56,7 +57,7 @@ class BaseFileOperator(BaseOperator):
             self.message_id = self.extract_message_id(cloud_event)
             self.cloud_event = cloud_event
             trigger_file_bucket = cloud_event['bucket']
-            trigger_file_path = cloud_event['subject']
+            trigger_file_path = re.sub(r'^objects\/', '', cloud_event['subject'])
             self.trigger_origin = f'{trigger_file_bucket}/{trigger_file_path}'
             self.execute(trigger_file_bucket, trigger_file_path)
 
@@ -69,7 +70,10 @@ class BaseFileOperator(BaseOperator):
             'origin': self.trigger_origin,
             'error': message,
             'event_id': self.message_id,
-            'data': json.loads(str(self.cloud_event))
+            'data': {
+                'attributes': self.cloud_event._attributes,
+                'data': self.cloud_event.data
+            }
         }
 
 

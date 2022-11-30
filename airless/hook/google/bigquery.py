@@ -142,7 +142,7 @@ class BigqueryHook(BaseHook):
             to_table=to_table,
             job_config=job_config)
 
-        destination_table = self.get_table(to_dataset, to_table)
+        destination_table = self.get_table(to_project, to_dataset, to_table, to_schema, to_time_partitioning['field'])
         self.logger.debug(f'Loaded {destination_table.num_rows} rows')
 
     def execute_query_job(
@@ -163,20 +163,20 @@ class BigqueryHook(BaseHook):
         job = self.bigquery_client.query(query, job_config=job_config)
         job.result()
 
-    def export_to_gcs(self, to_filepath, dataset, table, bucket, directory, filename):
+    def export_to_gcs(self, from_project, from_dataset, from_table, to_filepath):
         job_config = bigquery.ExtractJobConfig()
         job_config.print_header = False
 
         extract_job = self.bigquery_client.extract_table(
-            self.get_table(dataset, table),
+            self.get_table(from_project, from_dataset, from_table, None, None),
             to_filepath,
             job_config=job_config,
             location='US'
         )
         extract_job.result()
 
-    def get_rows_from_table(self, dataset, table):
-        query = f'SELECT * FROM {dataset}.{table}'
+    def get_rows_from_table(self, project, dataset, table):
+        query = f'SELECT * FROM `{project}.{dataset}.{table}`'
         job = self.bigquery_client.query(query)
         return job.result()
 
