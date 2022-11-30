@@ -69,7 +69,7 @@ class BaseFileOperator(BaseOperator):
             'origin': self.trigger_origin,
             'error': message,
             'event_id': self.message_id,
-            'data': self.cloud_event
+            'data': json.loads(str(self.cloud_event))
         }
 
 
