@@ -48,17 +48,18 @@ class BaseFileOperator(BaseOperator):
         self.trigger_origin = None
         self.cloud_event = None
 
-    def execute(self, origin):
+    def execute(self, bucket, filepath):
         raise NotImplementedError()
 
     def run(self, cloud_event):
+        self.logger.debug(cloud_event)
         try:
             self.message_id = self.extract_message_id(cloud_event)
             self.cloud_event = cloud_event
             trigger_file_bucket = cloud_event['bucket']
-            trigger_file_path = cloud_event['subject']
+            trigger_file_path = cloud_event.data['name']
             self.trigger_origin = f'{trigger_file_bucket}/{trigger_file_path}'
-            self.execute(self.trigger_origin)
+            self.execute(trigger_file_bucket, trigger_file_path)
 
         except Exception as e:
             self.report_error(f'{str(e)}\n{traceback.format_exc()}')
@@ -69,7 +70,10 @@ class BaseFileOperator(BaseOperator):
             'origin': self.trigger_origin,
             'error': message,
             'event_id': self.message_id,
-            'data': self.cloud_event
+            'data': {
+                'attributes': self.cloud_event._attributes,
+                'data': self.cloud_event.data
+            }
         }
 
 
@@ -86,6 +90,7 @@ class BaseEventOperator(BaseOperator):
         raise NotImplementedError()
 
     def run(self, cloud_event):
+        self.logger.debug(cloud_event)
         try:
             self.message_id = self.extract_message_id(cloud_event)
             decoded_data = b64decode(cloud_event.data['message']['data']).decode('utf-8')
