@@ -142,7 +142,12 @@ class BigqueryHook(BaseHook):
             to_table=to_table,
             job_config=job_config)
 
-        destination_table = self.get_table(to_project, to_dataset, to_table, to_schema, to_time_partitioning['field'])
+        destination_table = self.get_table(
+            project=to_project,
+            dataset=to_dataset,
+            table=to_table,
+            schema=to_schema,
+            partition_column=(to_time_partitioning or {}).get('field'))
         self.logger.debug(f'Loaded {destination_table.num_rows} rows')
 
     def execute_query_job(
