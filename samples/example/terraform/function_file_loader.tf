@@ -17,16 +17,16 @@ resource "google_cloudfunctions2_function" "file_detect" {
 
     service_config {
         max_instance_count    = 20
-        available_memory      = "128Mi"
+        available_memory      = "256Mi"
         timeout_seconds       = 60
         environment_variables = {
-            ENV                             = var.env
-            OPERATOR_IMPORT                 = "from airless.operator.google.storage import FileDetectOperator"
-            GCP_PROJECT                     = var.project_id
-            PUBSUB_TOPIC_ERROR              = google_pubsub_topic.error_reprocess.name
-            LOG_LEVEL                       = var.log_level
-            PUBSUB_TOPIC_FILE_TO_BQ         = google_pubsub_topic.file_detect.name
-            GCS_BUCKET_FILE_ENTRANCE_CONFIG = google_storage_bucket.file_entrance_config.name
+            ENV                                   = var.env
+            OPERATOR_IMPORT                       = "from airless.operator.google.storage import FileDetectOperator"
+            GCP_PROJECT                           = var.project_id
+            PUBSUB_TOPIC_ERROR                    = google_pubsub_topic.error_reprocess.name
+            LOG_LEVEL                             = var.log_level
+            PUBSUB_TOPIC_FILE_TO_BQ               = google_pubsub_topic.file_detect.name
+            GCS_BUCKET_LANDING_ZONE_LOADER_CONFIG = google_storage_bucket.landing_zone_loader_config.name
         }
     }
 
@@ -36,7 +36,7 @@ resource "google_cloudfunctions2_function" "file_detect" {
         retry_policy   = "RETRY_POLICY_DO_NOT_RETRY"
         event_filters {
             attribute = "bucket"
-            value = google_storage_bucket.file_entrance.name
+            value = google_storage_bucket.landing_zone_loader.name
         }
     }
 
@@ -44,8 +44,8 @@ resource "google_cloudfunctions2_function" "file_detect" {
         google_storage_bucket.function_bucket,  # declared in `storage.tf`
         google_storage_bucket_object.zip,
         google_pubsub_topic.file_detect,
-        google_storage_bucket.file_entrance,
-        google_storage_bucket.file_entrance_config,
+        google_storage_bucket.landing_zone_loader,
+        google_storage_bucket.landing_zone_loader_config,
     ]
 }
 
@@ -75,6 +75,7 @@ resource "google_cloudfunctions2_function" "file_to_bq" {
             GCP_PROJECT             = var.project_id
             PUBSUB_TOPIC_ERROR      = google_pubsub_topic.error_reprocess.name
             LOG_LEVEL               = var.log_level
+            GCS_BUCKET_LANDING_ZONE = google_storage_bucket.landing_zone.name
         }
     }
 

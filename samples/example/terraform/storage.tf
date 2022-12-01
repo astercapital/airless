@@ -3,12 +3,23 @@ resource "google_storage_bucket" "function_bucket" {
     location = var.region
 }
 
-resource "google_storage_bucket" "file_entrance" {
-    name     = "${var.env}-file-entrance"
+resource "google_storage_bucket" "landing_zone" {
+    name     = "${var.env}-landing-zone"
     location = var.region
 }
 
-resource "google_storage_bucket" "file_entrance_config" {
-    name     = "${var.env}-file-entrance-config"
+resource "google_storage_bucket" "landing_zone_processed" {
+    name          = "${var.env}-landing-zone-processed"
+    location      = var.region
+    storage_class = "COLDLINE"
+}
+
+resource "google_storage_bucket" "landing_zone_loader" {
+    name     = "${var.env}-landing-zone-loader"
+    location = var.region
+}
+
+resource "google_storage_bucket" "landing_zone_loader_config" {
+    name     = "${var.env}-landing-zone-loader-config"
     location = var.region
 }

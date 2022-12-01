@@ -1,5 +1,6 @@
 
 import json
+import ndjson
 
 from datetime import datetime
 from random import randint
@@ -12,10 +13,13 @@ class FileHook(BaseHook):
     def __init__(self):
         super().__init__()
 
-    def write(self, local_filepath, data):
+    def write(self, local_filepath, data, use_ndjson=False):
         with open(local_filepath, 'w') as f:
             if isinstance(data, dict) or isinstance(data, list):
-                f.write(json.dumps(data))
+                if use_ndjson:
+                    ndjson.dump(data, f)
+                else:
+                    json.dump(data, f)
             else:
                 f.write(str(data))
 

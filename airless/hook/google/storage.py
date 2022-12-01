@@ -80,6 +80,10 @@ class GcsHook(BaseHook):
                     for blob in tmp_list:
                         blob.delete()
 
+    def list(self, bucket_name):
+        bucket = self.storage_client.get_bucket(bucket_name)
+        return bucket.list_blobs()
+
 
 class GcsDatalakeHook(GcsHook):
 
@@ -117,7 +121,7 @@ class GcsDatalakeHook(GcsHook):
             prepared_rows = self.prepare_rows(data, metadata)
             self.upload_from_memory(
                 data=prepared_rows,
-                bucket=get_config('LANDING_ZONE_BUCKET'),
+                bucket=get_config('GCS_BUCKET_LANDING_ZONE'),
                 directory=f'{dataset}/{table}',
                 filename='tmp.json',
                 add_timestamp=True)
