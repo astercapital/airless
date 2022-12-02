@@ -143,10 +143,10 @@ class BatchWriteDetectOperator(BaseEventOperator):
         partially_processed_tables = []
 
         for b in self.gcs_hook.list(bucket):
-            if not b.name.endswith('/'):
+            if b.time_deleted is None:
                 filepaths = b.name.split('/')
-                key = f'{filepaths[0]}/{filepaths[1]}'  # dataset/table
-                filename = filepaths[2]
+                key = '/'.join(filepaths[:-1])  # dataset/table
+                filename = filepaths[-1]
 
                 if tables.get(key) is None:
                     tables[key] = {
