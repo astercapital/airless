@@ -81,8 +81,7 @@ class GcsHook(BaseHook):
                         blob.delete()
 
     def list(self, bucket_name):
-        bucket = self.storage_client.get_bucket(bucket_name)
-        return bucket.list_blobs()
+        return self.storage_client.list_blobs(bucket_name, fields='items(name,size,timeCreated,timeDeleted)')
 
 
 class GcsDatalakeHook(GcsHook):
