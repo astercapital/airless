@@ -229,3 +229,29 @@ class BatchWriteProcessOperator(BaseEventOperator):
                 from_prefix=f'{directory}/{f}',
                 to_bucket=to_bucket,
                 to_directory=directory)
+
+
+class FileDeleteOperator(BaseEventOperator):
+
+    def __init__(self):
+        super().__init__()
+        self.gcs_hook = GcsHook()
+
+    def execute(self, data, topic):
+        bucket = data['bucket']
+        prefix = data['prefix']
+        self.gcs_hook.delete(bucket, prefix)
+
+
+class FileMoveOperator(BaseEventOperator):
+
+    def __init__(self):
+        super().__init__()
+        self.gcs_hook = GcsHook()
+
+    def execute(self, data, topic):
+        origin_bucket = data['origin']['bucket']
+        origin_prefix = data['origin']['prefix']
+        dest_bucket = data['destination']['bucket']
+        dest_directory = data['destination']['directory']
+        self.gcs_hook.move(origin_bucket, origin_prefix, dest_bucket, dest_directory)

@@ -34,3 +34,11 @@ resource "google_pubsub_topic" "file_batch_write_detect" {
 resource "google_pubsub_topic" "file_batch_write_process" {
   name = "${var.env}-file-batch-write-process"
 }
+
+resource "google_pubsub_topic" "gcs_move" {
+  name = "${var.env}-gcs-move"
+}
+
+resource "google_pubsub_topic" "gcs_delete" {
+  name = "${var.env}-gcs-delete"
+}
