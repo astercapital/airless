@@ -55,7 +55,7 @@ class GcsHook(BaseHook):
         blobs = self.storage_client.list_blobs(bucket, prefix=filepath, max_results=1, page_size=1)
         return len(list(blobs)) > 0
 
-    def move(self, from_bucket, from_prefix, to_bucket, to_directory):
+    def move(self, from_bucket, from_prefix, to_bucket, to_directory, rewrite=False):
         bucket = self.storage_client.get_bucket(from_bucket)
         blobs = bucket.list_blobs(prefix=from_prefix)
 
@@ -64,9 +64,22 @@ class GcsHook(BaseHook):
         for blob in blobs:
             if not blob.name.endswith('/'):
                 filename = blob.name.split('/')[-1]
-                bucket.copy_blob(
-                    blob, dest_bucket, f'{to_directory}/{filename}'
-                )
+
+                if rewrite:
+                    rewrite_token = False
+                    dest_blob = dest_bucket.blob(f'{to_directory}/{filename}')
+                    while True:
+                        rewrite_token, bytes_rewritten, bytes_to_rewrite = dest_blob.rewrite(
+                            blob, token=rewrite_token)
+                        self.logger.debug(f'{to_directory}/{filename} - Progress so far: {bytes_rewritten}/{bytes_to_rewrite} bytes')
+
+                        if not rewrite_token:
+                            break
+
+                else:
+                    bucket.copy_blob(
+                        blob, dest_bucket, f'{to_directory}/{filename}'
+                    )
                 bucket.delete_blob(blob.name)
 
     def delete(self, bucket_name, prefix):
