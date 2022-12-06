@@ -201,7 +201,7 @@ class BatchWriteProcessOperator(BaseEventOperator):
         self.gcs_hook.upload(local_filepath, get_config('GCS_BUCKET_LANDING_ZONE_LOADER'), f'{directory}/append')
         os.remove(local_filepath)
 
-        self.move_files(from_bucket, get_config('GCS_BUCKET_LANDING_ZONE_PROCESSED'), directory, files, True)
+        self.move_files(from_bucket, get_config('GCS_BUCKET_LANDING_ZONE_PROCESSED'), directory, files)
 
     def read_files(self, bucket, directory, files):
         file_contents = []
@@ -254,4 +254,4 @@ class FileMoveOperator(BaseEventOperator):
         origin_prefix = data['origin']['prefix']
         dest_bucket = data['destination']['bucket']
         dest_directory = data['destination']['directory']
-        self.gcs_hook.move(origin_bucket, origin_prefix, dest_bucket, dest_directory)
+        self.gcs_hook.move(origin_bucket, origin_prefix, dest_bucket, dest_directory, True)
