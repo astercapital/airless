@@ -1,6 +1,6 @@
 
 resource "google_cloudfunctions2_function" "file_batch_write_detect" {
-    name                  = "${var.env}-file-detect"
+    name                  = "${var.env}-file-batch-write-detect"
     location              = var.region 
     description           = "Cloud Function to identify which files from a bucket are able to be processed considering some given thresholds"
 
