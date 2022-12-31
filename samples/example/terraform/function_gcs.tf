@@ -43,7 +43,7 @@ resource "google_cloudfunctions2_function" "gcs_move" {
 }
 
 resource "google_cloudfunctions2_function" "gcs_delete" {
-    name                  = "${var.env}-gcs-move"
+    name                  = "${var.env}-gcs-delete"
     location              = var.region 
     description           = "Cloud function that deletes files from GCS"
 
