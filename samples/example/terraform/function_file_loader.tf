@@ -25,7 +25,7 @@ resource "google_cloudfunctions2_function" "file_detect" {
             GCP_PROJECT                           = var.project_id
             PUBSUB_TOPIC_ERROR                    = google_pubsub_topic.error_reprocess.name
             LOG_LEVEL                             = var.log_level
-            PUBSUB_TOPIC_FILE_TO_BQ               = google_pubsub_topic.file_detect.name
+            PUBSUB_TOPIC_FILE_TO_BQ               = google_pubsub_topic.file_to_bq.name
             GCS_BUCKET_LANDING_ZONE_LOADER_CONFIG = google_storage_bucket.landing_zone_loader_config.name
         }
     }
@@ -43,7 +43,7 @@ resource "google_cloudfunctions2_function" "file_detect" {
     depends_on         = [
         google_storage_bucket.function_bucket,  # declared in `storage.tf`
         google_storage_bucket_object.zip,
-        google_pubsub_topic.file_detect,
+        google_pubsub_topic.file_to_bq,
         google_storage_bucket.landing_zone_loader,
         google_storage_bucket.landing_zone_loader_config,
     ]
