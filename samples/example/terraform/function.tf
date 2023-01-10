@@ -296,3 +296,46 @@ resource "google_cloudfunctions2_function" "pubsub_to_bq" {
         google_pubsub_topic.pubsub_to_bq
     ]
 }
+
+resource "google_cloudfunctions2_function" "delay" {
+    name                  = "${var.env}-delay"
+    location              = var.region 
+    description           = "Cloud functions that adds a delay to the processing pipeline"
+
+    build_config {
+        runtime           = "python39"  # of course changeable
+        entry_point       = "route"
+        source {
+            storage_source {
+                bucket = google_storage_bucket.function_bucket.name
+                object = google_storage_bucket_object.zip.name    
+            }
+        }
+    }
+
+    service_config {
+        max_instance_count    = 100
+        available_memory      = "128Mi"
+        timeout_seconds       = 540
+        environment_variables = {
+            ENV                     = var.env
+            OPERATOR_IMPORT         = "from airless.operator.delay import DelayOperator"
+            GCP_PROJECT             = var.project_id
+            PUBSUB_TOPIC_ERROR      = google_pubsub_topic.error_reprocess.name
+            LOG_LEVEL               = var.log_level
+        }
+    }
+
+    event_trigger {
+        trigger_region = var.region
+        event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
+        pubsub_topic   = google_pubsub_topic.delay.id
+        retry_policy   = "RETRY_POLICY_DO_NOT_RETRY"
+    }
+
+    depends_on         = [
+        google_storage_bucket.function_bucket,  # declared in `storage.tf`
+        google_storage_bucket_object.zip,
+        google_pubsub_topic.delay
+    ]
+}
