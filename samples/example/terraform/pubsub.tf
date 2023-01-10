@@ -42,3 +42,7 @@ resource "google_pubsub_topic" "gcs_move" {
 resource "google_pubsub_topic" "gcs_delete" {
   name = "${var.env}-gcs-delete"
 }
+
+resource "google_pubsub_topic" "delay" {
+  name = "${var.env}-delay"
+}
