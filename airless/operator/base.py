@@ -23,19 +23,19 @@ class BaseOperator():
     def extract_message_id(self, cloud_event):
         return cloud_event['id']
 
-    def report_error(self, message):
+    def report_error(self, message, data=None):
         if get_config('ENV') == 'prod':
             logging.error(f'Error {message}')
         else:
             logging.debug(f'[DEV] Error {message}')
 
-        error_obj = self.build_error_message(message)
+        error_obj = self.build_error_message(message, data)
         self.pubsub_hook.publish(
             project=get_config('GCP_PROJECT'),
             topic=get_config('PUBSUB_TOPIC_ERROR'),
             data=error_obj)
 
-    def build_error_message(self, message):
+    def build_error_message(self, message, data):
         raise NotImplementedError()
 
 
@@ -64,7 +64,7 @@ class BaseFileOperator(BaseOperator):
         except Exception as e:
             self.report_error(f'{str(e)}\n{traceback.format_exc()}')
 
-    def build_error_message(self, message):
+    def build_error_message(self, message, data):
         return {
             'input_type': self.trigger_type,
             'origin': self.trigger_origin,
@@ -72,7 +72,7 @@ class BaseFileOperator(BaseOperator):
             'event_id': self.message_id,
             'data': {
                 'attributes': self.cloud_event._attributes,
-                'data': self.cloud_event.data
+                'data': data or self.cloud_event.data
             }
         }
 
@@ -114,11 +114,11 @@ class BaseEventOperator(BaseOperator):
                 topic=t['topic'],
                 data=t['data'])
 
-    def build_error_message(self, message):
+    def build_error_message(self, message, data):
         return {
             'input_type': self.trigger_type,
             'origin': self.trigger_event_topic,
             'error': message,
             'event_id': self.message_id,
-            'data': self.trigger_event_data
+            'data': data or self.trigger_event_data
         }
