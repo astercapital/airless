@@ -16,6 +16,7 @@ class EmailSendOperator(BaseEventOperator):
         recipients = data['recipients']
         sender = data.get('sender', 'Airless notification')
         attachments = data.get('attachments', [])
+        mime_type = data.get('mime_type', 'plain')
 
         attachment_contents = []
         for att in attachments:
@@ -24,4 +25,4 @@ class EmailSendOperator(BaseEventOperator):
                 'content': self.gcs_hook.read(att['bucket'], att['filepath'], att['encoding'])
             })
 
-        self.email_hook.send(subject, content, recipients, sender, attachment_contents)
+        self.email_hook.send(subject, content, recipients, sender, attachment_contents, mime_type)
