@@ -14,6 +14,9 @@ class BigqueryHook(BaseHook):
     def build_table_id(self, project, dataset, table):
         return f'{project}.{dataset}.{table}'
 
+    def list_datasets(self):
+        return self.bigquery_client.list_datasets()
+
     def get_dataset(self, dataset):
         try:
             bq_dataset = self.bigquery_client.get_dataset(dataset)
