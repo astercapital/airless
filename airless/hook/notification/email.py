@@ -20,8 +20,9 @@ class EmailHook(BaseHook):
         secret_manager_hook = SecretManagerHook()
         self.smtp = secret_manager_hook.get_secret(get_config('GCP_PROJECT'), 'smtp', parse_json=True)
 
-    def build_message(self, subject, content, recipients, sender, attachments=[]):
-        msg = MIMEText(content)
+    def build_message(self, subject, content, recipients, sender, attachments=[], mime_type='plain'):
+
+        msg = MIMEText(content, mime_type)
         if attachments:
             msg = MIMEMultipart()
         msg['Subject'] = subject
@@ -42,9 +43,9 @@ class EmailHook(BaseHook):
             msg.attach(part)
         return msg
 
-    def send(self, subject, content, recipients, sender, attachments):
+    def send(self, subject, content, recipients, sender, attachments, mime_type):
 
-        msg = self.build_message(subject, content, recipients, sender, attachments)
+        msg = self.build_message(subject, content, recipients, sender, attachments, mime_type)
         server = smtplib.SMTP_SSL(self.smtp['host'], self.smtp['port'])
 
         try:
