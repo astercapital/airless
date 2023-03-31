@@ -1,6 +1,6 @@
 [project]
 name = "airless"
-version = "0.0.35"
+version = "0.0.36"
 
 [build-system]
 requires = ["setuptools"]
