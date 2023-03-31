@@ -41,9 +41,13 @@ class GcsHook(BaseHook):
 
     def upload_from_memory(self, data, bucket, directory, filename, add_timestamp):
         local_filename = self.file_hook.get_tmp_filepath(filename, add_timestamp)
-        self.file_hook.write(local_filename, data)
-        self.upload(local_filename, bucket, directory)
-        os.remove(local_filename)
+        try:
+            self.file_hook.write(local_filename, data)
+            self.upload(local_filename, bucket, directory)
+
+        finally:
+            if os.path.exists(local_filename):
+                os.remove(local_filename)
 
     def upload(self, local_filepath, bucket, directory):
         filename = self.file_hook.extract_filename(local_filepath)
