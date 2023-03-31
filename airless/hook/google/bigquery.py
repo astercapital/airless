@@ -1,4 +1,5 @@
 
+from concurrent.futures._base import TimeoutError
 from google.cloud import bigquery
 from google.cloud.exceptions import NotFound
 
@@ -113,12 +114,12 @@ class BigqueryHook(BaseHook):
 
         return job_config
 
-    def execute_load_job(self, from_filepath, to_project, to_dataset, to_table, job_config):
+    def execute_load_job(self, from_filepath, to_project, to_dataset, to_table, job_config, timeout=240):
         table_id = self.build_table_id(to_project, to_dataset, to_table)
         load_job = self.bigquery_client.load_table_from_uri(
             from_filepath, table_id,
             job_config=job_config,
-            timeout=240
+            timeout=timeout
         )
         load_job.result()  # Waits for the job to complete.
 
@@ -154,7 +155,7 @@ class BigqueryHook(BaseHook):
         self.logger.debug(f'Loaded {destination_table.num_rows} rows')
 
     def execute_query_job(
-            self, query, to_project, to_dataset, to_table, to_write_disposition, to_time_partitioning):
+            self, query, to_project, to_dataset, to_table, to_write_disposition, to_time_partitioning, timeout=480):
 
         job_config = bigquery.QueryJobConfig()
 
@@ -169,7 +170,13 @@ class BigqueryHook(BaseHook):
                 bigquery.table.TimePartitioning().from_api_repr(to_time_partitioning)
 
         job = self.bigquery_client.query(query, job_config=job_config)
-        job.result()
+        job.job_id
+
+        try:
+            job.result(timeout=timeout, job_retry=None)
+        except TimeoutError as e:
+            self.bigquery_client.cancel_job(job.job_id)
+            raise(e)
 
     def export_to_gcs(self, from_project, from_dataset, from_table, to_filepath):
         job_config = bigquery.ExtractJobConfig()
@@ -183,11 +190,14 @@ class BigqueryHook(BaseHook):
         )
         extract_job.result()
 
-    def get_rows_from_table(self, project, dataset, table):
+    def get_rows_from_table(self, project, dataset, table, timeout=480):
         query = f'SELECT * FROM `{project}.{dataset}.{table}`'
-        job = self.bigquery_client.query(query)
-        return job.result()
+        return self.get_query_results(query, timeout)
 
-    def get_query_results(self, query):
+    def get_query_results(self, query, timeout=480):
         job = self.bigquery_client.query(query)
-        return job.result()
+        try:
+            return job.result(timeout=timeout, job_retry=None)
+        except TimeoutError as e:
+            self.bigquery_client.cancel_job(job.job_id)
+            raise(e)

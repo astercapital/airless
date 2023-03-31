@@ -53,7 +53,8 @@ class GcsQueryToBigqueryOperator(BaseEventOperator):
 
         self.bigquery_hook.execute_query_job(
             sql, to_project, to_dataset,
-            to_table, to_write_disposition, to_time_partitioning)
+            to_table, to_write_disposition, to_time_partitioning,
+            timeout=get_config('BIGQUERY_JOB_TIMEOUT', False, 480))
 
 
 class PubsubToBqOperator(BaseEventOperator):
