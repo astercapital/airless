@@ -38,6 +38,27 @@ class BaseOperator():
     def build_error_message(self, message, data):
         raise NotImplementedError()
 
+    def chain_messages(self, messages):
+        msg_chain = None
+        messages.reverse()
+
+        for m in messages:
+            new_msg = m['data'].copy()
+            if msg_chain:
+                new_msg['metadata'] = {**new_msg.get('metadata', {}), **msg_chain}
+
+            msg_chain = {
+                'run_next': [{
+                    'topic': m['topic'],
+                    'data': new_msg
+                }]
+            }
+
+        chained_messages = msg_chain['run_next'][0]['data']
+        first_topic = msg_chain['run_next'][0]['topic']
+
+        return chained_messages, first_topic
+
 
 class BaseFileOperator(BaseOperator):
 

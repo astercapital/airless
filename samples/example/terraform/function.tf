@@ -185,7 +185,7 @@ resource "google_cloudfunctions2_function" "gcs_query_to_bigquery" {
     service_config {
         max_instance_count    = 1
         available_memory      = "128Mi"
-        timeout_seconds       = 60
+        timeout_seconds       = 540
         environment_variables = {
             ENV                     = var.env
             OPERATOR_IMPORT         = "from airless.operator.google.bigquery import GcsQueryToBigqueryOperator"
@@ -193,6 +193,7 @@ resource "google_cloudfunctions2_function" "gcs_query_to_bigquery" {
             PUBSUB_TOPIC_ERROR      = google_pubsub_topic.error_reprocess.name
             LOG_LEVEL               = var.log_level
             GCS_BUCKET_SQL          = "${var.project_id}-sql"
+            BIGQUERY_JOB_TIMEOUT    = 480
         }
     }
 
