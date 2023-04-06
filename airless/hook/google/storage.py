@@ -36,6 +36,13 @@ class GcsHook(BaseHook):
         else:
             return content.decode()
 
+    def download(self, bucket, filepath, target_filepath=None):
+        bucket = self.storage_client.get_bucket(bucket)
+
+        filename = filepath.split('/')[-1]
+        blob = bucket.blob(filepath)
+        blob.download_to_filename(target_filepath or filename)
+
     def read_json(self, bucket, filepath, encoding=None):
         return json.loads(self.read(bucket, filepath, encoding))
 
