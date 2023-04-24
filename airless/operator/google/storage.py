@@ -28,7 +28,7 @@ class FileDetectOperator(BaseFileOperator):
         dataset, table, mode, separator, skip_leading_rows, \
             file_format, schema, run_next, quote_character, encoding, \
             column_names, time_partitioning, processing_method, \
-            gcs_table_name = self.get_ingest_config(filepath)
+            gcs_table_name, sheet_name = self.get_ingest_config(filepath)
 
         return {
             'metadata': {
@@ -47,7 +47,8 @@ class FileDetectOperator(BaseFileOperator):
                 'column_names': column_names,
                 'time_partitioning': time_partitioning,
                 'processing_method': processing_method,
-                'gcs_table_name': gcs_table_name
+                'gcs_table_name': gcs_table_name,
+                'sheet_name': sheet_name
             }
         }
 
@@ -62,6 +63,7 @@ class FileDetectOperator(BaseFileOperator):
         skip_leading_rows = metadata.get('skip_leading_rows')
         quote_character = metadata.get('quote_character')
         encoding = metadata.get('encoding', None)
+        sheet_name = metadata.get('sheet_name', None)
 
         # output
         schema = metadata.get('schema', None)
@@ -76,7 +78,8 @@ class FileDetectOperator(BaseFileOperator):
         return dataset, table, mode, separator, \
             skip_leading_rows, file_format, schema, \
             run_next, quote_character, encoding, column_names, \
-            time_partitioning, processing_method, gcs_table_name
+            time_partitioning, processing_method, gcs_table_name, \
+            sheet_name
 
     def split_filepath(self, filepath):
         filepath_array = filepath.split('/')
