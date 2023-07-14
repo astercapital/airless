@@ -1,6 +1,7 @@
 
 import json
 import ndjson
+import requests
 
 from datetime import datetime
 from random import randint
@@ -32,3 +33,12 @@ class FileHook(BaseHook):
             timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
             filename = f'{timestamp}_{randint(1, 100000000)}_{filename}'
         return f'/tmp/{filename}'
+
+    def download(self, url, headers, timeout=500, proxies=None):
+        local_filename = self.get_tmp_filepath(url)
+        with requests.get(url, stream=True, verify=False, headers=headers, timeout=timeout, proxies=proxies) as r:
+            r.raise_for_status()
+            with open(local_filename, 'wb') as f:
+                for chunk in r.iter_content(chunk_size=8192):
+                    f.write(chunk)
+        return local_filename
