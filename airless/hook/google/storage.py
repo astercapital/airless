@@ -8,7 +8,7 @@ from itertools import zip_longest
 
 from airless.config import get_config
 from airless.hook.base import BaseHook
-from airless.hook.local.file import FileHook
+from airless.hook.file.file import FileHook
 
 
 def natatime(n, iterable, fillvalue=None):
