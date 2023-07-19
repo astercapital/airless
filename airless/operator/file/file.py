@@ -25,12 +25,13 @@ class FileUrlToGcsOperator(BaseEventOperator):
             proxies=origin.get('proxies')
         )
 
-        local_filepath = self.move_to_destinations(local_filepath, destination)
+        self.move_to_destinations(local_filepath, destination)
 
         os.remove(local_filepath)
 
     def move_to_destinations(self, local_filepath, destination):
 
+        original_filepath = local_filepath
         destinations = destination if isinstance(destination, list) else [destination]
 
         for dest in destinations:
@@ -38,7 +39,7 @@ class FileUrlToGcsOperator(BaseEventOperator):
             if dest.get('filename'):
                 local_filepath = self.file_hook.rename(
                     from_filename=local_filepath,
-                    to_filename=destination.get('filename'))
+                    to_filename=dest.get('filename'))
 
             bucket = dest['bucket']
             directory = dest.get('directory', f"{dest.get('dataset')}/{dest.get('table')}/{dest.get('mode')}")
@@ -46,10 +47,12 @@ class FileUrlToGcsOperator(BaseEventOperator):
 
             if remove_null_byte:
                 self.remove_null_byte(local_filepath)
-            # self.gcs_hook.upload(local_filepath, bucket, directory)
-            print(f'upload {local_filepath} to {bucket} {directory}')
+            self.gcs_hook.upload(local_filepath, bucket, directory)
 
-        return local_filepath
+            if local_filepath != original_filepath:  # revert to original filename
+                local_filepath = self.file_hook.rename(
+                    from_filename=local_filepath,
+                    to_filename=original_filepath)
 
     def remove_null_byte(self, local_filepath):
         splits = local_filepath.split('/')
