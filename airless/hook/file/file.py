@@ -1,6 +1,7 @@
 
 import json
 import ndjson
+import os
 import requests
 
 from datetime import datetime
@@ -42,3 +43,8 @@ class FileHook(BaseHook):
                 for chunk in r.iter_content(chunk_size=8192):
                     f.write(chunk)
         return local_filename
+
+    def rename(self, from_filename, to_filename):
+        to_filename_formatted = ('' if to_filename.startswith('/tmp/') else '/tmp/') + to_filename
+        os.rename(from_filename, to_filename_formatted)
+        return to_filename_formatted
