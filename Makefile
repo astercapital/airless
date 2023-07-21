@@ -3,4 +3,4 @@ build:
 	python -m build
 
 upload:
-	twine upload dist/airless-0.0.40*
+	twine upload dist/airless-0.0.42*
