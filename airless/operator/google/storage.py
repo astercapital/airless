@@ -18,68 +18,103 @@ class FileDetectOperator(BaseFileOperator):
         self.gcs_hook = GcsHook()
 
     def execute(self, bucket, filepath):
-        success_message = self.build_success_message(bucket, filepath)
-        self.pubsub_hook.publish(
-            project=get_config('GCP_PROJECT'),
-            topic=get_config('PUBSUB_TOPIC_FILE_TO_BQ'),
-            data=success_message)
+        success_messages = self.build_success_message(bucket, filepath)
+
+        for success_message in success_messages:
+            self.pubsub_hook.publish(
+                project=get_config('GCP_PROJECT'),
+                topic=get_config('PUBSUB_TOPIC_FILE_TO_BQ'),
+                data=success_message)
 
     def build_success_message(self, bucket, filepath):
         dataset, table, mode, separator, skip_leading_rows, \
             file_format, schema, run_next, quote_character, encoding, \
             column_names, time_partitioning, processing_method, \
-            gcs_table_name, sheet_name = self.get_ingest_config(filepath)
+            gcs_table_name, sheet_name, arguments = self.get_ingest_config(filepath)
 
-        return {
-            'metadata': {
-                'destination_dataset': dataset,
-                'destination_table': table,
-                'file_format': file_format,
-                'mode': mode,
-                'bucket': bucket,
-                'file': filepath,
-                'separator': separator,
-                'skip_leading_rows': skip_leading_rows,
-                'quote_character': quote_character,
-                'encoding': encoding,
-                'schema': schema,
-                'run_next': run_next,
-                'column_names': column_names,
-                'time_partitioning': time_partitioning,
-                'processing_method': processing_method,
-                'gcs_table_name': gcs_table_name,
-                'sheet_name': sheet_name
-            }
-        }
+        metadatas = []
+        for idx in range(len(file_format)):
+            metadatas.append({
+                'metadata': {
+                    'destination_dataset': dataset,
+                    'destination_table': table,
+                    'file_format': file_format[idx],
+                    'mode': mode,
+                    'bucket': bucket,
+                    'file': filepath,
+                    'separator': separator[idx],
+                    'skip_leading_rows': skip_leading_rows[idx],
+                    'quote_character': quote_character[idx],
+                    'encoding': encoding[idx],
+                    'schema': schema[idx],
+                    'run_next': run_next[idx],
+                    'column_names': column_names[idx],
+                    'time_partitioning': time_partitioning[idx],
+                    'processing_method': processing_method[idx],
+                    'gcs_table_name': gcs_table_name[idx],
+                    'sheet_name': sheet_name[idx],
+                    'arguments': arguments[idx]
+                }
+            })
+
+        return metadatas
 
     def get_ingest_config(self, filepath):
         dataset, table, mode = self.split_filepath(filepath)
 
         metadata = self.read_config_file(dataset, table)
 
-        # input
-        file_format = metadata.get('file_format', 'csv')
-        separator = metadata.get('separator')
-        skip_leading_rows = metadata.get('skip_leading_rows')
-        quote_character = metadata.get('quote_character')
-        encoding = metadata.get('encoding', None)
-        sheet_name = metadata.get('sheet_name', None)
+        # Verifying if config file hava multiple configs or not
+        if isinstance(metadata, list):
+            metadata = metadata
+        elif isinstance(metadata, dict):
+            metadata = [metadata]
+        else:
+            raise NotImplementedError()
 
-        # output
-        schema = metadata.get('schema', None)
-        column_names = metadata.get('column_names', None)
-        time_partitioning = metadata.get('time_partitioning', None)
-        processing_method = metadata.get('processing_method', None)
-        gcs_table_name = metadata.get('gcs_table_name', None)
+        # Instanciate all values
+        # inputs
+        file_format = []
+        separator = []
+        skip_leading_rows = []
+        quote_character = []
+        encoding = []
+        sheet_name = []
+        arguments = []
 
-        # after processing
-        run_next = metadata.get('run_next', [])
+        # outputs
+        schema = []
+        column_names = []
+        time_partitioning = []
+        processing_method = []
+        gcs_table_name = []
+        run_next = []
+
+        for config in metadata:
+            # input
+            file_format.append(config.get('file_format', 'csv'))
+            separator.append(config.get('separator'))
+            skip_leading_rows.append(config.get('skip_leading_rows'))
+            quote_character.append(config.get('quote_character'))
+            encoding.append(config.get('encoding', None))
+            sheet_name.append(config.get('sheet_name', None))
+            arguments.append(config.get('arguments', None))
+
+            # output
+            schema.append(config.get('schema', None))
+            column_names.append(config.get('column_names', None))
+            time_partitioning.append(config.get('time_partitioning', None))
+            processing_method.append(config.get('processing_method', None))
+            gcs_table_name.append(config.get('gcs_table_name', None))
+
+            # after processing
+            run_next.append(config.get('run_next', []))
 
         return dataset, table, mode, separator, \
             skip_leading_rows, file_format, schema, \
             run_next, quote_character, encoding, column_names, \
             time_partitioning, processing_method, gcs_table_name, \
-            sheet_name
+            sheet_name, arguments
 
     def split_filepath(self, filepath):
         filepath_array = filepath.split('/')
