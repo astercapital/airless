@@ -1,5 +1,7 @@
 
+from airless.config import get_config
 from airless.operator.base import BaseEventOperator
+from airless.hook.google.secret_manager import SecretManagerHook
 from airless.hook.notification.slack import SlackHook
 
 
@@ -8,10 +10,16 @@ class SlackSendOperator(BaseEventOperator):
     def __init__(self):
         super().__init__()
         self.slack_hook = SlackHook()
+        self.secret_manager_hook = SecretManagerHook()
 
     def execute(self, data, topic):
         channels = data['channels']
-        message = data['message']
+        secret_id = data.get('secret_id', 'slack_alert')
+        message = data.get('message')
+        blocks = data.get('blocks')
+
+        token = self.secret_manager_hook.get_secret(get_config('GCP_PROJECT'), secret_id, True)['bot_token']
+        self.slack_hook.set_token(token)
 
         for channel in channels:
-            self.slack_hook.send(channel, message)
+            self.slack_hook.send(channel, message, blocks)
