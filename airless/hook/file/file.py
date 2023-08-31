@@ -48,3 +48,17 @@ class FileHook(BaseHook):
         to_filename_formatted = ('' if to_filename.startswith('/tmp/') else '/tmp/') + to_filename
         os.rename(from_filename, to_filename_formatted)
         return to_filename_formatted
+
+    def rename_files(self, dir, prefix):
+        for root, subdirs, files in os.walk(dir):
+            for filename in files:
+                os.rename(os.path.join(root, filename), os.path.join(root, f'{prefix}_{filename}'))
+
+    def list_files(self, folder):
+        file_list = []
+        for root, subdirs, files in os.walk(folder):
+            for filename in files:
+                filepath = os.path.join(root, filename)
+                file_list.append(filepath)
+
+        return file_list
