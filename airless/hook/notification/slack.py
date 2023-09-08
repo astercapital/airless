@@ -18,7 +18,7 @@ class SlackHook(BaseHook):
             'Authorization': f'Bearer {self.token}'
         }
 
-    def send(self, channel, message=None, blocks=None):
+    def send(self, channel, message=None, blocks=None, thread_ts=None, reply_broadcast=False):
 
         data = {
             'channel': channel,
@@ -31,6 +31,10 @@ class SlackHook(BaseHook):
 
         if blocks:
             data['blocks'] = blocks
+
+        if thread_ts:
+            data['thread_ts'] = thread_ts
+            data['reply_broadcast'] = reply_broadcast
 
         response = requests.post(
             f'https://{self.api_url}/api/chat.postMessage',

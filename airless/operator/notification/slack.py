@@ -17,9 +17,11 @@ class SlackSendOperator(BaseEventOperator):
         secret_id = data.get('secret_id', 'slack_alert')
         message = data.get('message')
         blocks = data.get('blocks')
+        thread_ts = data.get('thread_ts')
+        reply_broadcast = data.get('reply_broadcast', False)
 
         token = self.secret_manager_hook.get_secret(get_config('GCP_PROJECT'), secret_id, True)['bot_token']
         self.slack_hook.set_token(token)
 
         for channel in channels:
-            self.slack_hook.send(channel, message, blocks)
+            self.slack_hook.send(channel, message, blocks, thread_ts, reply_broadcast)
