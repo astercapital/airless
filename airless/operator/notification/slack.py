@@ -25,3 +25,22 @@ class SlackSendOperator(BaseEventOperator):
 
         for channel in channels:
             self.slack_hook.send(channel, message, blocks, thread_ts, reply_broadcast)
+
+
+class SlackReactOperator(BaseEventOperator):
+
+    def __init__(self):
+        super().__init__()
+        self.slack_hook = SlackHook()
+        self.secret_manager_hook = SecretManagerHook()
+
+    def execute(self, data, topic):
+        channel = data['channel']
+        secret_id = data.get('secret_id', 'slack_alert')
+        reaction = data.get('reaction')
+        ts = data.get('ts')
+
+        token = self.secret_manager_hook.get_secret(get_config('GCP_PROJECT'), secret_id, True)['bot_token']
+        self.slack_hook.set_token(token)
+
+        self.slack_hook.react(channel, reaction, ts)
