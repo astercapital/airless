@@ -143,3 +143,42 @@ class BaseEventOperator(BaseOperator):
             'event_id': self.message_id,
             'data': data or self.trigger_event_data
         }
+
+
+class BaseHttpOperator(BaseOperator):
+
+    def __init__(self):
+        super().__init__()
+
+        self.trigger_type = 'http'
+        self.trigger_base_url = None
+        self.trigger_request = None
+
+    def execute(self, request):
+        raise NotImplementedError()
+
+    def run(self, request):
+        self.logger.debug(request)
+        try:
+            self.trigger_request = {
+                'url': request.base_url,
+                'method': request.method,
+                'form': request.form.to_dict(),
+                'args': request.args.to_dict(),
+                'data': request.data.decode('utf-8')
+            }
+            self.trigger_base_url = request.base_url
+
+            self.execute(request)
+
+        except Exception as e:
+            self.report_error(f'{str(e)}\n{traceback.format_exc()}')
+
+    def build_error_message(self, message, request):
+        return {
+            'input_type': self.trigger_type,
+            'origin': self.trigger_base_url,
+            'error': message,
+            'event_id': int(time.time() * 1000),
+            'data': request or self.trigger_request
+        }

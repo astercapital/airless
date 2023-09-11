@@ -43,3 +43,17 @@ class SlackHook(BaseHook):
             timeout=10
         )
         response.raise_for_status()
+
+    def react(self, channel, reaction, ts):
+        data = {
+            'channel': channel,
+            'name': reaction,
+            'timestamp': ts
+        }
+        response = requests.post(
+            f'https://{self.api_url}/api/reactions.add',
+            headers=self.get_headers(),
+            json=data,
+            timeout=10
+        )
+        response.raise_for_status()
