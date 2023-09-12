@@ -40,7 +40,6 @@ Airless builts its workflows based on [Google Cloud Functions](https://cloud.goo
 
 ## Preparation
 
-
 ### Environment variables
 
 * `ENV`
