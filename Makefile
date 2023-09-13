@@ -1,6 +1,11 @@
+release-patch:
+	@bumpversion patch
+	@git push origin --tags
 
-build:
-	python -m build
+release-minor:
+	@bumpversion minor
+	@git push origin --tags
 
-upload:
-	twine upload dist/airless-0.0.42*
+release-major:
+	@bumpversion major
+	@git push origin --tags
