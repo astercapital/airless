@@ -1,5 +1,7 @@
 
 **unreleased**
+
+**v0.0.50**
 - [Feature] Add flow to `CONTRIBUTING.md`
 - [Bugfix] Set max error timeout to 480 seconds
 
