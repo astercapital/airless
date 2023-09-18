@@ -1,6 +1,7 @@
 
 **unreleased**
 - [Feature] Add flow to `CONTRIBUTING.md`
+- [Bugfix] Set max error timeout to 480 seconds
 
 **v0.0.49**
 - [Feature] Add automatically semantic version tags with `bump2version`

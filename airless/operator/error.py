@@ -27,7 +27,7 @@ class ErrorReprocessOperator(BaseEventOperator):
         max_retries = metadata.get('max_retries', 2)
 
         if (input_type == 'event') and (retries < max_retries):
-            time.sleep(min(retry_interval ** retries, 550))  # Cloud function max execution time is 600s, so set it to wait max 550s
+            time.sleep(min(retry_interval ** retries, 480))  # Cloud function max execution time is 540s (9 min), so set it to wait max 480s (8 min)
             original_data.setdefault('metadata', {})['retries'] = retries + 1
             self.pubsub_hook.publish(
                 project=get_config('GCP_PROJECT'),
