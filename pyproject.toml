@@ -1,6 +1,6 @@
 [project]
 name = "airless"
-version = "0.0.50"
+version = "0.0.51"
 description = "Airless is a package that aims to build a serverless and lightweight orchestration platform, creating workflows of multiple tasks being executed on FaaS platform"
 readme = "README.md"
 

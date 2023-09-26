@@ -1,5 +1,7 @@
 
 **unreleased**
+
+**v0.0.51**
 - [Feature] Add `options` to method `build_success_message` in class `FileDetectOperator`, to allow pass generic arguments
 
 **v0.0.50**
