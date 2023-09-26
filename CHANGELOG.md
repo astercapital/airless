@@ -1,5 +1,6 @@
 
 **unreleased**
+- [Feature] Add `options` to method `build_success_message` in class `FileDetectOperator`, to allow pass generic arguments
 
 **v0.0.50**
 - [Feature] Add flow to `CONTRIBUTING.md`
