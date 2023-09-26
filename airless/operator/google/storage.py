@@ -30,7 +30,7 @@ class FileDetectOperator(BaseFileOperator):
         dataset, table, mode, separator, skip_leading_rows, \
             file_format, schema, run_next, quote_character, encoding, \
             column_names, time_partitioning, processing_method, \
-            gcs_table_name, sheet_name, arguments = self.get_ingest_config(filepath)
+            gcs_table_name, sheet_name, arguments, options = self.get_ingest_config(filepath)
 
         metadatas = []
         for idx in range(len(file_format)):
@@ -53,7 +53,8 @@ class FileDetectOperator(BaseFileOperator):
                     'processing_method': processing_method[idx],
                     'gcs_table_name': gcs_table_name[idx],
                     'sheet_name': sheet_name[idx],
-                    'arguments': arguments[idx]
+                    'arguments': arguments[idx],
+                    'options': options[idx]
                 }
             })
 
@@ -81,6 +82,7 @@ class FileDetectOperator(BaseFileOperator):
         encoding = []
         sheet_name = []
         arguments = []
+        options = []
 
         # outputs
         schema = []
@@ -99,6 +101,7 @@ class FileDetectOperator(BaseFileOperator):
             encoding.append(config.get('encoding', None))
             sheet_name.append(config.get('sheet_name', None))
             arguments.append(config.get('arguments', None))
+            options.append(config.get('options', None))
 
             # output
             schema.append(config.get('schema', None))
@@ -114,7 +117,7 @@ class FileDetectOperator(BaseFileOperator):
             skip_leading_rows, file_format, schema, \
             run_next, quote_character, encoding, column_names, \
             time_partitioning, processing_method, gcs_table_name, \
-            sheet_name, arguments
+            sheet_name, arguments, options
 
     def split_filepath(self, filepath):
         filepath_array = filepath.split('/')
