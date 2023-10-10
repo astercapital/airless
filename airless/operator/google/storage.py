@@ -178,12 +178,13 @@ class BatchWriteDetectOperator(BaseEventOperator):
 
     def execute(self, data, topic):
         bucket = data.get('bucket', get_config('GCS_BUCKET_LANDING_ZONE'))
+        prefix = data.get('prefix')
         threshold = data['threshold']
 
         tables = {}
         partially_processed_tables = []
 
-        for b in self.gcs_hook.list(bucket):
+        for b in self.gcs_hook.list(bucket, prefix):
             if b.time_deleted is None:
                 filepaths = b.name.split('/')
                 key = '/'.join(filepaths[:-1])  # dataset/table
