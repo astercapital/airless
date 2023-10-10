@@ -1,5 +1,6 @@
 
 **unreleased**
+- [Feature] Allow `BatchWriteDetectOperator` to receive a prefix to process only a few files
 
 **v0.0.51**
 - [Feature] Add `options` to method `build_success_message` in class `FileDetectOperator`, to allow pass generic arguments
