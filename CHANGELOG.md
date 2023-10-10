@@ -1,5 +1,7 @@
 
 **unreleased**
+
+**v0.0.52**
 - [Feature] Allow `BatchWriteDetectOperator` to receive a prefix to process only a few files
 
 **v0.0.51**
