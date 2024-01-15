@@ -351,10 +351,30 @@ class BatchWriteProcessOrcOperator(BaseEventOperator):
             print(f'Save partition {partition} on path {partition_folder+file_name}')
 
     def send_to_processed_move(self, from_bucket, directory, files):
-        self.pubsub_hook.publish(
-            project=get_config('GCP_PROJECT'),
-            topic=get_config('PUBSUB_TOPIC_BATCH_WRITE_PROCESSED_MOVE'),
-            data={'bucket': from_bucket, 'directory': directory, 'files': files})
+        for file in files:
+            self.pubsub_hook.publish(
+                project=get_config('GCP_PROJECT'),
+                topic=get_config('PUBSUB_TOPIC_BATCH_WRITE_PROCESSED_MOVE'),
+                data={'bucket': from_bucket, 'directory': directory, 'file': file})
+
+class BatchWriteProcessedMoveOperator(BaseEventOperator):
+
+    def __init__(self):
+        super().__init__()
+        self.file_hook = FileHook()
+        self.gcs_hook = GcsHook()
+
+    def execute(self, data, topic):
+        from_bucket = data['bucket']
+        directory = data['directory']
+        file = data['file']
+        to_bucket = get_config('GCS_BUCKET_LANDING_ZONE_PROCESSED')
+
+        self.gcs_hook.move(
+            from_bucket=from_bucket,
+            from_prefix=f'{directory}/{file}',
+            to_bucket=to_bucket,
+            to_directory=directory)
 
 
 class FileDeleteOperator(BaseEventOperator):
