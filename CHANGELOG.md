@@ -1,6 +1,9 @@
 
 **unreleased**
 
+**unreleased**
+- [Feature] Remove the validation of the number of files in BatchWriteDetect operator
+
 **v0.0.52**
 - [Feature] Allow `BatchWriteDetectOperator` to receive a prefix to process only a few files
 
