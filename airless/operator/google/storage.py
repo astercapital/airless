@@ -1,8 +1,11 @@
 
 import os
-
 from datetime import datetime, timedelta
+import shutil
+
 from google.api_core.exceptions import NotFound
+import pyarrow as pa
+from pyarrow import orc, json as pa_json, dataset, compute
 
 from airless.config import get_config
 from airless.hook.google.bigquery import BigqueryHook
@@ -223,7 +226,7 @@ class BatchWriteDetectOperator(BaseEventOperator):
             data={'bucket': bucket, 'directory': directory, 'files': files})
 
 
-class BatchWriteProcessOperator(BaseEventOperator):
+class BatchWriteProcessNdjsonOperator(BaseEventOperator):
 
     def __init__(self):
         super().__init__()
@@ -270,6 +273,88 @@ class BatchWriteProcessOperator(BaseEventOperator):
                 from_prefix=f'{directory}/{f}',
                 to_bucket=to_bucket,
                 to_directory=directory)
+
+
+class BatchWriteProcessOrcOperator(BaseEventOperator):
+
+    def __init__(self):
+        super().__init__()
+        self.file_hook = FileHook()
+        self.gcs_hook = GcsHook()
+
+    def execute(self, data, topic):
+        from_bucket = data['bucket']
+        directory = data['directory']
+        files = data['files']
+
+        file_contents = self.read_files_from_gcs(from_bucket, directory, files)
+        local_ndjson_filepath = self.merge_files(file_contents)
+
+        table = self.read_json_with_pyarrow(local_ndjson_filepath)
+        self.write_orc_with_partitions(table, directory)
+
+        self.gcs_hook.upload_folder(f'./{directory}', get_config('GCS_BUCKET_LANDING_ZONE_LOADER'), directory)
+        shutil.rmtree(f'./{directory}')
+
+        # self.move_files(from_bucket, get_config('GCS_BUCKET_LANDING_ZONE_PROCESSED'), directory, files)
+        self.send_to_processed_move(from_bucket, directory, files)
+
+    def read_files_from_gcs(self, bucket, directory, files):
+        file_contents = []
+        for f in files:
+            obj = self.gcs_hook.read_json(
+                bucket=bucket,
+                filepath=f'{directory}/{f}')
+            if isinstance(obj, list):
+                file_contents += obj
+            elif isinstance(obj, dict):
+                file_contents.append(obj)
+            else:
+                raise Exception(f'Cannot process file {directory}/{f}')
+        return file_contents
+
+    def merge_files(self, file_contents):
+        local_filepath = self.file_hook.get_tmp_filepath('merged.ndjson', add_timestamp=True)
+        self.file_hook.write(local_filepath=local_filepath, data=file_contents, use_ndjson=True)
+        return local_filepath
+    
+    def read_json_with_pyarrow(self, path):
+        schema = pa.schema([
+            ('_event_id', pa.int64()),
+            ('_resource', pa.string()),
+            ('_json', pa.string()),
+            ('_created_at', pa.timestamp('us'))
+        ])
+        table = pa_json.read_json(path)
+        return table.cast(schema)
+
+    def write_orc_with_partitions(self, table, directory):
+        # Write partitioned data
+        partitions = compute.unique(table['_created_at'].cast(pa.date64()))
+
+        for partition in partitions:
+            table_filtred = table.filter(compute.field('_created_at').cast(pa.date64()) == partition)
+
+            partition_folder = f'./{directory}/_created_at={partition}'
+            file_name = self.file_hook.get_tmp_filepath('part.orc', add_timestamp=True)
+
+            os.makedirs(partition_folder, exist_ok=True)
+            orc.write_table(
+                table_filtred,
+                f'{partition_folder}/{file_name}',
+                file_version='0.12',
+                compression='ZLIB',
+                compression_strategy='COMPRESSION',
+                stripe_size=32 * 1024 * 1024  # 32mb per stripe
+            )
+
+            print(f'Save partition {partition} on path {partition_folder+file_name}')
+
+    def send_to_processed_move(self, from_bucket, directory, files):
+        self.pubsub_hook.publish(
+            project=get_config('GCP_PROJECT'),
+            topic=get_config('PUBSUB_TOPIC_BATCH_WRITE_PROCESSED_MOVE'),
+            data={'bucket': from_bucket, 'directory': directory, 'files': files})
 
 
 class FileDeleteOperator(BaseEventOperator):
