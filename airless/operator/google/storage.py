@@ -245,7 +245,7 @@ class BatchWriteProcessNdjsonOperator(BaseEventOperator):
         self.gcs_hook.upload(local_filepath, get_config('GCS_BUCKET_LANDING_ZONE_LOADER'), f'{directory}/append')
         os.remove(local_filepath)
 
-        self.move_files(from_bucket, get_config('GCS_BUCKET_LANDING_ZONE_PROCESSED'), directory, files)
+        self.send_to_processed_move(from_bucket, directory, files)
 
     def read_files(self, bucket, directory, files):
         file_contents = []
@@ -266,13 +266,12 @@ class BatchWriteProcessNdjsonOperator(BaseEventOperator):
         self.file_hook.write(local_filepath=local_filepath, data=file_contents, use_ndjson=True)
         return local_filepath
 
-    def move_files(self, from_bucket, to_bucket, directory, files):
-        for f in files:
-            self.gcs_hook.move(
-                from_bucket=from_bucket,
-                from_prefix=f'{directory}/{f}',
-                to_bucket=to_bucket,
-                to_directory=directory)
+    def send_to_processed_move(self, from_bucket, directory, files):
+        for file in files:
+            self.pubsub_hook.publish(
+                project=get_config('GCP_PROJECT'),
+                topic=get_config('PUBSUB_TOPIC_BATCH_WRITE_PROCESSED_MOVE'),
+                data={'bucket': from_bucket, 'directory': directory, 'file': file})
 
 
 class BatchWriteProcessOrcOperator(BaseEventOperator):
