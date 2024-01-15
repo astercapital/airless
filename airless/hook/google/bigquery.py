@@ -201,3 +201,18 @@ class BigqueryHook(BaseHook):
         except TimeoutError as e:
             self.bigquery_client.cancel_job(job.job_id)
             raise(e)
+        
+    def create_external_table(self, to_project, to_bucket, to_dataset, to_table):
+        f'''
+            CREATE EXTERNAL TABLE IF NOT EXISTS `{self.build_table_id(to_project, to_dataset, to_table)}`
+            WITH PARTITION COLUMNS
+            (
+                _created_at DATE,
+            )
+            WITH CONNECTION `{to_project}.us-east1.biglake-connection`
+            OPTIONS (
+                hive_partition_uri_prefix = "gs://{to_bucket}/{to_dataset}",
+                uris=["gs://{to_bucket}/{to_dataset}/*"],
+                format ="ORC"
+            );
+        '''

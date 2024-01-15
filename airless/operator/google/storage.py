@@ -280,6 +280,7 @@ class BatchWriteProcessOrcOperator(BaseEventOperator):
         super().__init__()
         self.file_hook = FileHook()
         self.gcs_hook = GcsHook()
+        self.bigquery_hook = BigqueryHook()
 
     def execute(self, data, topic):
         from_bucket = data['bucket']
@@ -293,8 +294,11 @@ class BatchWriteProcessOrcOperator(BaseEventOperator):
         self.write_orc_with_partitions(table, directory)
 
         self.gcs_hook.upload_folder(f'./{directory}', get_config('GCS_BUCKET_LANDING_ZONE_LOADER'), directory)
-        shutil.rmtree(f'./{directory}')
 
+        table = files[0].split('/')[0]
+        self.bigquery_hook.create_external_table(get_config('GCP_PROJECT'), get_config('GCS_BUCKET_LANDING_ZONE_LOADER'), directory, table)
+
+        shutil.rmtree(f'./{directory}')
         self.send_to_processed_move(from_bucket, directory, files)
 
     def read_files_from_gcs(self, bucket, directory, files):
