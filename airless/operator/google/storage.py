@@ -202,7 +202,7 @@ class BatchWriteDetectOperator(BaseEventOperator):
                     if b.time_created < tables[key]['min_time_created']:
                         tables[key]['min_time_created'] = b.time_created
 
-                if (tables[key]['size'] > threshold['size']) or (len(tables[key]['files']) > threshold['file_quantity']):
+                if tables[key]['size'] > threshold['size']:
                     self.send_to_process(bucket=bucket, directory=key, files=tables[key]['files'])
                     tables[key] = None
                     partially_processed_tables.append(key)
@@ -213,8 +213,7 @@ class BatchWriteDetectOperator(BaseEventOperator):
             if v is not None:
                 if (v['size'] > threshold['size']) or \
                     (v['min_time_created'].strftime('%Y-%m-%d %H:%M') < time_threshold) or \
-                        (len(v['files']) > threshold['file_quantity']) or \
-                        (directory in partially_processed_tables):
+                    (directory in partially_processed_tables):
                     self.send_to_process(bucket=bucket, directory=directory, files=v['files'])
 
     def send_to_process(self, bucket, directory, files):
