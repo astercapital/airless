@@ -296,7 +296,6 @@ class BatchWriteProcessOrcOperator(BaseEventOperator):
         self.gcs_hook.upload_folder(f'./{directory}', get_config('GCS_BUCKET_LANDING_ZONE_LOADER'), directory)
         shutil.rmtree(f'./{directory}')
 
-        # self.move_files(from_bucket, get_config('GCS_BUCKET_LANDING_ZONE_PROCESSED'), directory, files)
         self.send_to_processed_move(from_bucket, directory, files)
 
     def read_files_from_gcs(self, bucket, directory, files):
@@ -356,6 +355,7 @@ class BatchWriteProcessOrcOperator(BaseEventOperator):
                 project=get_config('GCP_PROJECT'),
                 topic=get_config('PUBSUB_TOPIC_BATCH_WRITE_PROCESSED_MOVE'),
                 data={'bucket': from_bucket, 'directory': directory, 'file': file})
+
 
 class BatchWriteProcessedMoveOperator(BaseEventOperator):
 
