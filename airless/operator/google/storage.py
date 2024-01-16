@@ -173,6 +173,62 @@ class FileToBigqueryOperator(BaseEventOperator):
 
 
 class BatchWriteDetectOperator(BaseEventOperator):
+    # Will be deprecreated
+
+    def __init__(self):
+        super().__init__()
+        self.file_hook = FileHook()
+        self.gcs_hook = GcsHook()
+
+    def execute(self, data, topic):
+        bucket = data.get('bucket', get_config('GCS_BUCKET_LANDING_ZONE'))
+        prefix = data.get('prefix')
+        threshold = data['threshold']
+
+        tables = {}
+        partially_processed_tables = []
+
+        for b in self.gcs_hook.list(bucket, prefix):
+            if b.time_deleted is None:
+                filepaths = b.name.split('/')
+                key = '/'.join(filepaths[:-1])  # dataset/table
+                filename = filepaths[-1]
+
+                if tables.get(key) is None:
+                    tables[key] = {
+                        'size': b.size,
+                        'files': [filename],
+                        'min_time_created': b.time_created
+                    }
+                else:
+                    tables[key]['size'] += b.size
+                    tables[key]['files'] += [filename]
+                    if b.time_created < tables[key]['min_time_created']:
+                        tables[key]['min_time_created'] = b.time_created
+
+                if (tables[key]['size'] > threshold['size']) or (len(tables[key]['files']) > threshold['file_quantity']):
+                    self.send_to_process(bucket=bucket, directory=key, files=tables[key]['files'])
+                    tables[key] = None
+                    partially_processed_tables.append(key)
+
+        # verify which dataset/table is ready to be processed
+        time_threshold = (datetime.now() - timedelta(minutes=threshold['minutes'])).strftime('%Y-%m-%d %H:%M')
+        for directory, v in tables.items():
+            if v is not None:
+                if (v['size'] > threshold['size']) or \
+                    (v['min_time_created'].strftime('%Y-%m-%d %H:%M') < time_threshold) or \
+                        (len(v['files']) > threshold['file_quantity']) or \
+                        (directory in partially_processed_tables):
+                    self.send_to_process(bucket=bucket, directory=directory, files=v['files'])
+
+    def send_to_process(self, bucket, directory, files):
+        self.pubsub_hook.publish(
+            project=get_config('GCP_PROJECT'),
+            topic=get_config('PUBSUB_TOPIC_BATCH_WRITE_PROCESS'),
+            data={'bucket': bucket, 'directory': directory, 'files': files})
+
+
+class BatchWriteDetectSizeOnlyOperator(BaseEventOperator):
 
     def __init__(self):
         super().__init__()
