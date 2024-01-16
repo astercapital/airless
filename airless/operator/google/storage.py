@@ -394,7 +394,8 @@ class BatchWriteProcessOrcOperator(BaseEventOperator):
             table_filtred = table.filter(compute.field('_created_at').cast(pa.date64()) == partition)
 
             partition_folder = f'./{directory}/_created_at={partition}'
-            file_name = self.file_hook.get_tmp_filepath('part.orc', add_timestamp=True)
+            file_path = self.file_hook.get_tmp_filepath('part.orc', add_timestamp=True)
+            file_name = self.file_hook.extract_filename(file_path)
 
             os.makedirs(partition_folder, exist_ok=True)
             orc.write_table(
