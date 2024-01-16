@@ -349,10 +349,10 @@ class BatchWriteProcessOrcOperator(BaseEventOperator):
         table = self.read_json_with_pyarrow(local_ndjson_filepath)
         self.write_orc_with_partitions(table, directory)
 
-        self.gcs_hook.upload_folder(f'./{directory}', get_config('GCS_BUCKET_LANDING_ZONE_LOADER'), directory)
+        self.gcs_hook.upload_folder(f'./{directory}', get_config('GCS_BUCKET_RAW_ZONE'), directory)
 
         table = files[0].split('/')[0]
-        self.bigquery_hook.create_external_table(get_config('GCP_PROJECT'), get_config('GCS_BUCKET_LANDING_ZONE_LOADER'), directory, table)
+        self.bigquery_hook.create_external_table(get_config('GCP_PROJECT'), get_config('GCS_BUCKET_RAW_ZONE'), directory, table)
 
         shutil.rmtree(f'./{directory}')
         self.send_to_processed_move(from_bucket, directory, files)
