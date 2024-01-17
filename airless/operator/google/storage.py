@@ -389,11 +389,12 @@ class BatchWriteProcessOrcOperator(BaseEventOperator):
     def write_orc_with_partitions(self, table, directory):
         # Write partitioned data
         partitions = compute.unique(table['_created_at'].cast(pa.date64()))
+        partition_name = 'date'
 
         for partition in partitions:
             table_filtred = table.filter(compute.field('_created_at').cast(pa.date64()) == partition)
 
-            partition_folder = f'./{directory}/_created_at={partition}'
+            partition_folder = f'./{directory}/{partition_name}={partition}'
             file_path = self.file_hook.get_tmp_filepath('part.orc', add_timestamp=True)
             file_name = self.file_hook.extract_filename(file_path)
 
