@@ -202,14 +202,15 @@ class BigqueryHook(BaseHook):
             self.bigquery_client.cancel_job(job.job_id)
             raise(e)
 
-    def create_external_table(self, to_project, to_bucket, to_dataset, to_table):
+    def create_external_table(self, to_project, to_bucket, to_dataset, to_table, biglake_connection, partition_name):
+        location = biglake_connection.split('.')[1]
         query = f"""
             CREATE SCHEMA IF NOT EXISTS `{to_project}.{to_dataset}`
-            OPTIONS(location = 'us');
+            OPTIONS(location = '{location}');
 
             CREATE EXTERNAL TABLE IF NOT EXISTS `{self.build_table_id(to_project, to_dataset, to_table)}`
-            WITH PARTITION COLUMNS (date DATE)
-            WITH CONNECTION `{to_project}.us.biglake-connection`
+            WITH PARTITION COLUMNS ({partition_name} DATE)
+            WITH CONNECTION `{biglake_connection}`
             OPTIONS (
                 uris=['gs://{to_bucket}/{to_dataset}/{to_table}/*'],
                 format = 'ORC',

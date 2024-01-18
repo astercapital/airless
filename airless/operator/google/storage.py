@@ -343,16 +343,21 @@ class BatchWriteProcessOrcOperator(BaseEventOperator):
         directory = data['directory']
         files = data['files']
 
+        time_column_partition = '_created_at'
+        partition_name = 'date'
+
         file_contents = self.read_files_from_gcs(from_bucket, directory, files)
         local_ndjson_filepath = self.merge_files(file_contents)
 
         table = self.read_json_with_pyarrow(local_ndjson_filepath)
-        self.write_orc_with_partitions(table, directory)
+        self.write_orc_with_partitions(table, directory, time_column_partition, partition_name)
 
         self.gcs_hook.upload_folder(f'./{directory}', get_config('GCS_BUCKET_RAW_ZONE'), directory)
 
-        table = files[0].split('/')[0]
-        self.bigquery_hook.create_external_table(get_config('GCP_PROJECT'), get_config('GCS_BUCKET_RAW_ZONE'), directory, table)
+        dataset = directory.split('/')[0]
+        table = directory.split('/')[1]
+        # table = files[0].split('/')[0]
+        self.bigquery_hook.create_external_table(get_config('GCP_PROJECT'), get_config('GCS_BUCKET_RAW_ZONE'), dataset, table, get_config('GCP_BIGLAKE_CONNECTION_URI'), partition_name)
 
         shutil.rmtree(f'./{directory}')
         self.send_to_processed_move(from_bucket, directory, files)
@@ -386,13 +391,12 @@ class BatchWriteProcessOrcOperator(BaseEventOperator):
         table = pa_json.read_json(path)
         return table.cast(schema)
 
-    def write_orc_with_partitions(self, table, directory):
+    def write_orc_with_partitions(self, table, directory, time_column_partition, partition_name):
         # Write partitioned data
-        partitions = compute.unique(table['_created_at'].cast(pa.date64()))
-        partition_name = 'date'
+        partitions = compute.unique(table[time_column_partition].cast(pa.date64()))
 
         for partition in partitions:
-            table_filtred = table.filter(compute.field('_created_at').cast(pa.date64()) == partition)
+            table_filtred = table.filter(compute.field(time_column_partition).cast(pa.date64()) == partition)
 
             partition_folder = f'./{directory}/{partition_name}={partition}'
             file_path = self.file_hook.get_tmp_filepath('part.orc', add_timestamp=True)
