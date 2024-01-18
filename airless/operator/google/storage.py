@@ -356,7 +356,6 @@ class BatchWriteProcessOrcOperator(BaseEventOperator):
 
         dataset = directory.split('/')[0]
         table = directory.split('/')[1]
-        # table = files[0].split('/')[0]
         self.bigquery_hook.create_external_table(get_config('GCP_PROJECT'), get_config('GCS_BUCKET_RAW_ZONE'), dataset, table, get_config('GCP_BIGLAKE_CONNECTION_URI'), partition_name)
 
         shutil.rmtree(f'./{directory}')
@@ -388,7 +387,9 @@ class BatchWriteProcessOrcOperator(BaseEventOperator):
             ('_json', pa.string()),
             ('_created_at', pa.timestamp('us'))
         ])
-        table = pa_json.read_json(path)
+        block_size_10MB = 10<<20
+        options = pa_json.ReadOptions(block_size=block_size_10MB)
+        table = pa_json.read_json(path, read_options=options)
         return table.cast(schema)
 
     def write_orc_with_partitions(self, table, directory, time_column_partition, partition_name):
