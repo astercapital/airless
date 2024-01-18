@@ -203,7 +203,7 @@ class BigqueryHook(BaseHook):
             raise(e)
 
     def create_external_table(self, to_project, to_bucket, to_dataset, to_table):
-        query = f'''
+        query = f"""
             CREATE SCHEMA IF NOT EXISTS `{to_project}.{to_dataset}`
             OPTIONS(location = 'us');
 
@@ -211,11 +211,11 @@ class BigqueryHook(BaseHook):
             WITH PARTITION COLUMNS (date DATE)
             WITH CONNECTION `{to_project}.us.biglake-connection`
             OPTIONS (
-                uris=["gs://{to_bucket}/{to_dataset}/{to_table}/*"],
-                format ="ORC"
-                hive_partition_uri_prefix = "gs://{to_bucket}/{to_dataset}/{to_table}",
+                uris=['gs://{to_bucket}/{to_dataset}/{to_table}/*'],
+                format = 'ORC',
+                hive_partition_uri_prefix = 'gs://{to_bucket}/{to_dataset}/{to_table}',
                 require_hive_partition_filter = false
             );
-        '''
+        """
 
         return self.get_query_results(query)
