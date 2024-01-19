@@ -354,9 +354,9 @@ class BatchWriteProcessOrcOperator(BaseEventOperator):
 
         self.gcs_hook.upload_folder(f'./{directory}', get_config('GCS_BUCKET_RAW_ZONE'), directory)
 
-        dataset = directory.split('/')[0]
-        table = directory.split('/')[1]
-        self.bigquery_hook.create_external_table(get_config('GCP_PROJECT'), get_config('GCS_BUCKET_RAW_ZONE'), dataset, table, get_config('GCP_BIGLAKE_CONNECTION_URI'), partition_name)
+        # dataset = directory.split('/')[0]
+        # table = directory.split('/')[1]
+        # self.bigquery_hook.create_external_table(get_config('GCP_PROJECT'), get_config('GCS_BUCKET_RAW_ZONE'), dataset, table, get_config('GCP_BIGLAKE_CONNECTION_URI'), partition_name)
 
         shutil.rmtree(f'./{directory}')
         self.send_to_processed_move(from_bucket, directory, files)
@@ -379,7 +379,7 @@ class BatchWriteProcessOrcOperator(BaseEventOperator):
         local_filepath = self.file_hook.get_tmp_filepath('merged.ndjson', add_timestamp=True)
         self.file_hook.write(local_filepath=local_filepath, data=file_contents, use_ndjson=True)
         return local_filepath
-    
+
     def read_json_with_pyarrow(self, path):
         schema = pa.schema([
             ('_event_id', pa.int64()),
