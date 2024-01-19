@@ -282,7 +282,7 @@ class BatchWriteDetectSizeOnlyOperator(BaseEventOperator):
             data={'bucket': bucket, 'directory': directory, 'files': files})
 
 
-class BatchWriteProcessNdjsonOperator(BaseEventOperator):
+class BatchWriteProcessOperator(BaseEventOperator):
 
     def __init__(self):
         super().__init__()
