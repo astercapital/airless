@@ -3,10 +3,8 @@
 
 **unreleased**
 - [Feature] Create a new write detect operator with name `BatchWriteDetectSizeOnlyOperator` without the validation of the number of files
-- [Feature] Rename operator `BatchWriteProcessOperator` to `BatchWriteProcessNdjsonOperator`
 - [Feature] Create new operator `BatchWriteProcessOrcOperator` that write ORC file format
 - [Feature] Create new operator `BatchWriteProcessedMoveOperator`
-- [Feature] `BatchWriteProcessNdjsonOperator` use `BatchWriteProcessedMoveOperator` to move files
 
 **v0.0.52**
 - [Feature] Allow `BatchWriteDetectOperator` to receive a prefix to process only a few files
