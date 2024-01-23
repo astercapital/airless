@@ -417,27 +417,10 @@ class BatchWriteProcessOrcOperator(BaseEventOperator):
             self.pubsub_hook.publish(
                 project=get_config('GCP_PROJECT'),
                 topic=get_config('PUBSUB_TOPIC_BATCH_WRITE_PROCESSED_MOVE'),
-                data={'bucket': from_bucket, 'directory': directory, 'file': file})
-
-
-class BatchWriteProcessedMoveOperator(BaseEventOperator):
-
-    def __init__(self):
-        super().__init__()
-        self.file_hook = FileHook()
-        self.gcs_hook = GcsHook()
-
-    def execute(self, data, topic):
-        from_bucket = data['bucket']
-        directory = data['directory']
-        file = data['file']
-        to_bucket = get_config('GCS_BUCKET_LANDING_ZONE_PROCESSED')
-
-        self.gcs_hook.move(
-            from_bucket=from_bucket,
-            from_prefix=f'{directory}/{file}',
-            to_bucket=to_bucket,
-            to_directory=directory)
+                data={
+                    'origin': {'bucket': from_bucket, 'prefix': f'{directory}/{file}'},
+                    'destination': {'bucket': get_config('GCS_BUCKET_LANDING_ZONE_PROCESSED'), 'directory': directory}
+                })
 
 
 class FileDeleteOperator(BaseEventOperator):
