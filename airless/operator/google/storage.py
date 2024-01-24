@@ -1,8 +1,11 @@
 
 import os
-
 from datetime import datetime, timedelta
+import shutil
+
 from google.api_core.exceptions import NotFound
+import pyarrow as pa
+from pyarrow import orc, json as pa_json, dataset, compute
 
 from airless.config import get_config
 from airless.hook.google.bigquery import BigqueryHook
@@ -170,6 +173,7 @@ class FileToBigqueryOperator(BaseEventOperator):
 
 
 class BatchWriteDetectOperator(BaseEventOperator):
+    # Will be deprecreated
 
     def __init__(self):
         super().__init__()
@@ -215,6 +219,60 @@ class BatchWriteDetectOperator(BaseEventOperator):
                     (v['min_time_created'].strftime('%Y-%m-%d %H:%M') < time_threshold) or \
                         (len(v['files']) > threshold['file_quantity']) or \
                         (directory in partially_processed_tables):
+                    self.send_to_process(bucket=bucket, directory=directory, files=v['files'])
+
+    def send_to_process(self, bucket, directory, files):
+        self.pubsub_hook.publish(
+            project=get_config('GCP_PROJECT'),
+            topic=get_config('PUBSUB_TOPIC_BATCH_WRITE_PROCESS'),
+            data={'bucket': bucket, 'directory': directory, 'files': files})
+
+
+class BatchWriteDetectSizeOnlyOperator(BaseEventOperator):
+
+    def __init__(self):
+        super().__init__()
+        self.file_hook = FileHook()
+        self.gcs_hook = GcsHook()
+
+    def execute(self, data, topic):
+        bucket = data.get('bucket', get_config('GCS_BUCKET_LANDING_ZONE'))
+        prefix = data.get('prefix')
+        threshold = data['threshold']
+
+        tables = {}
+        partially_processed_tables = []
+
+        for b in self.gcs_hook.list(bucket, prefix):
+            if b.time_deleted is None:
+                filepaths = b.name.split('/')
+                key = '/'.join(filepaths[:-1])  # dataset/table
+                filename = filepaths[-1]
+
+                if tables.get(key) is None:
+                    tables[key] = {
+                        'size': b.size,
+                        'files': [filename],
+                        'min_time_created': b.time_created
+                    }
+                else:
+                    tables[key]['size'] += b.size
+                    tables[key]['files'] += [filename]
+                    if b.time_created < tables[key]['min_time_created']:
+                        tables[key]['min_time_created'] = b.time_created
+
+                if tables[key]['size'] > threshold['size']:
+                    self.send_to_process(bucket=bucket, directory=key, files=tables[key]['files'])
+                    tables[key] = None
+                    partially_processed_tables.append(key)
+
+        # verify which dataset/table is ready to be processed
+        time_threshold = (datetime.now() - timedelta(minutes=threshold['minutes'])).strftime('%Y-%m-%d %H:%M')
+        for directory, v in tables.items():
+            if v is not None:
+                if (v['size'] > threshold['size']) or \
+                    (v['min_time_created'].strftime('%Y-%m-%d %H:%M') < time_threshold) or \
+                    (directory in partially_processed_tables):
                     self.send_to_process(bucket=bucket, directory=directory, files=v['files'])
 
     def send_to_process(self, bucket, directory, files):
@@ -271,6 +329,98 @@ class BatchWriteProcessOperator(BaseEventOperator):
                 from_prefix=f'{directory}/{f}',
                 to_bucket=to_bucket,
                 to_directory=directory)
+
+
+class BatchWriteProcessOrcOperator(BaseEventOperator):
+
+    def __init__(self):
+        super().__init__()
+        self.file_hook = FileHook()
+        self.gcs_hook = GcsHook()
+        self.bigquery_hook = BigqueryHook()
+
+    def execute(self, data, topic):
+        from_bucket = data['bucket']
+        directory = data['directory']
+        files = data['files']
+
+        time_column_partition = '_created_at'
+        partition_name = 'date'
+
+        file_contents = self.read_files_from_gcs(from_bucket, directory, files)
+        local_ndjson_filepath = self.merge_files(file_contents)
+
+        table = self.read_json_with_pyarrow(local_ndjson_filepath)
+        self.write_orc_with_partitions(table, directory, time_column_partition, partition_name)
+
+        self.gcs_hook.upload_folder(f'./{directory}', get_config('GCS_BUCKET_RAW_ZONE'), directory)
+
+        shutil.rmtree(f'./{directory}')
+        self.send_to_processed_move(from_bucket, directory, files)
+
+    def read_files_from_gcs(self, bucket, directory, files):
+        file_contents = []
+        for f in files:
+            obj = self.gcs_hook.read_json(
+                bucket=bucket,
+                filepath=f'{directory}/{f}')
+            if isinstance(obj, list):
+                file_contents += obj
+            elif isinstance(obj, dict):
+                file_contents.append(obj)
+            else:
+                raise Exception(f'Cannot process file {directory}/{f}')
+        return file_contents
+
+    def merge_files(self, file_contents):
+        local_filepath = self.file_hook.get_tmp_filepath('merged.ndjson', add_timestamp=True)
+        self.file_hook.write(local_filepath=local_filepath, data=file_contents, use_ndjson=True)
+        return local_filepath
+
+    def read_json_with_pyarrow(self, path):
+        schema = pa.schema([
+            ('_event_id', pa.int64()),
+            ('_resource', pa.string()),
+            ('_json', pa.string()),
+            ('_created_at', pa.timestamp('us'))
+        ])
+        block_size_10MB = 10<<20
+        options = pa_json.ReadOptions(block_size=block_size_10MB)
+        table = pa_json.read_json(path, read_options=options)
+        return table.cast(schema)
+
+    def write_orc_with_partitions(self, table, directory, time_column_partition, partition_name):
+        # Write partitioned data
+        partitions = compute.unique(table[time_column_partition].cast(pa.date64()))
+
+        for partition in partitions:
+            table_filtred = table.filter(compute.field(time_column_partition).cast(pa.date64()) == partition)
+
+            partition_folder = f'./{directory}/{partition_name}={partition}'
+            file_path = self.file_hook.get_tmp_filepath('part.orc', add_timestamp=True)
+            file_name = self.file_hook.extract_filename(file_path)
+
+            os.makedirs(partition_folder, exist_ok=True)
+            orc.write_table(
+                table_filtred,
+                f'{partition_folder}/{file_name}',
+                file_version='0.12',
+                compression='ZLIB',
+                compression_strategy='COMPRESSION',
+                stripe_size=32 * 1024 * 1024  # 32mb per stripe
+            )
+
+            print(f'Save partition {partition} on path {partition_folder+file_name}')
+
+    def send_to_processed_move(self, from_bucket, directory, files):
+        for file in files:
+            self.pubsub_hook.publish(
+                project=get_config('GCP_PROJECT'),
+                topic=get_config('PUBSUB_TOPIC_BATCH_WRITE_PROCESSED_MOVE'),
+                data={
+                    'origin': {'bucket': from_bucket, 'prefix': f'{directory}/{file}'},
+                    'destination': {'bucket': get_config('GCS_BUCKET_LANDING_ZONE_PROCESSED'), 'directory': directory}
+                })
 
 
 class FileDeleteOperator(BaseEventOperator):

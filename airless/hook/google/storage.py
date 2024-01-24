@@ -62,6 +62,17 @@ class GcsHook(BaseHook):
         blob = bucket.blob(f"{directory}/{filename}")
         blob.upload_from_filename(local_filepath)
 
+    def upload_folder(self, local_path, bucket, gcs_path):
+        for root, _, files in os.walk(local_path):
+            for file in files:
+                local_file_path = os.path.join(root, file)
+                gcs_blob_name = os.path.join(gcs_path, os.path.relpath(local_file_path, local_path))
+
+                # Upload the file to GCS
+                bucket_ = self.storage_client.bucket(bucket)
+                blob = bucket_.blob(gcs_blob_name)
+                blob.upload_from_filename(local_file_path)
+
     def check_existance(self, bucket, filepath):
         blobs = self.storage_client.list_blobs(bucket, prefix=filepath, max_results=1, page_size=1)
         return len(list(blobs)) > 0

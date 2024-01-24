@@ -3,9 +3,10 @@ name = "airless"
 version = "0.0.52"
 description = "Airless is a package that aims to build a serverless and lightweight orchestration platform, creating workflows of multiple tasks being executed on FaaS platform"
 readme = "README.md"
+dynamic = ["dependencies"]
 
 [build-system]
-requires = ["setuptools"]
+requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project.urls]
