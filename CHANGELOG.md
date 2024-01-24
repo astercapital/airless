@@ -2,10 +2,6 @@
 **unreleased**
 
 **v0.0.53**
-
-**unreleased**
-
-**v0.0.53**
 - [Feature] Create a new write detect operator with name `BatchWriteDetectSizeOnlyOperator` without the validation of the number of files
 - [Feature] Create new operator `BatchWriteProcessOrcOperator` that write ORC file format
 
