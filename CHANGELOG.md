@@ -1,5 +1,7 @@
 
 **unreleased**
+
+**v0.0.55**
 - [Feature] Add the ability to send attachments in a slack message
 
 **v0.0.53**
