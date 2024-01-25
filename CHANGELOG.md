@@ -1,5 +1,6 @@
 
 **unreleased**
+- [Feature] Add the ability to send attachments in a slack message
 
 **v0.0.53**
 - [Feature] Create a new write detect operator with name `BatchWriteDetectSizeOnlyOperator` without the validation of the number of files

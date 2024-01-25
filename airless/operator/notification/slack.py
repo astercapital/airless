@@ -17,6 +17,7 @@ class SlackSendOperator(BaseEventOperator):
         secret_id = data.get('secret_id', 'slack_alert')
         message = data.get('message')
         blocks = data.get('blocks')
+        attachments = data.get('attachments')
         thread_ts = data.get('thread_ts')
         reply_broadcast = data.get('reply_broadcast', False)
 
@@ -24,7 +25,8 @@ class SlackSendOperator(BaseEventOperator):
         self.slack_hook.set_token(token)
 
         for channel in channels:
-            self.slack_hook.send(channel, message, blocks, thread_ts, reply_broadcast)
+            response = self.slack_hook.send(channel, message, blocks, thread_ts, reply_broadcast, attachments)
+            self.logger.debug(response)
 
 
 class SlackReactOperator(BaseEventOperator):
@@ -43,4 +45,5 @@ class SlackReactOperator(BaseEventOperator):
         token = self.secret_manager_hook.get_secret(get_config('GCP_PROJECT'), secret_id, True)['bot_token']
         self.slack_hook.set_token(token)
 
-        self.slack_hook.react(channel, reaction, ts)
+        response = self.slack_hook.react(channel, reaction, ts)
+        self.logger.debug(response)
