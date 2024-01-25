@@ -11,7 +11,7 @@ release-major:
 	@git push origin --tags
 
 publish-dev-version:
-	@read -p "Do you change version on pyproject.toml and add .dev1 in name? (yes/no): " answer; \
+	@read -p "Did you change version on pyproject.toml and add .dev1 in name? (yes/no): " answer; \
     if [ "$$answer" != "yes" ]; then \
         echo "Execution interrupted."; \
         exit 1; \
