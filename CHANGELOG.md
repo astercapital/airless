@@ -1,6 +1,10 @@
 
 **unreleased**
 
+**unreleased**
+- [Feature] Add partition logic on `send_to_landing_zone`
+- [Feature] Remove partition logic from `BatchWriteProcessOrcOperator`
+
 **v0.0.55**
 - [Feature] Add the ability to send attachments in a slack message
 

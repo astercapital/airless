@@ -134,19 +134,20 @@ class GcsDatalakeHook(GcsHook):
             'resource': origin or 'local'
         }
 
-    def prepare_row(self, row, metadata):
+    def prepare_row(self, row, metadata, now):
         return {
             '_event_id': metadata['event_id'],
             '_resource': metadata['resource'],
             '_json': json.dumps({'data': row, 'metadata': metadata}),
-            '_created_at': str(datetime.now())
+            '_created_at': str(now)
         }
 
     def prepare_rows(self, data, metadata):
+        now = datetime.now()
         prepared_rows = data if isinstance(data, list) else [data]
-        return [self.prepare_row(row, metadata) for row in prepared_rows]
+        return [self.prepare_row(row, metadata, now) for row in prepared_rows], now
 
-    def send_to_landing_zone(self, data, dataset, table, message_id, origin):
+    def send_to_landing_zone(self, data, dataset, table, message_id, origin, time_partition=False):
 
         if isinstance(data, list) and (len(data) == 0):
             raise Exception(f'Trying to send empty list to landing zone: {dataset}.{table}')
@@ -156,11 +157,13 @@ class GcsDatalakeHook(GcsHook):
 
         if get_config('ENV') == 'prod':
             metadata = self.build_metadata(message_id, origin)
-            prepared_rows = self.prepare_rows(data, metadata)
+            prepared_rows, now = self.prepare_rows(data, metadata)
+            time_partition_name = 'date'
+
             self.upload_from_memory(
                 data=prepared_rows,
                 bucket=get_config('GCS_BUCKET_LANDING_ZONE'),
-                directory=f'{dataset}/{table}',
+                directory=f'{dataset}/{table}/{time_partition_name}={now.strftime("%Y-%m-%d")}' if time_partition else f'{dataset}/{table}',
                 filename='tmp.json',
                 add_timestamp=True)
         else:
