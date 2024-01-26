@@ -1,7 +1,7 @@
 
 **unreleased**
 
-**unreleased**
+**v0.0.56**
 - [Feature] Add partition logic on `send_to_landing_zone`
 - [Feature] Remove partition logic from `BatchWriteProcessOrcOperator`
 
