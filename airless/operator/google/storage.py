@@ -344,14 +344,11 @@ class BatchWriteProcessOrcOperator(BaseEventOperator):
         directory = data['directory']
         files = data['files']
 
-        time_column_partition = '_created_at'
-        partition_name = 'date'
-
         file_contents = self.read_files_from_gcs(from_bucket, directory, files)
         local_ndjson_filepath = self.merge_files(file_contents)
 
         table = self.read_json_with_pyarrow(local_ndjson_filepath)
-        self.write_orc_with_partitions(table, directory, time_column_partition, partition_name)
+        self.write_orc_with_partitions(table, directory)
 
         self.gcs_hook.upload_folder(f'./{directory}', get_config('GCS_BUCKET_RAW_ZONE'), directory)
 
@@ -389,28 +386,21 @@ class BatchWriteProcessOrcOperator(BaseEventOperator):
         table = pa_json.read_json(path, read_options=options)
         return table.cast(schema)
 
-    def write_orc_with_partitions(self, table, directory, time_column_partition, partition_name):
-        # Write partitioned data
-        partitions = compute.unique(table[time_column_partition].cast(pa.date64()))
+    def write_orc_with_partitions(self, table, directory):
+        file_path = self.file_hook.get_tmp_filepath('part.orc', add_timestamp=True)
+        file_name = self.file_hook.extract_filename(file_path)
 
-        for partition in partitions:
-            table_filtred = table.filter(compute.field(time_column_partition).cast(pa.date64()) == partition)
+        os.makedirs(directory, exist_ok=True)
+        orc.write_table(
+            table,
+            f'{directory}/{file_name}',
+            file_version='0.12',
+            compression='ZLIB',
+            compression_strategy='COMPRESSION',
+            stripe_size=32 * 1024 * 1024  # 32mb per stripe
+        )
 
-            partition_folder = f'./{directory}/{partition_name}={partition}'
-            file_path = self.file_hook.get_tmp_filepath('part.orc', add_timestamp=True)
-            file_name = self.file_hook.extract_filename(file_path)
-
-            os.makedirs(partition_folder, exist_ok=True)
-            orc.write_table(
-                table_filtred,
-                f'{partition_folder}/{file_name}',
-                file_version='0.12',
-                compression='ZLIB',
-                compression_strategy='COMPRESSION',
-                stripe_size=32 * 1024 * 1024  # 32mb per stripe
-            )
-
-            print(f'Save partition {partition} on path {partition_folder+file_name}')
+        print(f'Save partition orc on path {directory}/{file_name}')
 
     def send_to_processed_move(self, from_bucket, directory, files):
         for file in files:
