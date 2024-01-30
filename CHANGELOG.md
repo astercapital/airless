@@ -1,5 +1,7 @@
 
 **unreleased**
+
+**v0.0.57**
 - [Feature] Add support to `BatchWriteProcessOrcOperator` read ndjson
 
 **v0.0.56**
