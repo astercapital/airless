@@ -1,5 +1,6 @@
 
 import json
+import ndjson
 import os
 
 from datetime import datetime
@@ -45,6 +46,9 @@ class GcsHook(BaseHook):
 
     def read_json(self, bucket, filepath, encoding=None):
         return json.loads(self.read(bucket, filepath, encoding))
+
+    def read_ndjson(self, bucket, filepath, encoding=None):
+        return ndjson.loads(self.read(bucket, filepath, encoding))
 
     def upload_from_memory(self, data, bucket, directory, filename, add_timestamp):
         local_filename = self.file_hook.get_tmp_filepath(filename, add_timestamp)

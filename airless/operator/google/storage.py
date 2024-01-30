@@ -358,9 +358,19 @@ class BatchWriteProcessOrcOperator(BaseEventOperator):
     def read_files_from_gcs(self, bucket, directory, files):
         file_contents = []
         for f in files:
-            obj = self.gcs_hook.read_json(
-                bucket=bucket,
-                filepath=f'{directory}/{f}')
+            extension = f.split('.')[-1]
+
+            if extension == 'ndjson':
+                obj = self.gcs_hook.read_ndjson(
+                    bucket=bucket,
+                    filepath=f'{directory}/{f}')
+            elif extension == 'json':
+                obj = self.gcs_hook.read_json(
+                    bucket=bucket,
+                    filepath=f'{directory}/{f}')
+            else:
+                raise Exception(f'Cannot process file {directory}/{f} because extension {extension} is not supported')
+
             if isinstance(obj, list):
                 file_contents += obj
             elif isinstance(obj, dict):
