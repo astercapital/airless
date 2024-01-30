@@ -1,5 +1,6 @@
 
 **unreleased**
+- [Feature] Add support to `BatchWriteProcessOrcOperator` read ndjson
 
 **v0.0.56**
 - [Feature] Add partition logic on `send_to_landing_zone`
