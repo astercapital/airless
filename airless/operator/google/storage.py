@@ -1,5 +1,6 @@
 
 import os
+import logging
 from datetime import datetime, timedelta
 import shutil
 
@@ -407,7 +408,7 @@ class BatchWriteProcessParquetOperator(BaseEventOperator):
             compression='GZIP'
         )
 
-        print(f'Save partition parquet on path {directory}/{file_name}')
+        logging.debug(f'Save partition parquet on path {directory}/{file_name}')
 
     def send_to_processed_move(self, from_bucket, directory, files):
         for file in files:
