@@ -2,6 +2,7 @@
 **unreleased**
 
 **v0.0.58**
+- [Feature] Change from `BatchWriteProcessOrcOperator` to `BatchWriteProcessParquetOperator` to use parquet instead of orc
 
 **v0.0.57**
 - [Feature] Add support to `BatchWriteProcessOrcOperator` read ndjson
