@@ -348,7 +348,7 @@ class BatchWriteProcessParquetOperator(BaseEventOperator):
         local_ndjson_filepath = self.merge_files(file_contents)
 
         table = self.read_json_with_pyarrow(local_ndjson_filepath)
-        self.write_orc_with_partitions(table, directory)
+        self.write_parquet_with_partitions(table, directory)
 
         self.gcs_hook.upload_folder(f'./{directory}', get_config('GCS_BUCKET_RAW_ZONE'), directory)
 
