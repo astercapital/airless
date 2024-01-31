@@ -1,11 +1,12 @@
 
 import os
+import logging
 from datetime import datetime, timedelta
 import shutil
 
 from google.api_core.exceptions import NotFound
 import pyarrow as pa
-from pyarrow import orc, json as pa_json, dataset, compute
+from pyarrow import parquet, json as pa_json
 
 from airless.config import get_config
 from airless.hook.google.bigquery import BigqueryHook
@@ -331,7 +332,7 @@ class BatchWriteProcessOperator(BaseEventOperator):
                 to_directory=directory)
 
 
-class BatchWriteProcessOrcOperator(BaseEventOperator):
+class BatchWriteProcessParquetOperator(BaseEventOperator):
 
     def __init__(self):
         super().__init__()
@@ -348,7 +349,7 @@ class BatchWriteProcessOrcOperator(BaseEventOperator):
         local_ndjson_filepath = self.merge_files(file_contents)
 
         table = self.read_json_with_pyarrow(local_ndjson_filepath)
-        self.write_orc_with_partitions(table, directory)
+        self.write_parquet_with_partitions(table, directory)
 
         self.gcs_hook.upload_folder(f'./{directory}', get_config('GCS_BUCKET_RAW_ZONE'), directory)
 
@@ -396,21 +397,18 @@ class BatchWriteProcessOrcOperator(BaseEventOperator):
         table = pa_json.read_json(path, read_options=options)
         return table.cast(schema)
 
-    def write_orc_with_partitions(self, table, directory):
-        file_path = self.file_hook.get_tmp_filepath('part.orc', add_timestamp=True)
+    def write_parquet_with_partitions(self, table, directory):
+        file_path = self.file_hook.get_tmp_filepath('part.parquet', add_timestamp=True)
         file_name = self.file_hook.extract_filename(file_path)
 
         os.makedirs(directory, exist_ok=True)
-        orc.write_table(
+        parquet.write_table(
             table,
             f'{directory}/{file_name}',
-            file_version='0.12',
-            compression='ZLIB',
-            compression_strategy='COMPRESSION',
-            stripe_size=32 * 1024 * 1024  # 32mb per stripe
+            compression='GZIP'
         )
 
-        print(f'Save partition orc on path {directory}/{file_name}')
+        logging.debug(f'Save partition parquet on path {directory}/{file_name}')
 
     def send_to_processed_move(self, from_bucket, directory, files):
         for file in files:
