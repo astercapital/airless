@@ -253,7 +253,7 @@ class BatchWriteDetectSizeOnlyOperator(BaseEventOperator):
                 if tables.get(key) is None:
                     tables[key] = {
                         'total_size': b.size,
-                        'files': [{'name': filename, 'size': b.size}],
+                        'files': [filename],
                         'min_time_created': b.time_created
                     }
                 else:
@@ -263,7 +263,7 @@ class BatchWriteDetectSizeOnlyOperator(BaseEventOperator):
                         tables[key]['min_time_created'] = b.time_created
 
                 if tables[key]['total_size'] > threshold['size_large']:
-                    self.send_to_process(bucket=bucket, directory=key, files=[f['name'] for f in tables[key]['files']], size='large')
+                    self.send_to_process(bucket=bucket, directory=key, files=tables[key]['files'], size='large')
                     tables[key] = None
                     partially_processed_tables.append(key)
 
@@ -277,11 +277,11 @@ class BatchWriteDetectSizeOnlyOperator(BaseEventOperator):
         for directory, v in tables.items():
             if v is not None:
                 if (v['total_size'] < threshold['size_small']) and ((directory in partially_processed_tables) or (v['min_time_created'].strftime('%Y-%m-%d %H:%M') < time_threshold)):
-                    self.send_to_process(bucket=bucket, directory=directory, files=[f['name'] for f in v['files']], size='small')
+                    self.send_to_process(bucket=bucket, directory=directory, files=v['files'], size='small')
                 elif (v['total_size'] < threshold['size_medium']) and ((directory in partially_processed_tables) or (v['min_time_created'].strftime('%Y-%m-%d %H:%M') < time_threshold)):
-                    self.send_to_process(bucket=bucket, directory=directory, files=[f['name'] for f in v['files']], size='medium')
+                    self.send_to_process(bucket=bucket, directory=directory, files=v['files'], size='medium')
                 elif (v['total_size'] < threshold['size_large']) and ((directory in partially_processed_tables) or (v['min_time_created'].strftime('%Y-%m-%d %H:%M') < time_threshold)):
-                    self.send_to_process(bucket=bucket, directory=directory, files=[f['name'] for f in v['files']], size='large')
+                    self.send_to_process(bucket=bucket, directory=directory, files=v['files'], size='large')
 
                 # if (v['size'] > threshold['size_small']) or \
                 #     (v['min_time_created'].strftime('%Y-%m-%d %H:%M') < time_threshold) or \
