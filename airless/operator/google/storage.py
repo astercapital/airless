@@ -257,7 +257,7 @@ class BatchWriteDetectSizeOnlyOperator(BaseEventOperator):
                         'min_time_created': b.time_created
                     }
                 else:
-                    tables[key]['size'] += b.size
+                    tables[key]['total_size'] += b.size
                     tables[key]['files'] += [filename]
                     if b.time_created < tables[key]['min_time_created']:
                         tables[key]['min_time_created'] = b.time_created
