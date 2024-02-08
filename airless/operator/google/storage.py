@@ -267,11 +267,6 @@ class BatchWriteDetectSizeOnlyOperator(BaseEventOperator):
                     tables[key] = None
                     partially_processed_tables.append(key)
 
-                # if tables[key]['size'] > threshold['size_large']:
-                #     self.send_to_process(bucket=bucket, directory=key, files=tables[key]['files'], size='large')
-                #     tables[key] = None
-                #     partially_processed_tables.append(key)
-
         # verify which dataset/table is ready to be processed
         time_threshold = (datetime.now() - timedelta(minutes=threshold['minutes'])).strftime('%Y-%m-%d %H:%M')
         for directory, v in tables.items():
@@ -282,11 +277,6 @@ class BatchWriteDetectSizeOnlyOperator(BaseEventOperator):
                     self.send_to_process(bucket=bucket, directory=directory, files=v['files'], size='medium')
                 elif (v['total_size'] < threshold['size_large']) and ((directory in partially_processed_tables) or (v['min_time_created'].strftime('%Y-%m-%d %H:%M') < time_threshold)):
                     self.send_to_process(bucket=bucket, directory=directory, files=v['files'], size='large')
-
-                # if (v['size'] > threshold['size_small']) or \
-                #     (v['min_time_created'].strftime('%Y-%m-%d %H:%M') < time_threshold) or \
-                #     (directory in partially_processed_tables):
-                #     self.send_to_process(bucket=bucket, directory=directory, files=v['files'], size='small')
 
     def send_to_process(self, bucket, directory, files, size):
         if size == 'large':
