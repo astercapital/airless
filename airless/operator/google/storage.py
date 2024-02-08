@@ -262,8 +262,8 @@ class BatchWriteDetectSizeOnlyOperator(BaseEventOperator):
                     if b.time_created < tables[key]['min_time_created']:
                         tables[key]['min_time_created'] = b.time_created
 
-                if tables[key]['size'] > threshold['size']:
-                    self.send_to_process(bucket=bucket, directory=key, files=tables[key]['files'])
+                if tables[key]['size'] > threshold['size_large']:
+                    self.send_to_process(bucket=bucket, directory=key, files=tables[key]['files'], size='large')
                     tables[key] = None
                     partially_processed_tables.append(key)
 
@@ -271,16 +271,29 @@ class BatchWriteDetectSizeOnlyOperator(BaseEventOperator):
         time_threshold = (datetime.now() - timedelta(minutes=threshold['minutes'])).strftime('%Y-%m-%d %H:%M')
         for directory, v in tables.items():
             if v is not None:
-                if (v['size'] > threshold['size']) or \
+                if v['size'] > threshold['size_medium']:
+                    self.send_to_process(bucket=bucket, directory=directory, files=v['files'], size='medium')
+                if (v['size'] > threshold['size_small']) or \
                     (v['min_time_created'].strftime('%Y-%m-%d %H:%M') < time_threshold) or \
                     (directory in partially_processed_tables):
-                    self.send_to_process(bucket=bucket, directory=directory, files=v['files'])
+                    self.send_to_process(bucket=bucket, directory=directory, files=v['files'], size='small')
 
-    def send_to_process(self, bucket, directory, files):
-        self.pubsub_hook.publish(
-            project=get_config('GCP_PROJECT'),
-            topic=get_config('PUBSUB_TOPIC_BATCH_WRITE_PROCESS'),
-            data={'bucket': bucket, 'directory': directory, 'files': files})
+    def send_to_process(self, bucket, directory, files, size):
+        if size == 'large':
+            self.pubsub_hook.publish(
+                project=get_config('GCP_PROJECT'),
+                topic=get_config('PUBSUB_TOPIC_BATCH_WRITE_PROCESS_LARGE'),
+                data={'bucket': bucket, 'directory': directory, 'files': files})
+        elif size == 'medium':
+            self.pubsub_hook.publish(
+                project=get_config('GCP_PROJECT'),
+                topic=get_config('PUBSUB_TOPIC_BATCH_WRITE_PROCESS_MEDIUM'),
+                data={'bucket': bucket, 'directory': directory, 'files': files})
+        elif size == 'small':
+            self.pubsub_hook.publish(
+                project=get_config('GCP_PROJECT'),
+                topic=get_config('PUBSUB_TOPIC_BATCH_WRITE_PROCESS_SMALL'),
+                data={'bucket': bucket, 'directory': directory, 'files': files})
 
 
 class BatchWriteProcessOperator(BaseEventOperator):
