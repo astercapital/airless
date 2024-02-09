@@ -1,5 +1,7 @@
 
 **unreleased**
+
+**v0.0.59**
 - [Feature] Add file size scale in `BatchWriteDetectSizeOnlyOperator` to allow processing of larger partitions
 
 **v0.0.58**
