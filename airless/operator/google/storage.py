@@ -15,6 +15,12 @@ from airless.hook.file.file import FileHook
 from airless.operator.base import BaseFileOperator, BaseEventOperator
 
 
+class ProcessTopic:
+    SMALL = 'PUBSUB_TOPIC_BATCH_WRITE_PROCESS_SMALL'
+    MEDIUM = 'PUBSUB_TOPIC_BATCH_WRITE_PROCESS_MEDIUM'
+    LARGE = 'PUBSUB_TOPIC_BATCH_WRITE_PROCESS_LARGE'
+
+
 class FileDetectOperator(BaseFileOperator):
 
     def __init__(self):
@@ -252,18 +258,18 @@ class BatchWriteDetectSizeOnlyOperator(BaseEventOperator):
 
                 if tables.get(key) is None:
                     tables[key] = {
-                        'size': b.size,
+                        'total_size': b.size,
                         'files': [filename],
                         'min_time_created': b.time_created
                     }
                 else:
-                    tables[key]['size'] += b.size
+                    tables[key]['total_size'] += b.size
                     tables[key]['files'] += [filename]
                     if b.time_created < tables[key]['min_time_created']:
                         tables[key]['min_time_created'] = b.time_created
 
-                if tables[key]['size'] > threshold['size']:
-                    self.send_to_process(bucket=bucket, directory=key, files=tables[key]['files'])
+                if tables[key]['total_size'] > threshold['size_large']:
+                    self.send_to_process(bucket=bucket, directory=key, files=tables[key]['files'], size=ProcessTopic.LARGE)
                     tables[key] = None
                     partially_processed_tables.append(key)
 
@@ -271,16 +277,18 @@ class BatchWriteDetectSizeOnlyOperator(BaseEventOperator):
         time_threshold = (datetime.now() - timedelta(minutes=threshold['minutes'])).strftime('%Y-%m-%d %H:%M')
         for directory, v in tables.items():
             if v is not None:
-                if (v['size'] > threshold['size']) or \
-                    (v['min_time_created'].strftime('%Y-%m-%d %H:%M') < time_threshold) or \
-                    (directory in partially_processed_tables):
-                    self.send_to_process(bucket=bucket, directory=directory, files=v['files'])
+                if (v['total_size'] < threshold['size_small']) and ((directory in partially_processed_tables) or (v['min_time_created'].strftime('%Y-%m-%d %H:%M') < time_threshold)):
+                    self.send_to_process(bucket=bucket, directory=directory, files=v['files'], size=ProcessTopic.SMALL)
+                elif (v['total_size'] < threshold['size_medium']) and ((directory in partially_processed_tables) or (v['min_time_created'].strftime('%Y-%m-%d %H:%M') < time_threshold)):
+                    self.send_to_process(bucket=bucket, directory=directory, files=v['files'], size=ProcessTopic.MEDIUM)
+                elif (v['total_size'] < threshold['size_large']) and ((directory in partially_processed_tables) or (v['min_time_created'].strftime('%Y-%m-%d %H:%M') < time_threshold)):
+                    self.send_to_process(bucket=bucket, directory=directory, files=v['files'], size=ProcessTopic.LARGE)
 
-    def send_to_process(self, bucket, directory, files):
-        self.pubsub_hook.publish(
-            project=get_config('GCP_PROJECT'),
-            topic=get_config('PUBSUB_TOPIC_BATCH_WRITE_PROCESS'),
-            data={'bucket': bucket, 'directory': directory, 'files': files})
+    def send_to_process(self, bucket, directory, files, size):
+            self.pubsub_hook.publish(
+                project=get_config('GCP_PROJECT'),
+                topic=get_config(size),
+                data={'bucket': bucket, 'directory': directory, 'files': files})
 
 
 class BatchWriteProcessOperator(BaseEventOperator):
