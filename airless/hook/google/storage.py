@@ -6,6 +6,9 @@ import os
 from datetime import datetime
 from google.cloud import storage
 from itertools import zip_longest
+import pyarrow as pa
+from pyarrow import parquet
+from pyarrow import fs
 
 from airless.config import get_config
 from airless.hook.base import BaseHook
@@ -59,6 +62,19 @@ class GcsHook(BaseHook):
         finally:
             if os.path.exists(local_filename):
                 os.remove(local_filename)
+
+    def upload_parquet_from_memory(self, data, bucket, directory, filename, add_timestamp, schema=None):
+        gcs = fs.GcsFileSystem(project_id=get_config('GCP_PROJECT'))
+        table = pa.Table.from_pylist(data)
+        table_casted = table.cast(schema) if schema else table
+        local_filename = self.file_hook.get_tmp_filepath(filename, add_timestamp)
+
+        parquet.write_table(
+            table_casted,
+            f'gcs://{bucket}/{directory}/{local_filename}',
+            compression='GZIP',
+            filesystem=gcs
+        )
 
     def upload(self, local_filepath, bucket, directory):
         filename = self.file_hook.extract_filename(local_filepath)
@@ -162,13 +178,28 @@ class GcsDatalakeHook(GcsHook):
         if get_config('ENV') == 'prod':
             metadata = self.build_metadata(message_id, origin)
             prepared_rows, now = self.prepare_rows(data, metadata)
-            time_partition_name = 'date'
 
-            self.upload_from_memory(
-                data=prepared_rows,
-                bucket=get_config('GCS_BUCKET_LANDING_ZONE'),
-                directory=f'{dataset}/{table}/{time_partition_name}={now.strftime("%Y-%m-%d")}' if time_partition else f'{dataset}/{table}',
-                filename='tmp.json',
-                add_timestamp=True)
+            if time_partition:
+                time_partition_name = 'date'
+                schema = pa.schema([
+                    ('_event_id', pa.int64()),
+                    ('_resource', pa.string()),
+                    ('_json', pa.string()),
+                    ('_created_at', pa.timestamp('us'))
+                ])
+                self.upload_parquet_from_memory(
+                    data=prepared_rows,
+                    bucket=get_config('GCS_BUCKET_RAW_ZONE'),
+                    directory=f'{dataset}/{table}/{time_partition_name}={now.strftime("%Y-%m-%d")}',
+                    filename='tmp.parquet',
+                    add_timestamp=True,
+                    schema=schema)
+            else:
+                self.upload_from_memory(
+                    data=prepared_rows,
+                    bucket=get_config('GCS_BUCKET_LANDING_ZONE'),
+                    directory=f'{dataset}/{table}',
+                    filename='tmp.json',
+                    add_timestamp=True)
         else:
             self.logger.debug(f'[DEV] Uploading to {dataset}.{table}, Data: {data}')
