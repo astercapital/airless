@@ -2,6 +2,7 @@
 import json
 import ndjson
 import os
+import logging
 
 from datetime import datetime
 from google.cloud import storage
@@ -64,14 +65,15 @@ class GcsHook(BaseHook):
                 os.remove(local_filename)
 
     def upload_parquet_from_memory(self, data, bucket, directory, filename, add_timestamp, schema=None):
-        gcs = fs.GcsFileSystem(project_id=get_config('GCP_PROJECT'))
+        gcs = fs.GcsFileSystem()
         table = pa.Table.from_pylist(data)
         table_casted = table.cast(schema) if schema else table
         local_filename = self.file_hook.get_tmp_filepath(filename, add_timestamp)
+        local_filename = local_filename.split('/')[-1]
 
         parquet.write_table(
             table_casted,
-            f'gcs://{bucket}/{directory}/{local_filename}',
+            f'{bucket}/{directory}/{local_filename}',
             compression='GZIP',
             filesystem=gcs
         )
@@ -133,7 +135,14 @@ class GcsHook(BaseHook):
             if len(tmp_list) > 0:
                 with self.storage_client.batch():
                     for blob in tmp_list:
+                        logging.info(f'Deleting blob {blob.path}')
                         blob.delete()
+
+    def delete_file(self, bucket_name, file):
+        bucket = self.storage_client.get_bucket(bucket_name)
+        blob = bucket.blob(file)
+        logging.info(f'Deleting blob {blob.path}')
+        blob.delete()
 
     def list(self, bucket_name, prefix=None):
         return self.storage_client.list_blobs(
