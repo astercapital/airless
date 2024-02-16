@@ -449,8 +449,12 @@ class FileDeleteOperator(BaseEventOperator):
 
     def execute(self, data, topic):
         bucket = data['bucket']
-        prefix = data.get('prefix', '')
+        prefix = data.get('prefix')
         files = data.get('files', [])
+
+        if (prefix is None) and (not files):
+            raise Exception('prefix or files parameter has to be defined!')
+
         logging.info(f'Deleting from bucket {bucket}')
         self.gcs_hook.delete(bucket, prefix, files)
 
