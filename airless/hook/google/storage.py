@@ -126,9 +126,12 @@ class GcsHook(BaseHook):
                     )
                 bucket.delete_blob(blob.name)
 
-    def delete(self, bucket_name, prefix):
+    def delete(self, bucket_name, prefix, files):
         bucket = self.storage_client.get_bucket(bucket_name)
-        blobs = bucket.list_blobs(prefix=prefix)
+        if files:
+            blobs = files
+        else:
+            blobs = bucket.list_blobs(prefix=prefix)
 
         for to_delete_batch in natatime(100, blobs):
             tmp_list = [tdb for tdb in to_delete_batch if (tdb is not None)]

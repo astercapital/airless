@@ -517,19 +517,13 @@ class BatchAggregateParquetFilesOperator(BaseEventOperator):
 
     def send_to_delete(self, from_bucket, directory, files):
         obj = {
-            'topic': get_config('PUBSUB_TOPIC_GCS_DELETE'),
-            'messages': [{'bucket': from_bucket}],
-            'params': [
-                {
-                    'key': 'file',
-                    'values': [f'{directory}/{f}' for f in files]
-                }
-            ]
+            'bucket': from_bucket,
+            'files': [f'{directory}/{f}' for f in files]
         }
 
         self.pubsub_hook.publish(
             project=get_config('GCP_PROJECT'),
-            topic=get_config('PUBSUB_TOPIC_REDIRECT'),
+            topic=get_config('PUBSUB_TOPIC_GCS_DELETE'),
             data=obj)
 
 
@@ -542,8 +536,9 @@ class FileDeleteOperator(BaseEventOperator):
     def execute(self, data, topic):
         bucket = data['bucket']
         prefix = data.get('prefix', '')
-        logging.info(f'Deleting from bucket {bucket} prefix {prefix}')
-        self.gcs_hook.delete(bucket, prefix)
+        files = data.get('files', [])
+        logging.info(f'Deleting from bucket {bucket}')
+        self.gcs_hook.delete(bucket, prefix, files)
 
 
 class FileMoveOperator(BaseEventOperator):
