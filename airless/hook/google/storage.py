@@ -126,7 +126,7 @@ class GcsHook(BaseHook):
                     )
                 bucket.delete_blob(blob.name)
 
-    def delete(self, bucket_name, prefix, files):
+    def delete(self, bucket_name, prefix, files=None):
         bucket = self.storage_client.get_bucket(bucket_name)
         if files:
             blobs = [bucket.blob(f) for f in files] 
