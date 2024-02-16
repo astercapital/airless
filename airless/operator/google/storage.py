@@ -542,12 +542,8 @@ class FileDeleteOperator(BaseEventOperator):
     def execute(self, data, topic):
         bucket = data['bucket']
         prefix = data.get('prefix', '')
-        file = data.get('file', '')
-        logging.info(f'Deleting from bucket {bucket} file {file if file else prefix}')
-        if file:
-            self.gcs_hook.delete_file(bucket, file)
-        else:
-            self.gcs_hook.delete(bucket, prefix)
+        logging.info(f'Deleting from bucket {bucket} prefix {prefix}')
+        self.gcs_hook.delete(bucket, prefix)
 
 
 class FileMoveOperator(BaseEventOperator):
