@@ -129,7 +129,7 @@ class GcsHook(BaseHook):
     def delete(self, bucket_name, prefix, files):
         bucket = self.storage_client.get_bucket(bucket_name)
         if files:
-            blobs = files
+            blobs = [bucket.blob(f) for f in files] 
         else:
             blobs = bucket.list_blobs(prefix=prefix)
 
@@ -195,7 +195,7 @@ class GcsDatalakeHook(GcsHook):
                 ])
                 self.upload_parquet_from_memory(
                     data=prepared_rows,
-                    bucket=get_config('GCS_BUCKET_RAW_ZONE'),
+                    bucket=get_config('GCS_BUCKET_LANDING_ZONE'),
                     directory=f'{dataset}/{table}/{time_partition_name}={now.strftime("%Y-%m-%d")}',
                     filename='tmp.parquet',
                     add_timestamp=True,

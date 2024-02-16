@@ -246,7 +246,7 @@ class BatchWriteDetectAggregateOperator(BaseEventOperator):
         self.reprocess = False
 
     def execute(self, data, topic):
-        bucket = data.get('bucket', get_config('GCS_BUCKET_RAW_ZONE'))
+        bucket = data.get('bucket', get_config('GCS_BUCKET_LANDING_ZONE'))
         prefix = data.get('prefix')
         threshold = data['threshold']
         reprocess_delay = threshold.get('reprocess_delay', 60)
@@ -257,60 +257,73 @@ class BatchWriteDetectAggregateOperator(BaseEventOperator):
         partially_processed_tables = []
 
         for b in self.gcs_hook.list(bucket, prefix):
-            # Verify if blob is not deleted and size less than best performance partition size
-            if (b.time_deleted is None) and (b.size < threshold['size_medium']):
+            # Verify if blob is not deleted
+            if (b.time_deleted is None):
                 filepaths = b.name.split('/')
                 key = '/'.join(filepaths[:-1])  # dataset/table
                 filename = filepaths[-1]
 
-                if tables.get(key) is None:
-                    tables[key] = {
-                        'size': b.size,
-                        'files': [filename],
-                        'min_time_created': b.time_created
-                    }
-                else:
-                    tables[key]['size'] += b.size
-                    tables[key]['files'] += [filename]
-                    if b.time_created < tables[key]['min_time_created']:
-                        tables[key]['min_time_created'] = b.time_created
+                if (b.size < threshold['size_medium']):  # size less than best performance partition size
 
-                # Try to create the best performance partition size
-                if tables[key]['size'] > threshold['size_medium']:
-                    self.send_to_process(bucket=bucket, directory=key, files=tables[key]['files'], size=ProcessTopic.MEDIUM, data=data)
-                    tables[key] = None
-                    partially_processed_tables.append(key)
-                else:
-                    # If number of files is too high process it
-                    if (len(tables[key]['files']) > threshold['file_quantity']):
-                        if tables[key]['size'] < threshold['size_small']:
-                            self.send_to_process(bucket=bucket, directory=key, files=tables[key]['files'], size=ProcessTopic.SMALL, data=data)
-                        else:
-                            self.send_to_process(bucket=bucket, directory=key, files=tables[key]['files'], size=ProcessTopic.MEDIUM, data=data)
+                    if tables.get(key) is None:
+                        tables[key] = {
+                            'size': b.size,
+                            'files': [filename],
+                            'min_time_created': b.time_created
+                        }
+                    else:
+                        tables[key]['size'] += b.size
+                        tables[key]['files'] += [filename]
+                        if b.time_created < tables[key]['min_time_created']:
+                            tables[key]['min_time_created'] = b.time_created
 
+                    # Try to create the best performance partition size
+                    if tables[key]['size'] > threshold['size_medium']:
+                        self.send_to_process(from_bucket=bucket, to_bucket=get_config('GCS_BUCKET_RAW_ZONE'), directory=key, files=tables[key]['files'], size=ProcessTopic.MEDIUM)
                         tables[key] = None
                         partially_processed_tables.append(key)
+                    else:
+                        # If number of files is too high process it
+                        if (len(tables[key]['files']) > threshold['file_quantity']):
+                            self.send_to_process(
+                                from_bucket=bucket,
+                                to_bucket=bucket,
+                                directory=key,
+                                files=tables[key]['files'],
+                                size=ProcessTopic.SMALL if v['size'] < threshold['size_small'] else ProcessTopic.MEDIUM)
+                            tables[key] = None
+                            partially_processed_tables.append(key)
+                else:
+                    self.send_to_process(from_bucket=bucket, to_bucket=get_config('GCS_BUCKET_RAW_ZONE'), directory=key, files=[filename], size=ProcessTopic.MEDIUM)
 
         # verify which dataset/table is ready to be processed
         time_threshold = (datetime.now() - timedelta(minutes=threshold['minutes'])).strftime('%Y-%m-%d %H:%M')
         for directory, v in tables.items():
             if v is not None:
                 if (len(v['files']) == 1) and (directory not in partially_processed_tables):
-                    break  # only have one file that is lower than best performnce partition size in this directory
-                elif (v['size'] < threshold['size_small']) and ((directory in partially_processed_tables) or (v['min_time_created'].strftime('%Y-%m-%d %H:%M') < time_threshold)):
-                    self.send_to_process(bucket=bucket, directory=directory, files=v['files'], size=ProcessTopic.SMALL, data=data)
+                    # only have one file that is lower than best performnce partition size in this directory
+                    self.send_to_process(
+                        from_bucket=bucket,
+                        to_bucket=get_config('GCS_BUCKET_RAW_ZONE'),
+                        directory=key, files=[filename],
+                        size=ProcessTopic.SMALL if v['size'] < threshold['size_small'] else ProcessTopic.MEDIUM)
                 elif ((directory in partially_processed_tables) or (v['min_time_created'].strftime('%Y-%m-%d %H:%M') < time_threshold)):
-                    self.send_to_process(bucket=bucket, directory=directory, files=v['files'], size=ProcessTopic.MEDIUM, data=data)
+                    self.send_to_process(
+                        from_bucket=bucket,
+                        to_bucket=bucket,
+                        directory=directory,
+                        files=v['files'],
+                        size=ProcessTopic.SMALL if v['size'] < threshold['size_small'] else ProcessTopic.MEDIUM)
 
         # Reprocess data until only one file can be lower than best performance partition size
         if self.reprocess and reprocess_time < reprocess_max_times:
             self.send_to_reprocess(reprocess_delay, topic, data)
 
-    def send_to_process(self, bucket, directory, files, size, data):
+    def send_to_process(self, from_bucket, to_bucket, directory, files, size):
             self.pubsub_hook.publish(
                 project=get_config('GCP_PROJECT'),
                 topic=get_config(size),
-                data={'bucket': bucket, 'directory': directory, 'files': files, 'metadata': {'data': data}})
+                data={'from_bucket': from_bucket, 'to_bucket': to_bucket, 'directory': directory, 'files': files})
 
             self.reprocess = True
 
@@ -321,7 +334,7 @@ class BatchWriteDetectAggregateOperator(BaseEventOperator):
         if reprocess_data.get('metadata'):
             reprocess_data['metadata']['reprocess_time'] += 1
         else:
-            
+            reprocess_data['metadata'] = {}
             reprocess_data['metadata']['reprocess_time'] = 1
 
         self.pubsub_hook.publish(
@@ -487,10 +500,10 @@ class BatchAggregateParquetFilesOperator(BaseEventOperator):
         self.fs_gcs = fs.GcsFileSystem()
 
     def execute(self, data, topic):
-        from_bucket = data['bucket']
+        from_bucket = data['from_bucket']
+        to_bucket = data['to_bucket']
         directory = data['directory']
         files = data['files']
-        metadata = data['metadata']
 
         # Read parquets from gcs
         tables_union = self.read_parquet_from_gcs(from_bucket, directory, files)
@@ -500,7 +513,7 @@ class BatchAggregateParquetFilesOperator(BaseEventOperator):
         local_filename = local_filename.split('/')[-1]
         parquet.write_table(
             tables_union,
-            f'{get_config("GCS_BUCKET_RAW_ZONE")}/{directory}/{local_filename}',
+            f'{to_bucket}/{directory}/{local_filename}',
             compression='GZIP',
             filesystem=self.fs_gcs
         )
