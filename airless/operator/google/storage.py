@@ -3,10 +3,12 @@ import os
 import logging
 from datetime import datetime, timedelta
 import shutil
+import copy
 
 from google.api_core.exceptions import NotFound
 import pyarrow as pa
 from pyarrow import parquet, json as pa_json
+from pyarrow import fs
 
 from airless.config import get_config
 from airless.hook.google.bigquery import BigqueryHook
@@ -16,9 +18,9 @@ from airless.operator.base import BaseFileOperator, BaseEventOperator
 
 
 class ProcessTopic:
-    SMALL = 'PUBSUB_TOPIC_BATCH_WRITE_PROCESS_SMALL'
-    MEDIUM = 'PUBSUB_TOPIC_BATCH_WRITE_PROCESS_MEDIUM'
-    LARGE = 'PUBSUB_TOPIC_BATCH_WRITE_PROCESS_LARGE'
+    SMALL = 'PUBSUB_TOPIC_FILE_BATCH_AGGREGATE_PROCESS_SMALL'
+    MEDIUM = 'PUBSUB_TOPIC_FILE_BATCH_AGGREGATE_PROCESS_MEDIUM'
+    LARGE = 'PUBSUB_TOPIC_FILE_BATCH_AGGREGATE_PROCESS_LARGE'
 
 
 class FileDetectOperator(BaseFileOperator):
@@ -235,60 +237,111 @@ class BatchWriteDetectOperator(BaseEventOperator):
             data={'bucket': bucket, 'directory': directory, 'files': files})
 
 
-class BatchWriteDetectSizeOnlyOperator(BaseEventOperator):
+class BatchWriteDetectAggregateOperator(BaseEventOperator):
 
     def __init__(self):
         super().__init__()
         self.file_hook = FileHook()
         self.gcs_hook = GcsHook()
+        self.reprocess = False
 
     def execute(self, data, topic):
         bucket = data.get('bucket', get_config('GCS_BUCKET_LANDING_ZONE'))
         prefix = data.get('prefix')
         threshold = data['threshold']
+        reprocess_delay = threshold.get('reprocess_delay', 60)
+        reprocess_max_times = threshold.get('reprocess_max_times', 0)
+        reprocess_time = data.get('metadata', {}).get('reprocess_time', 0)
 
         tables = {}
         partially_processed_tables = []
 
         for b in self.gcs_hook.list(bucket, prefix):
-            if b.time_deleted is None:
+            # Verify if blob is not deleted
+            if (b.time_deleted is None):
                 filepaths = b.name.split('/')
                 key = '/'.join(filepaths[:-1])  # dataset/table
                 filename = filepaths[-1]
 
-                if tables.get(key) is None:
-                    tables[key] = {
-                        'total_size': b.size,
-                        'files': [filename],
-                        'min_time_created': b.time_created
-                    }
-                else:
-                    tables[key]['total_size'] += b.size
-                    tables[key]['files'] += [filename]
-                    if b.time_created < tables[key]['min_time_created']:
-                        tables[key]['min_time_created'] = b.time_created
+                if (b.size < threshold['size_medium']):  # size less than best performance partition size
 
-                if tables[key]['total_size'] > threshold['size_large']:
-                    self.send_to_process(bucket=bucket, directory=key, files=tables[key]['files'], size=ProcessTopic.LARGE)
-                    tables[key] = None
-                    partially_processed_tables.append(key)
+                    if tables.get(key) is None:
+                        tables[key] = {
+                            'size': b.size,
+                            'files': [filename],
+                            'min_time_created': b.time_created
+                        }
+                    else:
+                        tables[key]['size'] += b.size
+                        tables[key]['files'] += [filename]
+                        if b.time_created < tables[key]['min_time_created']:
+                            tables[key]['min_time_created'] = b.time_created
+
+                    # Try to create the best performance partition size
+                    if tables[key]['size'] > threshold['size_medium']:
+                        self.send_to_process(from_bucket=bucket, to_bucket=get_config('GCS_BUCKET_RAW_ZONE'), directory=key, files=tables[key]['files'], size=ProcessTopic.MEDIUM)
+                        tables[key] = None
+                        partially_processed_tables.append(key)
+                    else:
+                        # If number of files is too high process it
+                        if (len(tables[key]['files']) > threshold['file_quantity']):
+                            self.send_to_process(
+                                from_bucket=bucket,
+                                to_bucket=bucket,
+                                directory=key,
+                                files=tables[key]['files'],
+                                size=ProcessTopic.SMALL if tables[key]['size'] < threshold['size_small'] else ProcessTopic.MEDIUM)
+                            tables[key] = None
+                            partially_processed_tables.append(key)
+                else:
+                    self.send_to_process(from_bucket=bucket, to_bucket=get_config('GCS_BUCKET_RAW_ZONE'), directory=key, files=[filename], size=ProcessTopic.MEDIUM)
 
         # verify which dataset/table is ready to be processed
         time_threshold = (datetime.now() - timedelta(minutes=threshold['minutes'])).strftime('%Y-%m-%d %H:%M')
         for directory, v in tables.items():
             if v is not None:
-                if (v['total_size'] < threshold['size_small']) and ((directory in partially_processed_tables) or (v['min_time_created'].strftime('%Y-%m-%d %H:%M') < time_threshold)):
-                    self.send_to_process(bucket=bucket, directory=directory, files=v['files'], size=ProcessTopic.SMALL)
-                elif (v['total_size'] < threshold['size_medium']) and ((directory in partially_processed_tables) or (v['min_time_created'].strftime('%Y-%m-%d %H:%M') < time_threshold)):
-                    self.send_to_process(bucket=bucket, directory=directory, files=v['files'], size=ProcessTopic.MEDIUM)
-                elif (v['total_size'] < threshold['size_large']) and ((directory in partially_processed_tables) or (v['min_time_created'].strftime('%Y-%m-%d %H:%M') < time_threshold)):
-                    self.send_to_process(bucket=bucket, directory=directory, files=v['files'], size=ProcessTopic.LARGE)
+                if (len(v['files']) == 1) and (directory not in partially_processed_tables):
+                    # only have one file that is lower than best performnce partition size in this directory
+                    self.send_to_process(
+                        from_bucket=bucket,
+                        to_bucket=get_config('GCS_BUCKET_RAW_ZONE'),
+                        directory=key,
+                        files=v['files'],
+                        size=ProcessTopic.SMALL if v['size'] < threshold['size_small'] else ProcessTopic.MEDIUM)
+                elif ((directory in partially_processed_tables) or (v['min_time_created'].strftime('%Y-%m-%d %H:%M') < time_threshold)):
+                    self.send_to_process(
+                        from_bucket=bucket,
+                        to_bucket=bucket,
+                        directory=directory,
+                        files=v['files'],
+                        size=ProcessTopic.SMALL if v['size'] < threshold['size_small'] else ProcessTopic.MEDIUM)
 
-    def send_to_process(self, bucket, directory, files, size):
+        # Reprocess data until only one file can be lower than best performance partition size
+        if self.reprocess and reprocess_time < reprocess_max_times:
+            self.send_to_reprocess(reprocess_delay, topic, data)
+
+    def send_to_process(self, from_bucket, to_bucket, directory, files, size):
             self.pubsub_hook.publish(
                 project=get_config('GCP_PROJECT'),
                 topic=get_config(size),
-                data={'bucket': bucket, 'directory': directory, 'files': files})
+                data={'from_bucket': from_bucket, 'to_bucket': to_bucket, 'directory': directory, 'files': files})
+
+            self.reprocess = True
+
+    def send_to_reprocess(self, reprocess_delay, topic, data):
+        reprocess_data = copy.deepcopy(data)
+        reprocess_data['threshold']['minutes'] = 0  # Change to zero because new files were aggreagated
+
+        if reprocess_data.get('metadata'):
+            reprocess_data['metadata']['reprocess_time'] += 1
+        else:
+            reprocess_data['metadata'] = {}
+            reprocess_data['metadata']['reprocess_time'] = 1
+
+        self.pubsub_hook.publish(
+            project=get_config('GCP_PROJECT'),
+            topic=get_config('PUBSUB_DELAY_TOPIC'),
+            data={'seconds': reprocess_delay, 'metadata': {'run_next': [{'topic': topic, 'data': reprocess_data}]}})
 
 
 class BatchWriteProcessOperator(BaseEventOperator):
@@ -340,93 +393,52 @@ class BatchWriteProcessOperator(BaseEventOperator):
                 to_directory=directory)
 
 
-class BatchWriteProcessParquetOperator(BaseEventOperator):
-
+class BatchAggregateParquetFilesOperator(BaseEventOperator):
     def __init__(self):
         super().__init__()
         self.file_hook = FileHook()
         self.gcs_hook = GcsHook()
-        self.bigquery_hook = BigqueryHook()
+        self.fs_gcs = fs.GcsFileSystem()
 
     def execute(self, data, topic):
-        from_bucket = data['bucket']
+        from_bucket = data['from_bucket']
+        to_bucket = data['to_bucket']
         directory = data['directory']
         files = data['files']
 
-        file_contents = self.read_files_from_gcs(from_bucket, directory, files)
-        local_ndjson_filepath = self.merge_files(file_contents)
+        # Read parquets from gcs
+        tables_union = self.read_parquet_from_gcs(from_bucket, directory, files)
 
-        table = self.read_json_with_pyarrow(local_ndjson_filepath)
-        self.write_parquet_with_partitions(table, directory)
-
-        self.gcs_hook.upload_folder(f'./{directory}', get_config('GCS_BUCKET_RAW_ZONE'), directory)
-
-        shutil.rmtree(f'./{directory}')
-        self.send_to_processed_move(from_bucket, directory, files)
-
-    def read_files_from_gcs(self, bucket, directory, files):
-        file_contents = []
-        for f in files:
-            extension = f.split('.')[-1]
-
-            if extension == 'ndjson':
-                obj = self.gcs_hook.read_ndjson(
-                    bucket=bucket,
-                    filepath=f'{directory}/{f}')
-            elif extension == 'json':
-                obj = self.gcs_hook.read_json(
-                    bucket=bucket,
-                    filepath=f'{directory}/{f}')
-            else:
-                raise Exception(f'Cannot process file {directory}/{f} because extension {extension} is not supported')
-
-            if isinstance(obj, list):
-                file_contents += obj
-            elif isinstance(obj, dict):
-                file_contents.append(obj)
-            else:
-                raise Exception(f'Cannot process file {directory}/{f}')
-        return file_contents
-
-    def merge_files(self, file_contents):
-        local_filepath = self.file_hook.get_tmp_filepath('merged.ndjson', add_timestamp=True)
-        self.file_hook.write(local_filepath=local_filepath, data=file_contents, use_ndjson=True)
-        return local_filepath
-
-    def read_json_with_pyarrow(self, path):
-        schema = pa.schema([
-            ('_event_id', pa.int64()),
-            ('_resource', pa.string()),
-            ('_json', pa.string()),
-            ('_created_at', pa.timestamp('us'))
-        ])
-        block_size_10MB = 10<<20
-        options = pa_json.ReadOptions(block_size=block_size_10MB)
-        table = pa_json.read_json(path, read_options=options)
-        return table.cast(schema)
-
-    def write_parquet_with_partitions(self, table, directory):
-        file_path = self.file_hook.get_tmp_filepath('part.parquet', add_timestamp=True)
-        file_name = self.file_hook.extract_filename(file_path)
-
-        os.makedirs(directory, exist_ok=True)
+        # Save parquet concatenated
+        local_filename = self.file_hook.get_tmp_filepath('tmp.parquet', add_timestamp=True)
+        local_filename = local_filename.split('/')[-1]
         parquet.write_table(
-            table,
-            f'{directory}/{file_name}',
-            compression='GZIP'
+            tables_union,
+            f'{to_bucket}/{directory}/{local_filename}',
+            compression='GZIP',
+            filesystem=self.fs_gcs
         )
 
-        logging.debug(f'Save partition parquet on path {directory}/{file_name}')
+        self.send_to_delete(from_bucket, directory, files)
 
-    def send_to_processed_move(self, from_bucket, directory, files):
-        for file in files:
-            self.pubsub_hook.publish(
-                project=get_config('GCP_PROJECT'),
-                topic=get_config('PUBSUB_TOPIC_BATCH_WRITE_PROCESSED_MOVE'),
-                data={
-                    'origin': {'bucket': from_bucket, 'prefix': f'{directory}/{file}'},
-                    'destination': {'bucket': get_config('GCS_BUCKET_LANDING_ZONE_PROCESSED'), 'directory': directory}
-                })
+    def read_parquet_from_gcs(self, bucket, directory, files):
+        concat = None
+        for f in files:
+            t = parquet.read_table(f'{bucket}/{directory}/{f}', filesystem=self.fs_gcs)
+            concat = t if not concat else pa.concat_tables([t,concat])
+
+        return concat
+
+    def send_to_delete(self, from_bucket, directory, files):
+        obj = {
+            'bucket': from_bucket,
+            'files': [f'{directory}/{f}' for f in files]
+        }
+
+        self.pubsub_hook.publish(
+            project=get_config('GCP_PROJECT'),
+            topic=get_config('PUBSUB_TOPIC_GCS_DELETE'),
+            data=obj)
 
 
 class FileDeleteOperator(BaseEventOperator):
@@ -437,8 +449,14 @@ class FileDeleteOperator(BaseEventOperator):
 
     def execute(self, data, topic):
         bucket = data['bucket']
-        prefix = data['prefix']
-        self.gcs_hook.delete(bucket, prefix)
+        prefix = data.get('prefix')
+        files = data.get('files', [])
+
+        if (prefix is None) and (not files):
+            raise Exception('prefix or files parameter has to be defined!')
+
+        logging.info(f'Deleting from bucket {bucket}')
+        self.gcs_hook.delete(bucket, prefix, files)
 
 
 class FileMoveOperator(BaseEventOperator):

@@ -1,5 +1,10 @@
 
 **unreleased**
+- [Bugfix] In `BatchWriteProcessParquetOperator` change `send_to_processed_move` to use redirect function
+- [Feature] Add `BatchAggregateParquetFilesOperator` class to agregate parquet files
+- [Feature] Add `BatchWriteDetectAggregateOperator` class to compare file sizes and trigger `BatchAggregateParquetFilesOperator`
+- [Feature] Change `send_to_landing_zone` to write parquet direct to gcs raw zone when `time_partition` is defined
+- [Feature] Remove `BatchWriteDetectSizeOnlyOperator` because will not be used
 
 **v0.0.59**
 - [Feature] Add file size scale in `BatchWriteDetectSizeOnlyOperator` to allow processing of larger partitions

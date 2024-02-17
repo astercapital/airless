@@ -2,10 +2,14 @@
 import json
 import ndjson
 import os
+import logging
 
 from datetime import datetime
 from google.cloud import storage
 from itertools import zip_longest
+import pyarrow as pa
+from pyarrow import parquet
+from pyarrow import fs
 
 from airless.config import get_config
 from airless.hook.base import BaseHook
@@ -60,6 +64,20 @@ class GcsHook(BaseHook):
             if os.path.exists(local_filename):
                 os.remove(local_filename)
 
+    def upload_parquet_from_memory(self, data, bucket, directory, filename, add_timestamp, schema=None):
+        gcs = fs.GcsFileSystem()
+        table = pa.Table.from_pylist(data)
+        table_casted = table.cast(schema) if schema else table
+        local_filename = self.file_hook.get_tmp_filepath(filename, add_timestamp)
+        local_filename = local_filename.split('/')[-1]
+
+        parquet.write_table(
+            table_casted,
+            f'{bucket}/{directory}/{local_filename}',
+            compression='GZIP',
+            filesystem=gcs
+        )
+
     def upload(self, local_filepath, bucket, directory):
         filename = self.file_hook.extract_filename(local_filepath)
         bucket = self.storage_client.bucket(bucket)
@@ -108,15 +126,19 @@ class GcsHook(BaseHook):
                     )
                 bucket.delete_blob(blob.name)
 
-    def delete(self, bucket_name, prefix):
+    def delete(self, bucket_name, prefix, files=None):
         bucket = self.storage_client.get_bucket(bucket_name)
-        blobs = bucket.list_blobs(prefix=prefix)
+        if files:
+            blobs = [bucket.blob(f) for f in files] 
+        else:
+            blobs = bucket.list_blobs(prefix=prefix)
 
         for to_delete_batch in natatime(100, blobs):
-            tmp_list = [tdb for tdb in to_delete_batch if (tdb is not None) and (tdb.name != prefix)]
+            tmp_list = [tdb for tdb in to_delete_batch if (tdb is not None)]
             if len(tmp_list) > 0:
                 with self.storage_client.batch():
                     for blob in tmp_list:
+                        logging.info(f'Deleting blob {blob.name}')
                         blob.delete()
 
     def list(self, bucket_name, prefix=None):
@@ -162,13 +184,28 @@ class GcsDatalakeHook(GcsHook):
         if get_config('ENV') == 'prod':
             metadata = self.build_metadata(message_id, origin)
             prepared_rows, now = self.prepare_rows(data, metadata)
-            time_partition_name = 'date'
 
-            self.upload_from_memory(
-                data=prepared_rows,
-                bucket=get_config('GCS_BUCKET_LANDING_ZONE'),
-                directory=f'{dataset}/{table}/{time_partition_name}={now.strftime("%Y-%m-%d")}' if time_partition else f'{dataset}/{table}',
-                filename='tmp.json',
-                add_timestamp=True)
+            if time_partition:
+                time_partition_name = 'date'
+                schema = pa.schema([
+                    ('_event_id', pa.int64()),
+                    ('_resource', pa.string()),
+                    ('_json', pa.string()),
+                    ('_created_at', pa.timestamp('us'))
+                ])
+                self.upload_parquet_from_memory(
+                    data=prepared_rows,
+                    bucket=get_config('GCS_BUCKET_LANDING_ZONE'),
+                    directory=f'{dataset}/{table}/{time_partition_name}={now.strftime("%Y-%m-%d")}',
+                    filename='tmp.parquet',
+                    add_timestamp=True,
+                    schema=schema)
+            else:
+                self.upload_from_memory(
+                    data=prepared_rows,
+                    bucket=get_config('GCS_BUCKET_LANDING_ZONE'),
+                    directory=f'{dataset}/{table}',
+                    filename='tmp.json',
+                    add_timestamp=True)
         else:
             self.logger.debug(f'[DEV] Uploading to {dataset}.{table}, Data: {data}')
