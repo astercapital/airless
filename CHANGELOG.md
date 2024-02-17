@@ -1,5 +1,7 @@
 
 **unreleased**
+
+**v0.0.60**
 - [Bugfix] In `BatchWriteProcessParquetOperator` change `send_to_processed_move` to use redirect function
 - [Feature] Add `BatchAggregateParquetFilesOperator` class to agregate parquet files
 - [Feature] Add `BatchWriteDetectAggregateOperator` class to compare file sizes and trigger `BatchAggregateParquetFilesOperator`
