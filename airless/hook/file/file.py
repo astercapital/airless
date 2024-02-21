@@ -3,6 +3,7 @@ import json
 import ndjson
 import os
 import requests
+import hashlib
 
 from datetime import datetime
 from random import randint
@@ -32,7 +33,7 @@ class FileHook(BaseHook):
         filename = self.extract_filename(filepath_or_url)
         if add_timestamp:
             timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-            filename = f'{timestamp}_{randint(1, 100000000)}_{filename}'
+            filename = f'{timestamp}_{hashlib.md5(filename).hexdigest()}_{filename}'
         return f'/tmp/{filename}'
 
     def download(self, url, headers, timeout=500, proxies=None):
