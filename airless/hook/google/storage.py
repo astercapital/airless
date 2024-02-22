@@ -2,24 +2,16 @@
 import json
 import ndjson
 import os
-import logging
+import pyarrow as pa
 
 from datetime import datetime
 from google.cloud import storage
 from google.cloud.storage.retry import DEFAULT_RETRY
-from itertools import zip_longest
-import pyarrow as pa
-from pyarrow import parquet
-from pyarrow import fs
+from pyarrow import fs, parquet
 
 from airless.config import get_config
 from airless.hook.base import BaseHook
 from airless.hook.file.file import FileHook
-
-
-def natatime(n, iterable, fillvalue=None):
-    stepped_slices = [iter(iterable)] * n
-    return zip_longest(*stepped_slices, fillvalue=fillvalue)
 
 
 class GcsHook(BaseHook):
