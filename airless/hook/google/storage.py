@@ -6,6 +6,7 @@ import logging
 
 from datetime import datetime
 from google.cloud import storage
+from google.cloud.storage.retry import DEFAULT_RETRY
 from itertools import zip_longest
 import pyarrow as pa
 from pyarrow import parquet
@@ -101,45 +102,83 @@ class GcsHook(BaseHook):
 
     def move(self, from_bucket, from_prefix, to_bucket, to_directory, rewrite=False):
         bucket = self.storage_client.get_bucket(from_bucket)
-        blobs = bucket.list_blobs(prefix=from_prefix)
-
         dest_bucket = self.storage_client.bucket(to_bucket)
 
+        blobs = list(bucket.list_blobs(prefix=from_prefix, fields='items(name),nextPageToken'))
+        self.move_blobs(bucket, blobs, dest_bucket, to_directory, rewrite)
+
+    def move_files(self, from_bucket, files, to_bucket, to_directory, rewrite):
+        bucket = self.storage_client.get_bucket(from_bucket)
+        dest_bucket = self.storage_client.bucket(to_bucket)
+
+        blobs = self.files_to_blobs(bucket, files)
+        self.move_blobs(bucket, blobs, dest_bucket, to_directory, rewrite)
+
+    def move_blobs(self, bucket, blobs, to_bucket, to_directory, rewrite):
+        if rewrite:
+            self.rewrite_blobs(blobs, to_bucket, to_directory)
+        else:
+            self.copy_blobs(bucket, blobs, to_bucket, to_directory)
+
+        self.delete_blobs(blobs)
+
+    def rewrite_blobs(self, blobs, to_bucket, to_directory):
         for blob in blobs:
             if not blob.name.endswith('/'):
+                rewrite_token = False
                 filename = blob.name.split('/')[-1]
 
-                if rewrite:
-                    rewrite_token = False
-                    dest_blob = dest_bucket.blob(f'{to_directory}/{filename}')
-                    while True:
-                        rewrite_token, bytes_rewritten, bytes_to_rewrite = dest_blob.rewrite(
-                            blob, token=rewrite_token)
-                        self.logger.debug(f'{to_directory}/{filename} - Progress so far: {bytes_rewritten}/{bytes_to_rewrite} bytes')
-
-                        if not rewrite_token:
-                            break
-
-                else:
-                    bucket.copy_blob(
-                        blob, dest_bucket, f'{to_directory}/{filename}'
+                dest_blob = to_bucket.blob(f'{to_directory}/{filename}')
+                while True:
+                    rewrite_token, bytes_rewritten, bytes_to_rewrite = dest_blob.rewrite(
+                        source=blob,
+                        token=rewrite_token,
+                        retry=DEFAULT_RETRY  # retries any API request which returns a “transient” error
                     )
-                bucket.delete_blob(blob.name)
+                    self.logger.debug(f'{to_directory}/{filename} - Progress so far: {bytes_rewritten}/{bytes_to_rewrite} bytes')
+
+                    if not rewrite_token:
+                        break
+
+    def copy_blobs(self, bucket, blobs, to_bucket, to_directory):
+        # the copy operation is faster because it can be sent in batches, which rewrite can't
+        # but it can only be used for small files, it can fail to larger files
+
+        batch_size = 1000
+        count = 0
+
+        while count < len(blobs):
+            with self.storage_client.batch():
+                for blob in blobs[count:count + batch_size]:
+                    if not blob.name.endswith('/'):
+                        filename = blob.name.split('/')[-1]
+                        bucket.copy_blob(
+                            blob=blob,
+                            destination_bucket=to_bucket,
+                            new_name=f'{to_directory}/{filename}',
+                            retry=DEFAULT_RETRY  # retries any API request which returns a “transient” error
+                        )
+                count = count + batch_size
 
     def delete(self, bucket_name, prefix, files=None):
         bucket = self.storage_client.get_bucket(bucket_name)
         if files:
-            blobs = [bucket.blob(f) for f in files] 
+            blobs = self.files_to_blobs(bucket, files)
         else:
-            blobs = bucket.list_blobs(prefix=prefix)
+            blobs = list(bucket.list_blobs(prefix=prefix, fields='items(name),nextPageToken'))
 
-        for to_delete_batch in natatime(100, blobs):
-            tmp_list = [tdb for tdb in to_delete_batch if (tdb is not None)]
-            if len(tmp_list) > 0:
-                with self.storage_client.batch():
-                    for blob in tmp_list:
-                        logging.info(f'Deleting blob {blob.name}')
-                        blob.delete()
+        self.delete_blobs(blobs)
+
+    def delete_blobs(self, blobs):
+        batch_size = 1000
+        count = 0
+
+        while count < len(blobs):
+            with self.storage_client.batch():
+                for blob in blobs[count:count + batch_size]:
+                    self.logger.debug(f'Deleting blob {blob.name}')
+                    blob.delete(retry=DEFAULT_RETRY)  # retries any API request which returns a “transient” error
+                count = count + batch_size
 
     def list(self, bucket_name, prefix=None):
         return self.storage_client.list_blobs(
@@ -147,6 +186,9 @@ class GcsHook(BaseHook):
             prefix=prefix,
             fields='items(name,size,timeCreated,timeDeleted),nextPageToken'
         )
+
+    def files_to_blobs(self, bucket, files):
+        return [bucket.blob(f) for f in files]
 
 
 class GcsDatalakeHook(GcsHook):
