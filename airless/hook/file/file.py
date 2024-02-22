@@ -33,7 +33,7 @@ class FileHook(BaseHook):
         filename = self.extract_filename(filepath_or_url)
         if add_timestamp:
             timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-            filename = f'{timestamp}_{hashlib.md5(filename).hexdigest()}_{filename}'
+            filename = f'{timestamp}_{hashlib.md5(filename.encode('utf-8')).hexdigest()}_{filename}'
         return f'/tmp/{filename}'
 
     def download(self, url, headers, timeout=500, proxies=None):
