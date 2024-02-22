@@ -1,7 +1,7 @@
 
 import os
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import copy
 
 from google.api_core.exceptions import NotFound
@@ -288,7 +288,7 @@ class BatchWriteDetectAggregateOperator(BaseEventOperator):
 
                         tables[key]['size'] = []
                         tables[key]['files'] = []
-                        tables[key]['min_time_created'] = datetime(2100, 1, 1, 1, 0, 0, 227000, tzinfo=datetime.timezone.utc)  # Default value huge
+                        tables[key]['min_time_created'] = datetime(2100, 1, 1, 1, 0, 0, 227000, tzinfo=timezone.utc)  # Default value huge
                         partially_processed_tables.append(key)
                     else:
                         # If number of files is too high process it
@@ -302,7 +302,7 @@ class BatchWriteDetectAggregateOperator(BaseEventOperator):
 
                             tables[key]['size'] = []
                             tables[key]['files'] = []
-                            tables[key]['min_time_created'] = datetime(2100, 1, 1, 1, 0, 0, 227000, tzinfo=datetime.timezone.utc)  # Default value huge
+                            tables[key]['min_time_created'] = datetime(2100, 1, 1, 1, 0, 0, 227000, tzinfo=timezone.utc)  # Default value huge
                             partially_processed_tables.append(key)
                 else:
                     self.send_to_process(from_bucket=bucket, to_bucket=get_config('GCS_BUCKET_RAW_ZONE'), directory=key, files=[filename], size=ProcessTopic.MEDIUM)
@@ -354,7 +354,7 @@ class BatchWriteDetectAggregateOperator(BaseEventOperator):
 
                 timestamp_obj = datetime.strptime(timestamp, '%Y%m%d%H%M%S')
             else:
-                timestamp_obj = datetime(1900, 1, 1, 1, 0, 0, 227000, tzinfo=datetime.timezone.utc)
+                timestamp_obj = datetime(1900, 1, 1, 1, 0, 0, 227000, tzinfo=timezone.utc)
 
             self.tables_last_timestamp_processed[directory] = timestamp_obj
             return timestamp
