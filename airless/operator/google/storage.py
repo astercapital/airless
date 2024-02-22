@@ -357,7 +357,7 @@ class BatchWriteDetectAggregateOperator(BaseEventOperator):
                 timestamp_obj = datetime(1900, 1, 1, 1, 0, 0, 227000, tzinfo=timezone.utc)
 
             self.tables_last_timestamp_processed[directory] = timestamp_obj
-            return timestamp
+            return timestamp_obj
 
     def send_to_process(self, from_bucket, to_bucket, directory, files, size):
             self.pubsub_hook.publish(
