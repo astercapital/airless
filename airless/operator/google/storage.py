@@ -327,7 +327,6 @@ class BatchWriteDetectAggregateOperator(BaseEventOperator):
                         files=v['files'],
                         size=ProcessTopic.SMALL if v['size'] < threshold['size_small'] else ProcessTopic.MEDIUM)
 
-            # self.save_last_timestamp_processed(directory, v['max_time_created'])
             # Save last timestamp processed
             dataset, table = self.get_dataset_and_table_from_filepath(directory)
             self.gcs_hook.upload_from_memory(
@@ -341,18 +340,6 @@ class BatchWriteDetectAggregateOperator(BaseEventOperator):
         if self.reprocess and reprocess_time < reprocess_max_times:
             self.send_to_reprocess(reprocess_delay, topic, data)
 
-    def save_last_timestamp_processed(self, directory, max_timestamp):
-        # if self.gcs_hook.check_existance(get_config('GCS_BUCKET_DOCUMENT_DB'), f'{self.document_db_folder}/{directory}'):
-        try:
-            # Delete last timestamp on document_db
-            logging.debug(f"Deleting from {get_config('GCS_BUCKET_DOCUMENT_DB')} file {self.document_db_folder}/{directory}")
-            self.gcs_hook.delete(get_config('GCS_BUCKET_DOCUMENT_DB'), prefix=f'{self.document_db_folder}/{directory}')
-        except NotFound:
-            pass
-        finally:
-            # Send last timestamp to document_db
-            logging.debug(f"Uploading from memory {get_config('GCS_BUCKET_DOCUMENT_DB')} file {self.document_db_folder}/{directory} name {max_timestamp.strftime('%Y%m%d%H%M%S')}")
-
     def verify_table_last_timestamp_processed(self, directory):
         logging.debug(f"Verify table last timestamp processed for {self.document_db_folder}/{directory}")
         if directory in self.tables_last_timestamp_processed.keys():
@@ -362,18 +349,11 @@ class BatchWriteDetectAggregateOperator(BaseEventOperator):
             logging.debug(f"Get timestamp from bucket {get_config('GCS_BUCKET_DOCUMENT_DB')} dataset {self.document_db_folder}/{directory}")
             try:
                 dataset, table = self.get_dataset_and_table_from_filepath(directory)
-                timestamp = self.gcs_hook.read_json(get_config('GCS_BUCKET_DOCUMENT_DB'), f'{self.document_db_folder}/{dataset}/{table}.json')
+                info = self.gcs_hook.read_json(get_config('GCS_BUCKET_DOCUMENT_DB'), f'{self.document_db_folder}/{dataset}/{table}.json')
+                timestamp = info['processed_at']
                 timestamp_obj = datetime.strptime(timestamp, '%Y%m%d%H%M%S').replace(tzinfo=timezone.utc)
             except NotFound:
                 timestamp_obj = datetime(1900, 1, 1, 1, 0, 0, 227000, tzinfo=timezone.utc)
-
-            # if self.gcs_hook.check_existance(get_config('GCS_BUCKET_DOCUMENT_DB'), f'{self.document_db_folder}/{directory}'):
-            #     timestamp = [b.name.split('/')[-1] for b in self.gcs_hook.list(get_config('GCS_BUCKET_DOCUMENT_DB'), f'{self.document_db_folder}/{directory}')]
-            #     timestamp = timestamp[0]
-
-            #     timestamp_obj = datetime.strptime(timestamp, '%Y%m%d%H%M%S').replace(tzinfo=timezone.utc)
-            # else:
-            #     timestamp_obj = datetime(1900, 1, 1, 1, 0, 0, 227000, tzinfo=timezone.utc)
 
             self.tables_last_timestamp_processed[directory] = timestamp_obj
             return timestamp_obj
