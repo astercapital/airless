@@ -360,10 +360,12 @@ class BatchWriteDetectAggregateOperator(BaseEventOperator):
             return self.tables_last_timestamp_processed[directory]
         else:
             logging.debug(f"Get timestamp from bucket {get_config('GCS_BUCKET_DOCUMENT_DB')} dataset {self.document_db_folder}/{directory}")
-            dataset, table = self.get_dataset_and_table_from_filepath(directory)
-            timestamp = self.gcs_hook.read_json(get_config('GCS_BUCKET_DOCUMENT_DB'), f'{self.document_db_folder}/{dataset}/{table}.json')
-
-            timestamp_obj = datetime.strptime(timestamp, '%Y%m%d%H%M%S').replace(tzinfo=timezone.utc) if timestamp else datetime(1900, 1, 1, 1, 0, 0, 227000, tzinfo=timezone.utc)
+            try:
+                dataset, table = self.get_dataset_and_table_from_filepath(directory)
+                timestamp = self.gcs_hook.read_json(get_config('GCS_BUCKET_DOCUMENT_DB'), f'{self.document_db_folder}/{dataset}/{table}.json')
+                timestamp_obj = datetime.strptime(timestamp, '%Y%m%d%H%M%S').replace(tzinfo=timezone.utc)
+            except NotFound:
+                timestamp_obj = datetime(1900, 1, 1, 1, 0, 0, 227000, tzinfo=timezone.utc)
 
             # if self.gcs_hook.check_existance(get_config('GCS_BUCKET_DOCUMENT_DB'), f'{self.document_db_folder}/{directory}'):
             #     timestamp = [b.name.split('/')[-1] for b in self.gcs_hook.list(get_config('GCS_BUCKET_DOCUMENT_DB'), f'{self.document_db_folder}/{directory}')]
@@ -377,7 +379,7 @@ class BatchWriteDetectAggregateOperator(BaseEventOperator):
             return timestamp_obj
 
     def get_dataset_and_table_from_filepath(self, filepath):
-        dataset = filepath.split('/')[:-1]
+        dataset = '/'.join(filepath.split('/')[:-1])
         table = filepath.split('/')[-1]
 
         return dataset, table
