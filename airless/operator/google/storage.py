@@ -264,6 +264,7 @@ class BatchWriteDetectAggregateOperator(BaseEventOperator):
             filename = filepaths[-1]
 
             last_timestamp = self.verify_table_last_timestamp_processed(key)
+            logging.debug(f'Detecting file: {filename} from bucket {bucket} and table {key}')
 
             # Verify if blob is not deleted
             if (b.time_deleted is None) and (b.time_created > last_timestamp):
@@ -286,7 +287,7 @@ class BatchWriteDetectAggregateOperator(BaseEventOperator):
                     if tables[key]['size'] > threshold['size_medium']:
                         self.send_to_process(from_bucket=bucket, to_bucket=get_config('GCS_BUCKET_RAW_ZONE'), directory=key, files=tables[key]['files'], size=ProcessTopic.MEDIUM)
 
-                        tables[key]['size'] = []
+                        tables[key]['size'] = 0
                         tables[key]['files'] = []
                         tables[key]['min_time_created'] = datetime(2100, 1, 1, 1, 0, 0, 227000, tzinfo=timezone.utc)  # Default value huge
                         partially_processed_tables.append(key)
@@ -300,7 +301,7 @@ class BatchWriteDetectAggregateOperator(BaseEventOperator):
                                 files=tables[key]['files'],
                                 size=ProcessTopic.SMALL if tables[key]['size'] < threshold['size_small'] else ProcessTopic.MEDIUM)
 
-                            tables[key]['size'] = []
+                            tables[key]['size'] = 0
                             tables[key]['files'] = []
                             tables[key]['min_time_created'] = datetime(2100, 1, 1, 1, 0, 0, 227000, tzinfo=timezone.utc)  # Default value huge
                             partially_processed_tables.append(key)
@@ -308,7 +309,7 @@ class BatchWriteDetectAggregateOperator(BaseEventOperator):
                     self.send_to_process(from_bucket=bucket, to_bucket=get_config('GCS_BUCKET_RAW_ZONE'), directory=key, files=[filename], size=ProcessTopic.MEDIUM)
 
         # verify which dataset/table is ready to be processed
-        time_threshold = (datetime.now() - timedelta(minutes=threshold['minutes'])).strftime('%Y-%m-%d %H:%M')
+        time_threshold = (datetime.now(timezone.utc) - timedelta(minutes=threshold['minutes'])).strftime('%Y-%m-%d %H:%M')
         for directory, v in tables.items():
             if v['files'] is not None:
                 if (len(v['files']) == 1) and (directory not in partially_processed_tables):
@@ -326,33 +327,43 @@ class BatchWriteDetectAggregateOperator(BaseEventOperator):
                         directory=directory,
                         files=v['files'],
                         size=ProcessTopic.SMALL if v['size'] < threshold['size_small'] else ProcessTopic.MEDIUM)
+            
+            self.save_last_timestamp_processed(directory, v['max_time_created'])
 
         # Reprocess data until only one file can be lower than best performance partition size
         if self.reprocess and reprocess_time < reprocess_max_times:
             self.send_to_reprocess(reprocess_delay, topic, data)
 
     def save_last_timestamp_processed(self, directory, max_timestamp):
-        if self.gcs_hook.check_existance(get_config('GCS_BUCKET_DOCUMENT_DB'), f'{self.document_db_folder}/{directory}'):
+        # if self.gcs_hook.check_existance(get_config('GCS_BUCKET_DOCUMENT_DB'), f'{self.document_db_folder}/{directory}'):
+        try:
             # Delete last timestamp on document_db
-            self.gcs_hook.delete(get_config('GCS_BUCKET_DOCUMENT_DB'), f'{self.document_db_folder}/{directory}')
-
-        # Send last timestamp to document_db
-        self.gcs_hook.upload_from_memory(
-            data='No content',
-            bucket=get_config('GCS_BUCKET_DOCUMENT_DB'),
-            directory=f'{self.document_db_folder}/{directory}',
-            filename=max_timestamp.strftime('%Y%m%d%H%M%S'),
-            add_timestamp=False)
+            logging.debug(f"Deleting from {get_config('GCS_BUCKET_DOCUMENT_DB')} file {self.document_db_folder}/{directory}")
+            self.gcs_hook.delete(get_config('GCS_BUCKET_DOCUMENT_DB'), prefix=f'{self.document_db_folder}/{directory}')
+        except NotFound:
+            pass
+        finally:
+            # Send last timestamp to document_db
+            logging.debug(f"Uploading from memory {get_config('GCS_BUCKET_DOCUMENT_DB')} file {self.document_db_folder}/{directory} name {max_timestamp.strftime('%Y%m%d%H%M%S')}")
+            self.gcs_hook.upload_from_memory(
+                data='No content',
+                bucket=get_config('GCS_BUCKET_DOCUMENT_DB'),
+                directory=f'{self.document_db_folder}/{directory}',
+                filename=max_timestamp.strftime('%Y%m%d%H%M%S'),
+                add_timestamp=False)
 
     def verify_table_last_timestamp_processed(self, directory):
+        logging.debug(f"Verify table last timestamp processed for {self.document_db_folder}/{directory}")
         if directory in self.tables_last_timestamp_processed.keys():
+            logging.debug('Get timestamp from memory')
             return self.tables_last_timestamp_processed[directory]
         else:
+            logging.debug(f"Get timestamp from bucket {get_config('GCS_BUCKET_DOCUMENT_DB')} dataset {self.document_db_folder}/{directory}")
             if self.gcs_hook.check_existance(get_config('GCS_BUCKET_DOCUMENT_DB'), f'{self.document_db_folder}/{directory}'):
                 timestamp = [b.name.split('/')[-1] for b in self.gcs_hook.list(get_config('GCS_BUCKET_DOCUMENT_DB'), f'{self.document_db_folder}/{directory}')]
                 timestamp = timestamp[0]
 
-                timestamp_obj = datetime.strptime(timestamp, '%Y%m%d%H%M%S')
+                timestamp_obj = datetime.strptime(timestamp, '%Y%m%d%H%M%S').replace(tzinfo=timezone.utc)
             else:
                 timestamp_obj = datetime(1900, 1, 1, 1, 0, 0, 227000, tzinfo=timezone.utc)
 
