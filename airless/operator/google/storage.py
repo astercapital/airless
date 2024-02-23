@@ -281,7 +281,6 @@ class BatchWriteDetectAggregateOperator(BaseEventOperator):
                         tables[key]['files'] += [filename]
                         tables[key]['min_time_created'] = b.time_created if b.time_created < tables[key]['min_time_created'] else tables[key]['min_time_created']
                         tables[key]['max_time_created'] = b.time_created if b.time_created > tables[key]['max_time_created'] else tables[key]['max_time_created']
-                        
 
                     # Try to create the best performance partition size
                     if tables[key]['size'] > threshold['size_medium']:
@@ -327,8 +326,16 @@ class BatchWriteDetectAggregateOperator(BaseEventOperator):
                         directory=directory,
                         files=v['files'],
                         size=ProcessTopic.SMALL if v['size'] < threshold['size_small'] else ProcessTopic.MEDIUM)
-            
-            self.save_last_timestamp_processed(directory, v['max_time_created'])
+
+            # self.save_last_timestamp_processed(directory, v['max_time_created'])
+            # Save last timestamp processed
+            dataset, table = self.get_dataset_and_table_from_filepath(directory)
+            self.gcs_hook.upload_from_memory(
+                data={'processed_at': v['max_time_created'].strftime('%Y%m%d%H%M%S')},
+                bucket=get_config('GCS_BUCKET_DOCUMENT_DB'),
+                directory=f'{self.document_db_folder}/{dataset}',
+                filename=f'{table}.json',
+                add_timestamp=False)
 
         # Reprocess data until only one file can be lower than best performance partition size
         if self.reprocess and reprocess_time < reprocess_max_times:
@@ -345,12 +352,6 @@ class BatchWriteDetectAggregateOperator(BaseEventOperator):
         finally:
             # Send last timestamp to document_db
             logging.debug(f"Uploading from memory {get_config('GCS_BUCKET_DOCUMENT_DB')} file {self.document_db_folder}/{directory} name {max_timestamp.strftime('%Y%m%d%H%M%S')}")
-            self.gcs_hook.upload_from_memory(
-                data='No content',
-                bucket=get_config('GCS_BUCKET_DOCUMENT_DB'),
-                directory=f'{self.document_db_folder}/{directory}',
-                filename=max_timestamp.strftime('%Y%m%d%H%M%S'),
-                add_timestamp=False)
 
     def verify_table_last_timestamp_processed(self, directory):
         logging.debug(f"Verify table last timestamp processed for {self.document_db_folder}/{directory}")
@@ -359,16 +360,27 @@ class BatchWriteDetectAggregateOperator(BaseEventOperator):
             return self.tables_last_timestamp_processed[directory]
         else:
             logging.debug(f"Get timestamp from bucket {get_config('GCS_BUCKET_DOCUMENT_DB')} dataset {self.document_db_folder}/{directory}")
-            if self.gcs_hook.check_existance(get_config('GCS_BUCKET_DOCUMENT_DB'), f'{self.document_db_folder}/{directory}'):
-                timestamp = [b.name.split('/')[-1] for b in self.gcs_hook.list(get_config('GCS_BUCKET_DOCUMENT_DB'), f'{self.document_db_folder}/{directory}')]
-                timestamp = timestamp[0]
+            dataset, table = self.get_dataset_and_table_from_filepath(directory)
+            timestamp = self.gcs_hook.read_json(get_config('GCS_BUCKET_DOCUMENT_DB'), f'{self.document_db_folder}/{dataset}/{table}.json')
 
-                timestamp_obj = datetime.strptime(timestamp, '%Y%m%d%H%M%S').replace(tzinfo=timezone.utc)
-            else:
-                timestamp_obj = datetime(1900, 1, 1, 1, 0, 0, 227000, tzinfo=timezone.utc)
+            timestamp_obj = datetime.strptime(timestamp, '%Y%m%d%H%M%S').replace(tzinfo=timezone.utc) if timestamp else datetime(1900, 1, 1, 1, 0, 0, 227000, tzinfo=timezone.utc)
+
+            # if self.gcs_hook.check_existance(get_config('GCS_BUCKET_DOCUMENT_DB'), f'{self.document_db_folder}/{directory}'):
+            #     timestamp = [b.name.split('/')[-1] for b in self.gcs_hook.list(get_config('GCS_BUCKET_DOCUMENT_DB'), f'{self.document_db_folder}/{directory}')]
+            #     timestamp = timestamp[0]
+
+            #     timestamp_obj = datetime.strptime(timestamp, '%Y%m%d%H%M%S').replace(tzinfo=timezone.utc)
+            # else:
+            #     timestamp_obj = datetime(1900, 1, 1, 1, 0, 0, 227000, tzinfo=timezone.utc)
 
             self.tables_last_timestamp_processed[directory] = timestamp_obj
             return timestamp_obj
+
+    def get_dataset_and_table_from_filepath(self, filepath):
+        dataset = filepath.split('/')[:-1]
+        table = filepath.split('/')[-1]
+
+        return dataset, table
 
     def send_to_process(self, from_bucket, to_bucket, directory, files, size):
             self.pubsub_hook.publish(
