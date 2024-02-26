@@ -1,6 +1,9 @@
 
 **unreleased**
 
+**v0.0.62**
+- [Bugfix] Change directory from key to directory because key is the used in the previous for statement, directory is the current for statement
+
 **v0.0.61**
 - [Feature] Move files in `GcsHook` using batch operations to copy and delete files in order to improve performance
 - [Feature] Add random hash to filename to increase upload velocity
