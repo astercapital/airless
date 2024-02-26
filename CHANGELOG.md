@@ -1,6 +1,8 @@
 
 **unreleased**
 - [Feature] Move files in `GcsHook` using batch operations to copy and delete files in order to improve performance
+- [Feature] Add random hash to filename to increase upload velocity
+- [Feature] Add logic to control which file timestamps are being processed
 
 **v0.0.60**
 - [Bugfix] In `BatchWriteProcessParquetOperator` change `send_to_processed_move` to use redirect function
