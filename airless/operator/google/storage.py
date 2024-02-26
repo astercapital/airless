@@ -316,7 +316,7 @@ class BatchWriteDetectAggregateOperator(BaseEventOperator):
                     self.send_to_process(
                         from_bucket=bucket,
                         to_bucket=get_config('GCS_BUCKET_RAW_ZONE'),
-                        directory=key,
+                        directory=directory,
                         files=v['files'],
                         size=ProcessTopic.SMALL if v['size'] < threshold['size_small'] else ProcessTopic.MEDIUM)
                 elif ((directory in partially_processed_tables) or (v['min_time_created'].strftime('%Y-%m-%d %H:%M') < time_threshold)):
