@@ -18,7 +18,7 @@ class EmailHook(BaseHook):
     def __init__(self):
         super().__init__()
         secret_manager_hook = SecretManagerHook()
-        self.smtp = secret_manager_hook.get_secret(get_config('GCP_PROJECT'), 'smtp', parse_json=True)
+        self.smtp = secret_manager_hook.get_secret(get_config('GCP_PROJECT'), get_config('SECRET_SMTP'), parse_json=True)
 
     def build_message(self, subject, content, recipients, sender, attachments=[], mime_type='plain'):
 

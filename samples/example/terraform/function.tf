@@ -55,6 +55,7 @@ resource "google_cloudfunctions2_function" "notification_email_send" {
             GCP_PROJECT               = var.project_id
             PUBSUB_TOPIC_ERROR        = google_pubsub_topic.error_reprocess.name
             LOG_LEVEL                 = var.log_level
+            SECRET_SMTP               = "smtp"
         }
     }
 
