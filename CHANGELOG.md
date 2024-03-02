@@ -1,5 +1,6 @@
 
 **unreleased**
+- [Feature] Allow email operator to use different SMTP secrets according to an env var
 
 **v0.0.62**
 - [Bugfix] Change directory from key to directory because key is the used in the previous for statement, directory is the current for statement
