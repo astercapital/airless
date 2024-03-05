@@ -1,5 +1,6 @@
 
 **unreleased**
+- [Feature] Add new parameter to process all files in bucket
 
 **v0.0.63**
 - [Feature] Allow email operator to use different SMTP secrets according to an env var

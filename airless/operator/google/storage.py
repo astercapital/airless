@@ -251,7 +251,8 @@ class BatchWriteDetectAggregateOperator(BaseEventOperator):
         bucket = data.get('bucket', get_config('GCS_BUCKET_LANDING_ZONE'))
         prefix = data.get('prefix')
         threshold = data['threshold']
-        reprocess_delay = threshold.get('reprocess_delay', 60)
+        deadline_files_to_process = threshold.get('deadline_files_to_process', 60)  # minutes
+        reprocess_delay = threshold.get('reprocess_delay', 60)  # seconds
         reprocess_max_times = threshold.get('reprocess_max_times', 0)
         reprocess_time = data.get('metadata', {}).get('reprocess_time', 0)
 
@@ -267,7 +268,7 @@ class BatchWriteDetectAggregateOperator(BaseEventOperator):
             logging.debug(f'Detecting file: {filename} from bucket {bucket} and table {key}')
 
             # Verify if blob is not deleted
-            if (b.time_deleted is None) and (b.time_created > last_timestamp):
+            if (b.time_deleted is None) and ((b.time_created > last_timestamp) or (b.time_created < (datetime.now(timezone.utc) - timedelta(minutes=deadline_files_to_process)))):
                 if (b.size < threshold['size_medium']):  # size less than best performance partition size
                     if tables.get(key) is None:
                         tables[key] = {
