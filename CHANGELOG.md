@@ -1,5 +1,7 @@
 
 **unreleased**
+
+**v0.0.63**
 - [Feature] Allow email operator to use different SMTP secrets according to an env var
 
 **v0.0.62**
