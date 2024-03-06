@@ -1,5 +1,7 @@
 
 **unreleased**
+
+**v0.0.64**
 - [Feature] Add new parameter to process all files in bucket
 
 **v0.0.63**
