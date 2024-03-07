@@ -1,5 +1,7 @@
 
 **unreleased**
+
+**v0.0.65**
 - [Feature] Allow slack hook and operator to use parameters `response_url`, `response_type` and `replace_original`
 
 **v0.0.64**
