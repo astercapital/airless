@@ -18,12 +18,15 @@ class SlackHook(BaseHook):
             'Authorization': f'Bearer {self.token}'
         }
 
-    def send(self, channel, message=None, blocks=None, thread_ts=None, reply_broadcast=False, attachments=None):
+    def send(
+            self, channel=None, message=None, blocks=None, thread_ts=None,
+            reply_broadcast=False, attachments=None, response_url=None, response_type=None,
+            replace_original=None):
 
-        data = {
-            'channel': channel,
-            'text': message
-        }
+        data = {}
+
+        if channel:
+            data['channel'] = channel
 
         if message:
             message = message[:3000]  # slack does not accept long messages
@@ -39,13 +42,22 @@ class SlackHook(BaseHook):
             data['thread_ts'] = thread_ts
             data['reply_broadcast'] = reply_broadcast
 
+        if response_type:
+            data['response_type'] = response_type
+
+        if replace_original:
+            data['replace_original'] = replace_original
+
         response = requests.post(
-            f'https://{self.api_url}/api/chat.postMessage',
+            response_url or f'https://{self.api_url}/api/chat.postMessage',
             headers=self.get_headers(),
             json=data,
             timeout=10
         )
         response.raise_for_status()
+
+        if response_url:
+            return {'status': response.text}
         return response.json()
 
     def react(self, channel, reaction, ts):

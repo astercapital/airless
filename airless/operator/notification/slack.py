@@ -13,19 +13,45 @@ class SlackSendOperator(BaseEventOperator):
         self.secret_manager_hook = SecretManagerHook()
 
     def execute(self, data, topic):
-        channels = data['channels']
+        channels = data.get('channels', [])
         secret_id = data.get('secret_id', 'slack_alert')
         message = data.get('message')
         blocks = data.get('blocks')
         attachments = data.get('attachments')
         thread_ts = data.get('thread_ts')
         reply_broadcast = data.get('reply_broadcast', False)
+        response_url = data.get('response_url')
+        response_type = data.get('response_type')
+        replace_original = data.get('replace_original')
 
         token = self.secret_manager_hook.get_secret(get_config('GCP_PROJECT'), secret_id, True)['bot_token']
         self.slack_hook.set_token(token)
 
+        if not channels and not response_url:
+            raise Exception('Either channels or response_url must be set')
+
         for channel in channels:
-            response = self.slack_hook.send(channel, message, blocks, thread_ts, reply_broadcast, attachments)
+            response = self.slack_hook.send(
+                channel=channel,
+                message=message,
+                blocks=blocks,
+                thread_ts=thread_ts,
+                reply_broadcast=reply_broadcast,
+                attachments=attachments,
+                response_type=response_type,
+                replace_original=replace_original)
+            self.logger.debug(response)
+
+        if response_url:
+            response = self.slack_hook.send(
+                message=message,
+                blocks=blocks,
+                thread_ts=thread_ts,
+                reply_broadcast=reply_broadcast,
+                attachments=attachments,
+                response_url=response_url,
+                response_type=response_type,
+                replace_original=replace_original)
             self.logger.debug(response)
 
 
