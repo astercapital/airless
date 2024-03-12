@@ -246,100 +246,96 @@ class BatchWriteDetectAggregateOperator(BaseEventOperator):
         self.document_db_folder = 'batch-write-detect-aggregate'
 
         self.tables_last_timestamp_processed = {}
+        self.tables = {}
+        self.partially_processed_tables = []
 
     def execute(self, data, topic):
-        bucket = data.get('bucket', get_config('GCS_BUCKET_LANDING_ZONE'))
-        prefix = data.get('prefix')
-        threshold = data['threshold']
-        deadline_files_to_process = threshold.get('deadline_files_to_process', 60)  # minutes
-        reprocess_delay = threshold.get('reprocess_delay', 60)  # seconds
-        reprocess_max_times = threshold.get('reprocess_max_times', 0)
-        reprocess_time = data.get('metadata', {}).get('reprocess_time', 0)
+        config = {
+            "bucket": data.get('bucket', get_config('GCS_BUCKET_LANDING_ZONE')),
+            "prefix": data.get('prefix'),
+            "threshold": data['threshold'],
+            "reprocess_time": data.get('metadata', {}).get('reprocess_time', 0)
+        }
+        deadline = config["threshold"].get('deadline_files_to_process', 60)  # minutes
+        reprocess_delay = config["threshold"].get('reprocess_delay', 60)  # seconds
+        reprocess_max_times = config["threshold"].get('reprocess_max_times', 0)
 
-        tables = {}
-        partially_processed_tables = []
+        self.process_files(config, deadline)
+        self.verify_processed_tables(config)
 
-        for b in self.gcs_hook.list(bucket, prefix):
-            filepaths = b.name.split('/')
-            key = '/'.join(filepaths[:-1])  # dataset/table
-            filename = filepaths[-1]
-
-            last_timestamp = self.verify_table_last_timestamp_processed(key)
-            logging.debug(f'Detecting file: {filename} from bucket {bucket} and table {key}')
-
-            # Verify if blob is not deleted
-            if (b.time_deleted is None) and ((b.time_created > last_timestamp) or (b.time_created < (datetime.now(timezone.utc) - timedelta(minutes=deadline_files_to_process)))):
-                if (b.size < threshold['size_medium']):  # size less than best performance partition size
-                    if tables.get(key) is None:
-                        tables[key] = {
-                            'size': b.size,
-                            'files': [filename],
-                            'min_time_created': b.time_created,
-                            'max_time_created': b.time_created
-                        }
-                    else:
-                        tables[key]['size'] += b.size
-                        tables[key]['files'] += [filename]
-                        tables[key]['min_time_created'] = b.time_created if b.time_created < tables[key]['min_time_created'] else tables[key]['min_time_created']
-                        tables[key]['max_time_created'] = b.time_created if b.time_created > tables[key]['max_time_created'] else tables[key]['max_time_created']
-
-                    # Try to create the best performance partition size
-                    if tables[key]['size'] > threshold['size_medium']:
-                        self.send_to_process(from_bucket=bucket, to_bucket=get_config('GCS_BUCKET_RAW_ZONE'), directory=key, files=tables[key]['files'], size=ProcessTopic.MEDIUM)
-
-                        tables[key]['size'] = 0
-                        tables[key]['files'] = []
-                        tables[key]['min_time_created'] = datetime(2100, 1, 1, 1, 0, 0, 227000, tzinfo=timezone.utc)  # Default value huge
-                        partially_processed_tables.append(key)
-                    else:
-                        # If number of files is too high process it
-                        if (len(tables[key]['files']) > threshold['file_quantity']):
-                            self.send_to_process(
-                                from_bucket=bucket,
-                                to_bucket=bucket,
-                                directory=key,
-                                files=tables[key]['files'],
-                                size=ProcessTopic.SMALL if tables[key]['size'] < threshold['size_small'] else ProcessTopic.MEDIUM)
-
-                            tables[key]['size'] = 0
-                            tables[key]['files'] = []
-                            tables[key]['min_time_created'] = datetime(2100, 1, 1, 1, 0, 0, 227000, tzinfo=timezone.utc)  # Default value huge
-                            partially_processed_tables.append(key)
-                else:
-                    self.send_to_process(from_bucket=bucket, to_bucket=get_config('GCS_BUCKET_RAW_ZONE'), directory=key, files=[filename], size=ProcessTopic.MEDIUM)
-
-        # verify which dataset/table is ready to be processed
-        time_threshold = (datetime.now(timezone.utc) - timedelta(minutes=threshold['minutes'])).strftime('%Y-%m-%d %H:%M')
-        for directory, v in tables.items():
-            if v['files'] is not None:
-                if (len(v['files']) == 1) and (directory not in partially_processed_tables):
-                    # only have one file that is lower than best performnce partition size in this directory
-                    self.send_to_process(
-                        from_bucket=bucket,
-                        to_bucket=get_config('GCS_BUCKET_RAW_ZONE'),
-                        directory=directory,
-                        files=v['files'],
-                        size=ProcessTopic.SMALL if v['size'] < threshold['size_small'] else ProcessTopic.MEDIUM)
-                elif ((directory in partially_processed_tables) or (v['min_time_created'].strftime('%Y-%m-%d %H:%M') < time_threshold)):
-                    self.send_to_process(
-                        from_bucket=bucket,
-                        to_bucket=bucket,
-                        directory=directory,
-                        files=v['files'],
-                        size=ProcessTopic.SMALL if v['size'] < threshold['size_small'] else ProcessTopic.MEDIUM)
-
-            # Save last timestamp processed
-            dataset, table = self.get_dataset_and_table_from_filepath(directory)
-            self.gcs_hook.upload_from_memory(
-                data={'processed_at': v['max_time_created'].strftime('%Y%m%d%H%M%S')},
-                bucket=get_config('GCS_BUCKET_DOCUMENT_DB'),
-                directory=f'{self.document_db_folder}/{dataset}',
-                filename=f'{table}.json',
-                add_timestamp=False)
-
-        # Reprocess data until only one file can be lower than best performance partition size
-        if self.reprocess and reprocess_time < reprocess_max_times:
+        if self.reprocess and config["reprocess_time"] < reprocess_max_times:
             self.send_to_reprocess(reprocess_delay, topic, data)
+
+    def process_files(self, config, deadline):
+        for blob in self.gcs_hook.list(config["bucket"], config["prefix"]):
+            table_key, filename = self.get_dataset_and_table_from_filepath(blob)
+            last_timestamp = self.verify_table_last_timestamp_processed(table_key)
+
+            if self.is_processing_required(blob, last_timestamp, deadline):
+                self.update_table_records(blob, table_key, filename)
+                self.check_and_send_for_processing(table_key, config)
+
+    def is_processing_required(self, blob, last_timestamp, deadline):
+        current_time = datetime.now(timezone.utc)
+        return blob.time_deleted is None and (
+            blob.time_created > last_timestamp or 
+            blob.time_created < current_time - timedelta(minutes=deadline))
+
+    def update_table_records(self, blob, table_key, filename):
+        self.tables.setdefault(table_key, {
+            'size': 0,
+            'files': [], 
+            'min_time_created': datetime.max.replace(tzinfo=timezone.utc), 
+            'max_time_created': datetime.min.replace(tzinfo=timezone.utc)
+        })
+
+        self.tables[table_key]['size'] += blob.size
+        self.tables[table_key]['files'].append(filename)
+        self.tables[table_key]['min_time_created'] = min(self.tables[table_key]['min_time_created'], blob.time_created)
+        self.tables[table_key]['max_time_created'] = max(self.tables[table_key]['max_time_created'], blob.time_created)
+
+    def check_and_send_for_processing(self, table_key, config):
+        if self.tables[table_key]['size'] > config["threshold"]['size_medium']:
+            self.process_and_reset_table(table_key, config["bucket"], get_config('GCS_BUCKET_RAW_ZONE'), ProcessTopic.MEDIUM)
+        elif len(self.tables[table_key]['files']) > config["threshold"]['file_quantity']:
+            size = ProcessTopic.SMALL if self.tables[table_key]['size'] < config["threshold"]['size_small'] else ProcessTopic.MEDIUM
+            self.process_and_reset_table(table_key, config["bucket"], config["bucket"], size)
+
+    def process_and_reset_table(self, table_key, from_bucket, to_bucket, size):
+        self.send_to_process(from_bucket, to_bucket, table_key, self.tables[table_key]['files'], size)
+        self.tables[table_key] = {
+            'size': 0,
+            'files': [],
+            'min_time_created': datetime.max.replace(tzinfo=timezone.utc),
+            'max_time_created': datetime.min.replace(tzinfo=timezone.utc)
+        }
+        self.partially_processed_tables.append(table_key)
+
+    def verify_processed_tables(self, config):
+        time_threshold = datetime.now(timezone.utc) - timedelta(minutes=config["threshold"]['minutes'])
+        for directory, data in self.tables.items():
+            if data['files']:
+                self.process_based_on_file_count(directory, data, config, time_threshold)
+
+            self.update_last_timestamp(directory, data)
+
+    def process_based_on_file_count(self, directory, data, config, time_threshold):
+        if len(data['files']) == 1 and directory not in self.partially_processed_tables:
+            # only have one file that is lower than best performnce partition size in this directory
+            size = ProcessTopic.SMALL if data['size'] < config["threshold"]['size_small'] else ProcessTopic.MEDIUM
+            self.send_to_process(config["bucket"], get_config('GCS_BUCKET_RAW_ZONE'), directory, data['files'], size)
+        elif directory in self.partially_processed_tables or data['min_time_created'] < time_threshold:
+            size = ProcessTopic.SMALL if data['size'] < config["threshold"]['size_small'] else ProcessTopic.MEDIUM
+            self.send_to_process(config["bucket"], config["bucket"], directory, data['files'], size)
+
+    def update_last_timestamp(self, directory, data):
+        dataset, table = self.get_dataset_and_table_from_filepath(directory)
+        self.gcs_hook.upload_from_memory(
+            data={'processed_at': data['max_time_created'].strftime('%Y%m%d%H%M%S')},
+            bucket=get_config('GCS_BUCKET_DOCUMENT_DB'),
+            directory=f'{self.document_db_folder}/{dataset}',
+            filename=f'{table}.json',
+            add_timestamp=False)
 
     def verify_table_last_timestamp_processed(self, directory):
         logging.debug(f"Verify table last timestamp processed for {self.document_db_folder}/{directory}")
@@ -354,7 +350,7 @@ class BatchWriteDetectAggregateOperator(BaseEventOperator):
                 timestamp = info['processed_at']
                 timestamp_obj = datetime.strptime(timestamp, '%Y%m%d%H%M%S').replace(tzinfo=timezone.utc)
             except NotFound:
-                timestamp_obj = datetime(1900, 1, 1, 1, 0, 0, 227000, tzinfo=timezone.utc)
+                timestamp_obj = datetime.min.replace(tzinfo=timezone.utc)
 
             self.tables_last_timestamp_processed[directory] = timestamp_obj
             return timestamp_obj
@@ -366,22 +362,19 @@ class BatchWriteDetectAggregateOperator(BaseEventOperator):
         return dataset, table
 
     def send_to_process(self, from_bucket, to_bucket, directory, files, size):
-            self.pubsub_hook.publish(
-                project=get_config('GCP_PROJECT'),
-                topic=get_config(size),
-                data={'from_bucket': from_bucket, 'to_bucket': to_bucket, 'directory': directory, 'files': files})
+        self.pubsub_hook.publish(
+            project=get_config('GCP_PROJECT'),
+            topic=get_config(size),
+            data={'from_bucket': from_bucket, 'to_bucket': to_bucket, 'directory': directory, 'files': files})
 
-            self.reprocess = True
+        self.reprocess = True
 
     def send_to_reprocess(self, reprocess_delay, topic, data):
         reprocess_data = copy.deepcopy(data)
+        
         reprocess_data['threshold']['minutes'] = 0  # Change to zero because new files were aggreagated
-
-        if reprocess_data.get('metadata'):
-            reprocess_data['metadata']['reprocess_time'] += 1
-        else:
-            reprocess_data['metadata'] = {}
-            reprocess_data['metadata']['reprocess_time'] = 1
+        reprocess_data.setdefault('metadata', {}).setdefault('reprocess_time', 0)  # Ensurse metadata and reprocess_time exists
+        reprocess_data['metadata']['reprocess_time'] += 1
 
         self.pubsub_hook.publish(
             project=get_config('GCP_PROJECT'),

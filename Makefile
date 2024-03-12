@@ -25,3 +25,11 @@ publish-dev-version:
 	@python -m build
 	@echo "Upload package to pypi"
 	@twine upload dist/*
+
+lint:
+	@flake8 airless --count --show-source --statistics
+
+test:
+	@LOG_LEVEL=DEBUG \
+	GCS_BUCKET_RAW_ZONE=RAW \
+	pytest tests
