@@ -50,12 +50,17 @@ jobs:
         if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
     - name: Build coverage file
       run: |
-        pytest --junitxml=pytest.xml --cov-report=term-missing:skip-covered --cov=app tests/ | tee pytest-coverage.txt
+        make test | tee pytest-coverage.txt
     - name: Pytest coverage comment
       uses: MishaKav/pytest-coverage-comment@main
       with:
         pytest-coverage-path: ./pytest-coverage.txt
+        pytest-xml-coverage-path: ./cov.xml
         junitxml-path: ./pytest.xml
+        badge-title: Test Coverage
+        title: Tests 📝
+        junitxml-title: Tests Summary
+        hide-comment: true
 
   update-coverage-on-readme:
     name: Update Coverage on Readme 📄
