@@ -55,7 +55,7 @@ jobs:
       uses: MishaKav/pytest-coverage-comment@main
       with:
         pytest-coverage-path: ./pytest-coverage.txt
-        junitxml-path: ./pytest.xml
+        pytest-xml-coverage-path: ./pytest.xml
         badge-title: Test Coverage
         title: Tests 📝
         junitxml-title: Tests Summary
