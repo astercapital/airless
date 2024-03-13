@@ -1,20 +1,9 @@
 import pytest
 from datetime import datetime, timedelta, timezone
 from airless.operator.google.storage import BatchWriteDetectAggregateOperator, ProcessTopic
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, patch, call
 from google.api_core.exceptions import NotFound
 
-
-# @pytest.fixture
-# def operator():
-#     op = BatchWriteDetectAggregateOperator()
-#     # op.process_and_reset_table = MagicMock()
-#     op.send_to_process = MagicMock()
-#     op.gcs_hook = MagicMock()
-#     op.document_db_folder = 'test_folder'
-#     op.partially_processed_tables = []
-#     op.tables_last_timestamp_processed = {}
-#     return op
 
 class MockBlob:
     def __init__(self, time_created, time_deleted=None, size=None):
@@ -311,7 +300,6 @@ def test_verify_timestamp_in_memory():
         assert timestamp == expected_timestamp
 
 # Use case 2: Timestamp is fetched from bucket
-# @patch('airless.operator.google.storage.BatchWriteDetectAggregateOperator.gcs_hook', return_value=MagicMock())
 def test_verify_timestamp_fetched_from_bucket():
     operator = BatchWriteDetectAggregateOperator()
 
@@ -326,7 +314,6 @@ def test_verify_timestamp_fetched_from_bucket():
         assert timestamp == expected_timestamp_obj
 
 # Use case 3: NotFound exception handled gracefully
-# @patch('airless.operator.google.storage.BatchWriteDetectAggregateOperator.gcs_hook', return_value=MagicMock())
 def test_verify_timestamp_not_found_exception():
     operator = BatchWriteDetectAggregateOperator()
 
@@ -338,4 +325,96 @@ def test_verify_timestamp_not_found_exception():
 
         assert timestamp == datetime.min.replace(tzinfo=timezone.utc)
 
+
+
+
 ####### process_files
+
+# Use case 1: process_files with blobs that require processing
+@patch('airless.operator.google.storage.BatchWriteDetectAggregateOperator.check_and_send_for_processing', return_value=MagicMock())
+@patch('airless.operator.google.storage.BatchWriteDetectAggregateOperator.update_table_records', return_value=MagicMock())
+@patch('airless.operator.google.storage.BatchWriteDetectAggregateOperator.is_processing_required', return_value=True)
+@patch('airless.operator.google.storage.BatchWriteDetectAggregateOperator.verify_table_last_timestamp_processed', return_value=datetime.min.replace(tzinfo=timezone.utc))
+@patch('airless.operator.google.storage.BatchWriteDetectAggregateOperator.get_dataset_and_table_from_filepath', return_value=('dataset', 'table'))
+def test_process_files_with_required_processing(mock_get_dataset_and_table_from_filepath, mock_verify_table_last_timestamp_processed, mock_is_processing_required, mock_update_table_records, mock_check_and_send_for_processing):
+    operator = BatchWriteDetectAggregateOperator()
+
+    mock_blobs = [MagicMock(name=f'blob_{i}', time_created=datetime.now(timezone.utc) - timedelta(minutes=i*15)) for i in range(3)]
+    config = {"bucket": "test_bucket", "prefix": "test_prefix"}
+    deadline = 60  # in minutes
+
+    with patch.object(operator, 'gcs_hook') as mock_gcs_hook:
+        mock_gcs_hook.list.return_value = mock_blobs
+
+        operator.process_files(config, deadline)
+
+        mock_update_table_records.assert_has_calls([call(blob, 'dataset', 'table') for blob in mock_blobs])
+        mock_check_and_send_for_processing.assert_called()
+        assert mock_is_processing_required.call_count == len(mock_blobs)
+
+# Use case 2: process_files with no blobs requiring processing
+@patch('airless.operator.google.storage.BatchWriteDetectAggregateOperator.check_and_send_for_processing', return_value=MagicMock())
+@patch('airless.operator.google.storage.BatchWriteDetectAggregateOperator.update_table_records', return_value=MagicMock())
+@patch('airless.operator.google.storage.BatchWriteDetectAggregateOperator.is_processing_required', return_value=False)
+@patch('airless.operator.google.storage.BatchWriteDetectAggregateOperator.verify_table_last_timestamp_processed', return_value=datetime.min.replace(tzinfo=timezone.utc))
+@patch('airless.operator.google.storage.BatchWriteDetectAggregateOperator.get_dataset_and_table_from_filepath', return_value=('dataset', 'table'))
+def test_process_files_with_no_required_processing(mock_get_dataset_and_table_from_filepath, mock_verify_table_last_timestamp_processed, mock_is_processing_required, mock_update_table_records, mock_check_and_send_for_processing):
+    operator = BatchWriteDetectAggregateOperator()
+
+    mock_blobs = [MagicMock(name=f'blob_{i}', time_created=datetime.now(timezone.utc) - timedelta(minutes=i*15)) for i in range(3)]
+    config = {"bucket": "test_bucket", "prefix": "test_prefix"}
+    deadline = 60  # in minutes
+
+    with patch.object(operator, 'gcs_hook') as mock_gcs_hook:
+        mock_gcs_hook.list.return_value = mock_blobs
+        operator.process_files(config, deadline)
+
+        mock_update_table_records.assert_not_called()
+        mock_check_and_send_for_processing.assert_not_called()
+        assert mock_is_processing_required.call_count == len(mock_blobs)
+
+# Use case 3: process_files with mixed blobs (some require processing, some don't)
+@patch('airless.operator.google.storage.BatchWriteDetectAggregateOperator.check_and_send_for_processing', return_value=MagicMock())
+@patch('airless.operator.google.storage.BatchWriteDetectAggregateOperator.update_table_records', return_value=MagicMock())
+@patch('airless.operator.google.storage.BatchWriteDetectAggregateOperator.is_processing_required', side_effect=[True, True, False])
+@patch('airless.operator.google.storage.BatchWriteDetectAggregateOperator.verify_table_last_timestamp_processed', return_value=datetime.min.replace(tzinfo=timezone.utc))
+@patch('airless.operator.google.storage.BatchWriteDetectAggregateOperator.get_dataset_and_table_from_filepath', return_value=('dataset', 'table'))
+def test_process_files_with_mixed_blobs(mock_get_dataset_and_table_from_filepath, mock_verify_table_last_timestamp_processed, mock_is_processing_required, mock_update_table_records, mock_check_and_send_for_processing):
+    operator = BatchWriteDetectAggregateOperator()
+
+    mock_blobs = [MagicMock(name=f'blob_{i}', time_created=datetime.now(timezone.utc) - timedelta(minutes=i*15)) for i in range(3)]
+    config = {"bucket": "test_bucket", "prefix": "test_prefix"}
+    deadline = 60  # in minutes
+
+    with patch.object(operator, 'gcs_hook') as mock_gcs_hook:
+        mock_gcs_hook.list.return_value = mock_blobs
+        operator.process_files(config, deadline)
+
+        assert mock_update_table_records.call_count == 2  # First two blobs require processing
+        assert mock_check_and_send_for_processing.call_count == 2  # Called for the first two blobs that require processing
+        assert mock_is_processing_required.call_count == len(mock_blobs)
+
+# Use case 4: process_files when filepath is a folder
+@patch('airless.operator.google.storage.BatchWriteDetectAggregateOperator.check_and_send_for_processing', return_value=MagicMock())
+@patch('airless.operator.google.storage.BatchWriteDetectAggregateOperator.update_table_records', return_value=MagicMock())
+@patch('airless.operator.google.storage.BatchWriteDetectAggregateOperator.is_processing_required', side_effect=[True, True, False])
+@patch('airless.operator.google.storage.BatchWriteDetectAggregateOperator.verify_table_last_timestamp_processed', return_value=datetime.min.replace(tzinfo=timezone.utc))
+@patch('airless.operator.google.storage.BatchWriteDetectAggregateOperator.get_dataset_and_table_from_filepath', return_value=('dataset/table', ''))
+def test_process_files_when_path_is_folder(mock_get_dataset_and_table_from_filepath, mock_verify_table_last_timestamp_processed, mock_is_processing_required, mock_update_table_records, mock_check_and_send_for_processing):
+    operator = BatchWriteDetectAggregateOperator()
+
+    # Assuming blobs are in a folder structure without a specific table file
+    mock_blobs = [MagicMock(name=f'blob_{i}', time_created=datetime.now(timezone.utc) - timedelta(minutes=i*15)) for i in range(3)]
+    config = {"bucket": "test_bucket", "prefix": "test_prefix"}
+    deadline = 60  # in minutes
+
+    with patch.object(operator, 'gcs_hook') as mock_gcs_hook:
+        mock_gcs_hook.list.return_value = mock_blobs
+        operator.process_files(config, deadline)
+
+        # Assuming processing should be skipped or handled differently for folders
+        # Adjust assertions based on your actual logic for folders
+        mock_update_table_records.assert_not_called()
+        mock_check_and_send_for_processing.assert_not_called()
+        # Still checking all blobs to decide on processing needs
+        assert mock_is_processing_required.call_count == len(mock_blobs)

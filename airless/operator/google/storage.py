@@ -268,10 +268,10 @@ class BatchWriteDetectAggregateOperator(BaseEventOperator):
 
     def process_files(self, config, deadline):
         for blob in self.gcs_hook.list(config["bucket"], config["prefix"]):
-            table_key, filename = self.get_dataset_and_table_from_filepath(blob)
+            table_key, filename = self.get_dataset_and_table_from_filepath(blob.name)
             last_timestamp = self.verify_table_last_timestamp_processed(table_key)
 
-            if self.is_processing_required(blob, last_timestamp, deadline):
+            if self.is_processing_required(blob, last_timestamp, deadline) and filename:
                 self.update_table_records(blob, table_key, filename)
                 self.check_and_send_for_processing(table_key, config)
 
