@@ -278,14 +278,14 @@ class BatchWriteDetectAggregateOperator(BaseEventOperator):
     def is_processing_required(self, blob, last_timestamp, deadline):
         current_time = datetime.now(timezone.utc)
         return blob.time_deleted is None and (
-            blob.time_created > last_timestamp or 
-            blob.time_created < current_time - timedelta(minutes=deadline))
+            blob.time_created > last_timestamp or blob.time_created < current_time - timedelta(minutes=deadline)
+        )
 
     def update_table_records(self, blob, table_key, filename):
         self.tables.setdefault(table_key, {
             'size': 0,
-            'files': [], 
-            'min_time_created': datetime.max.replace(tzinfo=timezone.utc), 
+            'files': [],
+            'min_time_created': datetime.max.replace(tzinfo=timezone.utc),
             'max_time_created': datetime.min.replace(tzinfo=timezone.utc)
         })
 
@@ -371,7 +371,7 @@ class BatchWriteDetectAggregateOperator(BaseEventOperator):
 
     def send_to_reprocess(self, reprocess_delay, topic, data):
         reprocess_data = copy.deepcopy(data)
-        
+
         reprocess_data['threshold']['minutes'] = 0  # Change to zero because new files were aggreagated
         reprocess_data.setdefault('metadata', {}).setdefault('reprocess_time', 0)  # Ensurse metadata and reprocess_time exists
         reprocess_data['metadata']['reprocess_time'] += 1
@@ -463,7 +463,7 @@ class BatchAggregateParquetFilesOperator(BaseEventOperator):
         concat = None
         for f in files:
             t = parquet.read_table(f'{bucket}/{directory}/{f}', filesystem=self.fs_gcs)
-            concat = t if not concat else pa.concat_tables([t,concat])
+            concat = t if not concat else pa.concat_tables([t, concat])
 
         return concat
 

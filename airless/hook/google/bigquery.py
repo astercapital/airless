@@ -176,7 +176,7 @@ class BigqueryHook(BaseHook):
             job.result(timeout=timeout, job_retry=None)
         except TimeoutError as e:
             self.bigquery_client.cancel_job(job.job_id)
-            raise(e)
+            raise (e)
 
     def export_to_gcs(self, from_project, from_dataset, from_table, to_filepath):
         job_config = bigquery.ExtractJobConfig()
@@ -200,4 +200,4 @@ class BigqueryHook(BaseHook):
             return job.result(timeout=timeout, job_retry=None)
         except TimeoutError as e:
             self.bigquery_client.cancel_job(job.job_id)
-            raise(e)
+            raise (e)
