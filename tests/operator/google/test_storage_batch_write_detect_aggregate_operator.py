@@ -2,14 +2,19 @@ import pytest
 from datetime import datetime, timedelta, timezone
 from airless.operator.google.storage import BatchWriteDetectAggregateOperator, ProcessTopic
 from unittest.mock import MagicMock
+from google.api_core.exceptions import NotFound
 
 
 @pytest.fixture
 def operator():
     op = BatchWriteDetectAggregateOperator()
     op.process_and_reset_table = MagicMock()
+    op.send_to_process = MagicMock()
+    op.gcs_hook = MagicMock()
+    op.document_db_folder = 'test_folder'
+    op.partially_processed_tables = []
+    op.tables_last_timestamp_processed = {}
     return op
-    # return BatchWriteDetectAggregateOperator()
 
 class MockBlob:
     def __init__(self, time_created, time_deleted=None, size=None):
@@ -137,3 +142,145 @@ def test_check_and_send_no_threshold_exceeded(operator):
     }
     operator.check_and_send_for_processing(table_key, config)
     operator.process_and_reset_table.assert_not_called()
+
+
+
+####### process_based_on_file_count
+# Use case 1: Single file in directory, size below the small threshold, directory not partially processed
+def test_process_single_file_small_size_not_partially_processed(operator):
+    directory = 'test_directory'
+    data = {
+        'files': ['file1.txt'],
+        'size': 400,  # Below the SMALL size threshold
+        'min_time_created': datetime.now(timezone.utc) - timedelta(minutes=60),
+    }
+    config = {
+        'threshold': {'size_small': 500},
+        'bucket': 'test_bucket',
+    }
+    time_threshold = datetime.now(timezone.utc) - timedelta(minutes=30)
+
+    operator.process_based_on_file_count(directory, data, config, time_threshold)
+    operator.send_to_process.assert_called_once_with('test_bucket', 'RAW', directory, ['file1.txt'], ProcessTopic.SMALL)
+
+# Use case 2: Multiple files in directory, size below the small threshold, directory not partially processed
+def test_process_multiple_files_small_size_not_partially_processed(operator):
+    directory = 'test_directory'
+    data = {
+        'files': ['file1.txt', 'file2.txt'],
+        'size': 400,  # Below the SMALL size threshold
+        'min_time_created': datetime.now(timezone.utc) - timedelta(minutes=60),
+    }
+    config = {
+        'threshold': {'size_small': 500},
+        'bucket': 'test_bucket',
+    }
+    time_threshold = datetime.now(timezone.utc) - timedelta(minutes=30)
+
+    operator.process_based_on_file_count(directory, data, config, time_threshold)
+    operator.send_to_process.assert_called_once_with('test_bucket', 'test_bucket', directory, ['file1.txt', 'file2.txt'], ProcessTopic.SMALL)
+
+# Use case 3: Directory marked as partially processed, files created before threshold, size above small threshold
+def test_process_partially_processed_directory_above_small_threshold(operator):
+    directory = 'test_directory'
+    operator.partially_processed_tables.append(directory)
+    data = {
+        'files': ['file1.txt', 'file2.txt'],
+        'size': 600,  # Above the SMALL size threshold
+        'min_time_created': datetime.now(timezone.utc) - timedelta(minutes=60),
+    }
+    config = {
+        'threshold': {'size_small': 500},
+        'bucket': 'test_bucket',
+    }
+    time_threshold = datetime.now(timezone.utc) - timedelta(minutes=30)
+
+    operator.process_based_on_file_count(directory, data, config, time_threshold)
+    operator.send_to_process.assert_called_once_with('test_bucket', 'test_bucket', directory, ['file1.txt', 'file2.txt'], ProcessTopic.MEDIUM)
+
+# Use case 4: Directory marked as partially processed, files created before threshold, size below small threshold
+def test_process_partially_processed_directory_below_small_threshold(operator):
+    directory = 'test_directory'
+    operator.partially_processed_tables.append(directory)
+    data = {
+        'files': ['file1.txt', 'file2.txt'],
+        'size': 400,  # Below the SMALL size threshold
+        'min_time_created': datetime.now(timezone.utc) - timedelta(minutes=60),
+    }
+    config = {
+        'threshold': {'size_small': 500},
+        'bucket': 'test_bucket',
+    }
+    time_threshold = datetime.now(timezone.utc) - timedelta(minutes=30)
+
+    operator.process_based_on_file_count(directory, data, config, time_threshold)
+    operator.send_to_process.assert_called_once_with('test_bucket', 'test_bucket', directory, ['file1.txt', 'file2.txt'], ProcessTopic.SMALL)
+
+
+
+####### get_dataset_and_table_from_filepath
+# Use case 1: Filepath represents a table_name
+def test_get_data_when_filepath_is_a_table(operator):
+    filepath = 'dataset/table_name'
+    expected_dataset = 'dataset'
+    expected_table = 'table_name'
+
+    dataset, table = operator.get_dataset_and_table_from_filepath(filepath)
+
+    assert dataset == expected_dataset, "Dataset should be an empty string for root directory files"
+    assert table == expected_table, "Table name should be extracted correctly from root directory files"
+
+# Use case 2: Filepath represents a file
+def test_get_data_when_filepath_is_a_file(operator):
+    filepath = 'dataset/table_name/filename.file'
+    expected_folder = 'dataset/table_name'
+    expected_filename = 'filename.file'
+
+    folder, filename = operator.get_dataset_and_table_from_filepath(filepath)
+
+    assert folder == expected_folder, "Dataset should be correctly identified for nested directories"
+    assert filename == expected_filename, "Table name should be extracted correctly from nested directory paths"
+
+# Use case 3: Filepath ends with a slash (indicating a directory)
+def test_get_data_when_filepath_is_a_directory(operator):
+    filepath = '/dataset/table_name/'
+    expected_folder = '/dataset/table_name'
+    expected_filename = ''
+
+    folder, filename = operator.get_dataset_and_table_from_filepath(filepath)
+
+    assert folder == expected_folder, "Dataset should be the entire path minus the trailing slash for directory paths"
+    assert filename == expected_filename, "Table should be an empty string when filepath ends with a slash"
+
+
+
+####### verify_table_last_timestamp_processed
+# Use case 1: Timestamp is available in memory
+def test_verify_timestamp_in_memory(operator):
+    directory = 'existing_in_memory_dataset/existing_in_memory_table'
+    expected_timestamp = datetime.now().replace(tzinfo=timezone.utc)
+    operator.tables_last_timestamp_processed[directory] = expected_timestamp
+
+    timestamp = operator.verify_table_last_timestamp_processed(directory)
+
+    assert timestamp == expected_timestamp
+
+# Use case 2: Timestamp is fetched from bucket
+def test_verify_timestamp_fetched_from_bucket(operator):
+    directory = 'existing_in_bucket_dataset/existing_in_bucket_table'
+    expected_timestamp_str = '20230315010101'
+    expected_timestamp_obj = datetime.strptime(expected_timestamp_str, '%Y%m%d%H%M%S').replace(tzinfo=timezone.utc)
+    operator.gcs_hook.read_json.return_value = {'processed_at': expected_timestamp_str}
+
+    timestamp = operator.verify_table_last_timestamp_processed(directory)
+
+    assert timestamp == expected_timestamp_obj
+
+# Use case 3: NotFound exception handled gracefully
+def test_verify_timestamp_not_found_exception(operator):
+    directory = 'missing_directory'
+    operator.gcs_hook.read_json.side_effect = NotFound('Test not found error')
+
+    timestamp = operator.verify_table_last_timestamp_processed(directory)
+
+    assert timestamp == datetime.min.replace(tzinfo=timezone.utc)

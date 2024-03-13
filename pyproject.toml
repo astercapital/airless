@@ -15,5 +15,5 @@ build-backend = "setuptools.build_meta"
 
 [tool.pytest.ini_options]
 minversion = "6.0"
-addopts = "--junitxml=pytest.xml --cov-report=xml:cov.xml --cov-report=term-missing:skip-covered --cov=airless"
+addopts = "--disable-warnings --junitxml=pytest.xml --cov-report=xml:cov.xml --cov-report=term-missing:skip-covered --cov=airless"
 testpaths = ["tests"]
