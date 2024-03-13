@@ -28,9 +28,9 @@ jobs:
         if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
     - name: Lint with flake8
       uses: TrueBrain/actions-flake8@v2
-
-      # run: |
-      #   make lint
+      with:
+        path: airless
+        extra_arguments: "--config=setup.cfg --count --show-source --statistics"
 
   test:
     name: Run Tests 🧪
