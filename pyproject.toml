@@ -12,3 +12,8 @@ build-backend = "setuptools.build_meta"
 [project.urls]
 "Homepage" = "https://github.com/astercapital/airless"
 "Bug Tracker" = "https://github.com/astercapital/airless/issues"
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-v --disable-warnings --cov=airless"
+testpaths = ["tests"]
