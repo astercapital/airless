@@ -285,8 +285,8 @@ class BatchWriteDetectAggregateOperator(BaseEventOperator):
         self.tables.setdefault(table_key, {
             'size': 0,
             'files': [],
-            'min_time_created': datetime.max.replace(tzinfo=timezone.utc),
-            'max_time_created': datetime.min.replace(tzinfo=timezone.utc)
+            'min_time_created': datetime(2300,1,1,12,12,12).replace(tzinfo=timezone.utc),
+            'max_time_created': datetime(1900,1,1,12,12,12).replace(tzinfo=timezone.utc)
         })
 
         self.tables[table_key]['size'] += blob.size
@@ -306,8 +306,8 @@ class BatchWriteDetectAggregateOperator(BaseEventOperator):
         self.tables[table_key] = {
             'size': 0,
             'files': [],
-            'min_time_created': datetime.max.replace(tzinfo=timezone.utc),
-            'max_time_created': datetime.min.replace(tzinfo=timezone.utc)
+            'min_time_created': datetime(2300,1,1,12,12,12).replace(tzinfo=timezone.utc),
+            'max_time_created': datetime(1900,1,1,12,12,12).replace(tzinfo=timezone.utc)
         }
         self.partially_processed_tables.append(table_key)
 
@@ -350,7 +350,7 @@ class BatchWriteDetectAggregateOperator(BaseEventOperator):
                 timestamp = info['processed_at']
                 timestamp_obj = datetime.strptime(timestamp, '%Y%m%d%H%M%S').replace(tzinfo=timezone.utc)
             except NotFound:
-                timestamp_obj = datetime.min.replace(tzinfo=timezone.utc)
+                timestamp_obj = datetime(1900,1,1,12,12,12).replace(tzinfo=timezone.utc)
 
             self.tables_last_timestamp_processed[directory] = timestamp_obj
             return timestamp_obj
