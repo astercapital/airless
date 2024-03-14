@@ -268,7 +268,7 @@ class BatchWriteDetectAggregateOperator(BaseEventOperator):
 
     def process_files(self, config, deadline):
         for blob in self.gcs_hook.list(config["bucket"], config["prefix"]):
-            table_key, filename = self.get_dataset_and_table_from_filepath(blob.name)
+            table_key, filename = self.decompose_uri(blob.name)
             last_timestamp = self.verify_table_last_timestamp_processed(table_key)
 
             if self.is_processing_required(blob, last_timestamp, deadline) and filename:
@@ -329,7 +329,7 @@ class BatchWriteDetectAggregateOperator(BaseEventOperator):
             self.send_to_process(config["bucket"], config["bucket"], directory, data['files'], size)
 
     def update_last_timestamp(self, directory, data):
-        dataset, table = self.get_dataset_and_table_from_filepath(directory)
+        dataset, table = self.decompose_uri(directory)
         self.gcs_hook.upload_from_memory(
             data={'processed_at': data['max_time_created'].strftime('%Y%m%d%H%M%S')},
             bucket=get_config('GCS_BUCKET_DOCUMENT_DB'),
@@ -345,7 +345,7 @@ class BatchWriteDetectAggregateOperator(BaseEventOperator):
         else:
             logging.debug(f"Get timestamp from bucket {get_config('GCS_BUCKET_DOCUMENT_DB')} dataset {self.document_db_folder}/{directory}")
             try:
-                dataset, table = self.get_dataset_and_table_from_filepath(directory)
+                dataset, table = self.decompose_uri(directory)
                 info = self.gcs_hook.read_json(get_config('GCS_BUCKET_DOCUMENT_DB'), f'{self.document_db_folder}/{dataset}/{table}.json')
                 timestamp = info['processed_at']
                 timestamp_obj = datetime.strptime(timestamp, '%Y%m%d%H%M%S').replace(tzinfo=timezone.utc)
@@ -355,7 +355,7 @@ class BatchWriteDetectAggregateOperator(BaseEventOperator):
             self.tables_last_timestamp_processed[directory] = timestamp_obj
             return timestamp_obj
 
-    def get_dataset_and_table_from_filepath(self, filepath):
+    def decompose_uri(self, filepath):
         dataset = '/'.join(filepath.split('/')[:-1])
         table = filepath.split('/')[-1]
 

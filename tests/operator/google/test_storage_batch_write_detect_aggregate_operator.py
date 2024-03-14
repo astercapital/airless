@@ -243,7 +243,7 @@ def test_process_partially_processed_directory_below_small_threshold(mock_send_t
 
 
 
-####### get_dataset_and_table_from_filepath
+####### decompose_uri
 # Use case 1: Filepath represents a table_name
 def test_get_data_when_filepath_is_a_table():
     operator = BatchWriteDetectAggregateOperator()
@@ -252,7 +252,7 @@ def test_get_data_when_filepath_is_a_table():
     expected_dataset = 'dataset'
     expected_table = 'table_name'
 
-    dataset, table = operator.get_dataset_and_table_from_filepath(filepath)
+    dataset, table = operator.decompose_uri(filepath)
 
     assert dataset == expected_dataset, "Dataset should be an empty string for root directory files"
     assert table == expected_table, "Table name should be extracted correctly from root directory files"
@@ -265,7 +265,7 @@ def test_get_data_when_filepath_is_a_file():
     expected_folder = 'dataset/table_name'
     expected_filename = 'filename.file'
 
-    folder, filename = operator.get_dataset_and_table_from_filepath(filepath)
+    folder, filename = operator.decompose_uri(filepath)
 
     assert folder == expected_folder, "Dataset should be correctly identified for nested directories"
     assert filename == expected_filename, "Table name should be extracted correctly from nested directory paths"
@@ -278,7 +278,7 @@ def test_get_data_when_filepath_is_a_directory():
     expected_folder = '/dataset/table_name'
     expected_filename = ''
 
-    folder, filename = operator.get_dataset_and_table_from_filepath(filepath)
+    folder, filename = operator.decompose_uri(filepath)
 
     assert folder == expected_folder, "Dataset should be the entire path minus the trailing slash for directory paths"
     assert filename == expected_filename, "Table should be an empty string when filepath ends with a slash"
@@ -334,8 +334,8 @@ def test_verify_timestamp_not_found_exception():
 @patch('airless.operator.google.storage.BatchWriteDetectAggregateOperator.update_table_records', return_value=MagicMock())
 @patch('airless.operator.google.storage.BatchWriteDetectAggregateOperator.is_processing_required', return_value=True)
 @patch('airless.operator.google.storage.BatchWriteDetectAggregateOperator.verify_table_last_timestamp_processed', return_value=datetime(1900, 1, 1, 12, 12, 12).replace(tzinfo=timezone.utc))
-@patch('airless.operator.google.storage.BatchWriteDetectAggregateOperator.get_dataset_and_table_from_filepath', return_value=('dataset', 'table'))
-def test_process_files_with_required_processing(mock_get_dataset_and_table_from_filepath, mock_verify_table_last_timestamp_processed, mock_is_processing_required, mock_update_table_records, mock_check_and_send_for_processing):
+@patch('airless.operator.google.storage.BatchWriteDetectAggregateOperator.decompose_uri', return_value=('dataset', 'table'))
+def test_process_files_with_required_processing(mock_decompose_uri, mock_verify_table_last_timestamp_processed, mock_is_processing_required, mock_update_table_records, mock_check_and_send_for_processing):
     operator = BatchWriteDetectAggregateOperator()
 
     mock_blobs = [MagicMock(name=f'blob_{i}', time_created=datetime.now(timezone.utc) - timedelta(minutes=i*15)) for i in range(3)]
@@ -356,8 +356,8 @@ def test_process_files_with_required_processing(mock_get_dataset_and_table_from_
 @patch('airless.operator.google.storage.BatchWriteDetectAggregateOperator.update_table_records', return_value=MagicMock())
 @patch('airless.operator.google.storage.BatchWriteDetectAggregateOperator.is_processing_required', return_value=False)
 @patch('airless.operator.google.storage.BatchWriteDetectAggregateOperator.verify_table_last_timestamp_processed', return_value=datetime(1900, 1, 1, 12, 12, 12).replace(tzinfo=timezone.utc))
-@patch('airless.operator.google.storage.BatchWriteDetectAggregateOperator.get_dataset_and_table_from_filepath', return_value=('dataset', 'table'))
-def test_process_files_with_no_required_processing(mock_get_dataset_and_table_from_filepath, mock_verify_table_last_timestamp_processed, mock_is_processing_required, mock_update_table_records, mock_check_and_send_for_processing):
+@patch('airless.operator.google.storage.BatchWriteDetectAggregateOperator.decompose_uri', return_value=('dataset', 'table'))
+def test_process_files_with_no_required_processing(mock_decompose_uri, mock_verify_table_last_timestamp_processed, mock_is_processing_required, mock_update_table_records, mock_check_and_send_for_processing):
     operator = BatchWriteDetectAggregateOperator()
 
     mock_blobs = [MagicMock(name=f'blob_{i}', time_created=datetime.now(timezone.utc) - timedelta(minutes=i*15)) for i in range(3)]
@@ -377,8 +377,8 @@ def test_process_files_with_no_required_processing(mock_get_dataset_and_table_fr
 @patch('airless.operator.google.storage.BatchWriteDetectAggregateOperator.update_table_records', return_value=MagicMock())
 @patch('airless.operator.google.storage.BatchWriteDetectAggregateOperator.is_processing_required', side_effect=[True, True, False])
 @patch('airless.operator.google.storage.BatchWriteDetectAggregateOperator.verify_table_last_timestamp_processed', return_value=datetime(1900, 1, 1, 12, 12, 12).replace(tzinfo=timezone.utc))
-@patch('airless.operator.google.storage.BatchWriteDetectAggregateOperator.get_dataset_and_table_from_filepath', return_value=('dataset', 'table'))
-def test_process_files_with_mixed_blobs(mock_get_dataset_and_table_from_filepath, mock_verify_table_last_timestamp_processed, mock_is_processing_required, mock_update_table_records, mock_check_and_send_for_processing):
+@patch('airless.operator.google.storage.BatchWriteDetectAggregateOperator.decompose_uri', return_value=('dataset', 'table'))
+def test_process_files_with_mixed_blobs(mock_decompose_uri, mock_verify_table_last_timestamp_processed, mock_is_processing_required, mock_update_table_records, mock_check_and_send_for_processing):
     operator = BatchWriteDetectAggregateOperator()
 
     mock_blobs = [MagicMock(name=f'blob_{i}', time_created=datetime.now(timezone.utc) - timedelta(minutes=i*15)) for i in range(3)]
@@ -398,8 +398,8 @@ def test_process_files_with_mixed_blobs(mock_get_dataset_and_table_from_filepath
 @patch('airless.operator.google.storage.BatchWriteDetectAggregateOperator.update_table_records', return_value=MagicMock())
 @patch('airless.operator.google.storage.BatchWriteDetectAggregateOperator.is_processing_required', side_effect=[True, True, False])
 @patch('airless.operator.google.storage.BatchWriteDetectAggregateOperator.verify_table_last_timestamp_processed', return_value=datetime(1900, 1, 1, 12, 12, 12).replace(tzinfo=timezone.utc))
-@patch('airless.operator.google.storage.BatchWriteDetectAggregateOperator.get_dataset_and_table_from_filepath', return_value=('dataset/table', ''))
-def test_process_files_when_path_is_folder(mock_get_dataset_and_table_from_filepath, mock_verify_table_last_timestamp_processed, mock_is_processing_required, mock_update_table_records, mock_check_and_send_for_processing):
+@patch('airless.operator.google.storage.BatchWriteDetectAggregateOperator.decompose_uri', return_value=('dataset/table', ''))
+def test_process_files_when_path_is_folder(mock_decompose_uri, mock_verify_table_last_timestamp_processed, mock_is_processing_required, mock_update_table_records, mock_check_and_send_for_processing):
     operator = BatchWriteDetectAggregateOperator()
 
     # Assuming blobs are in a folder structure without a specific table file
@@ -422,8 +422,8 @@ def test_process_files_when_path_is_folder(mock_get_dataset_and_table_from_filep
 
 ####### update_last_timestamp
 @patch('airless.operator.google.storage.get_config', return_value='test_bucket')
-@patch('airless.operator.google.storage.BatchWriteDetectAggregateOperator.get_dataset_and_table_from_filepath', return_value=('test_dataset', 'test_table'))
-def test_update_last_timestamp_success(mock_get_dataset_and_table_from_filepath, mock_get_config):
+@patch('airless.operator.google.storage.BatchWriteDetectAggregateOperator.decompose_uri', return_value=('test_dataset', 'test_table'))
+def test_update_last_timestamp_success(mock_decompose_uri, mock_get_config):
     operator = BatchWriteDetectAggregateOperator()
     directory = 'test_directory'
     data = {'max_time_created': datetime(2023, 4, 1, 12, 0)}
@@ -440,8 +440,8 @@ def test_update_last_timestamp_success(mock_get_dataset_and_table_from_filepath,
         )
 
 @patch('airless.operator.google.storage.get_config', return_value='test_bucket')
-@patch('airless.operator.google.storage.BatchWriteDetectAggregateOperator.get_dataset_and_table_from_filepath', return_value=('test_dataset', 'test_table'))
-def test_update_last_timestamp_max_default(mock_get_dataset_and_table_from_filepath, mock_get_config):
+@patch('airless.operator.google.storage.BatchWriteDetectAggregateOperator.decompose_uri', return_value=('test_dataset', 'test_table'))
+def test_update_last_timestamp_max_default(mock_decompose_uri, mock_get_config):
     operator = BatchWriteDetectAggregateOperator()
     directory = 'test_directory'
     data = {'max_time_created': datetime(1900, 1, 1, 12, 12, 12).replace(tzinfo=timezone.utc)}
@@ -458,8 +458,8 @@ def test_update_last_timestamp_max_default(mock_get_dataset_and_table_from_filep
         )
 
 @patch('airless.operator.google.storage.get_config', return_value='test_bucket')
-@patch('airless.operator.google.storage.BatchWriteDetectAggregateOperator.get_dataset_and_table_from_filepath', return_value=('test_dataset', 'test_table'))
-def test_update_last_timestamp_not_found_exception(mock_get_dataset_and_table_from_filepath, mock_get_config):
+@patch('airless.operator.google.storage.BatchWriteDetectAggregateOperator.decompose_uri', return_value=('test_dataset', 'test_table'))
+def test_update_last_timestamp_not_found_exception(mock_decompose_uri, mock_get_config):
     operator = BatchWriteDetectAggregateOperator()
     directory = 'test_directory'
     data = {'max_time_created': datetime(2023, 4, 1, 12, 0)}
@@ -473,8 +473,8 @@ def test_update_last_timestamp_not_found_exception(mock_get_dataset_and_table_fr
         mock_gcs_hook.upload_from_memory.assert_called_once()
 
 @patch('airless.operator.google.storage.get_config', return_value='test_bucket')
-@patch('airless.operator.google.storage.BatchWriteDetectAggregateOperator.get_dataset_and_table_from_filepath', return_value=('test_dataset', 'test_table'))
-def test_update_last_timestamp_invalid_data_format(mock_get_dataset_and_table_from_filepath, mock_get_config):
+@patch('airless.operator.google.storage.BatchWriteDetectAggregateOperator.decompose_uri', return_value=('test_dataset', 'test_table'))
+def test_update_last_timestamp_invalid_data_format(mock_decompose_uri, mock_get_config):
     operator = BatchWriteDetectAggregateOperator()
     directory = 'test_directory'
     # Passing invalid data format (missing 'max_time_created')
