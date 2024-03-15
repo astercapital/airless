@@ -27,10 +27,15 @@ publish-dev-version:
 	@twine upload dist/*
 
 lint:
+	@make clean
 	@flake8 airless --count --show-source --statistics
 
 test:
+	@make clean
 	@LOG_LEVEL=DEBUG \
 	GCS_BUCKET_RAW_ZONE=RAW \
 	GCS_BUCKET_DOCUMENT_DB=DOCUMENT_DB \
 	pytest tests
+
+clean:
+	@find . -type d -name '__pycache__' -exec rm -r {} +

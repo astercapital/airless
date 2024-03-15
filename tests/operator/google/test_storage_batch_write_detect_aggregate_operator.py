@@ -96,14 +96,49 @@ def test_update_table_records_size_files_update():
 
 
 
+####### process_and_reset_table
+# Use case 1: Function called one single time
+@patch('airless.operator.google.storage.BatchWriteDetectAggregateOperator.send_to_process', return_value=MagicMock())
+def test_default_process_and_reset_table(mock_send_to_process):
+    operator = BatchWriteDetectAggregateOperator()
+    table_key = 'test_table'
+    from_bucket = 'source_bucket'
+    to_bucket = 'destination_bucket'
+    size = 1000
+    
+    # Setup a table with initial values
+    operator.tables[table_key] = {
+        'size': 950,
+        'files': ['file1.txt', 'file2.txt'],
+        'min_time_created': datetime(2021, 1, 1, 12, 12, 12, tzinfo=timezone.utc),
+        'max_time_created': datetime(2021, 1, 1, 13, 12, 12, tzinfo=timezone.utc)
+    }
+
+    # Call the method under test
+    operator.process_and_reset_table(table_key, from_bucket, to_bucket, size)
+
+    # Verify send_to_process was called correctly
+    mock_send_to_process.assert_called_once_with(from_bucket, to_bucket, table_key, ['file1.txt', 'file2.txt'], size)
+
+    # Verify the table is reset correctly
+    expected_reset_table = {
+        'size': 0,
+        'files': [],
+        'min_time_created': datetime(2021, 1, 1, 12, 12, 12, tzinfo=timezone.utc),
+        'max_time_created': datetime(2021, 1, 1, 13, 12, 12, tzinfo=timezone.utc)
+    }
+    assert operator.tables[table_key] == expected_reset_table, "Table details were not reset correctly."
+
+    # Verify the table key is appended to the partially_processed_tables
+    assert table_key in operator.partially_processed_tables, "Table key was not appended to partially_processed_tables."
+
+
+
 ####### check_and_send_for_processing
 # Use case 1: Table size exceeds the medium size threshold
 @patch('airless.operator.google.storage.BatchWriteDetectAggregateOperator.process_and_reset_table', return_value=MagicMock())
 def test_check_and_send_size_exceeds_medium(mock_process_and_reset_table):
     operator = BatchWriteDetectAggregateOperator()
-    # operator.document_db_folder = 'test_folder'
-    # operator.partially_processed_tables = []
-    # operator.tables_last_timestamp_processed = {}
 
     table_key = 'test_table'
     operator.tables[table_key] = {'size': 1100, 'files': ['file1.txt', 'file2.txt'], 'min_time_created': datetime.now(timezone.utc), 'max_time_created': datetime.now(timezone.utc)}

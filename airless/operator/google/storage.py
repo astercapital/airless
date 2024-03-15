@@ -267,6 +267,11 @@ class BatchWriteDetectAggregateOperator(BaseEventOperator):
             self.send_to_reprocess(reprocess_delay, topic, data)
 
     def process_files(self, config, deadline):
+        # blobs = list(self.gcs_hook.list(config["bucket"], config["prefix"]))
+        # blobs.sort(key=lambda x: x.time_created)
+
+        # for blob in blobs:
+
         for blob in self.gcs_hook.list(config["bucket"], config["prefix"]):
             table_key, filename = self.decompose_uri(blob.name)
             last_timestamp = self.verify_table_last_timestamp_processed(table_key)
@@ -306,8 +311,8 @@ class BatchWriteDetectAggregateOperator(BaseEventOperator):
         self.tables[table_key] = {
             'size': 0,
             'files': [],
-            'min_time_created': datetime(2300, 1, 1, 12, 12, 12).replace(tzinfo=timezone.utc),
-            'max_time_created': datetime(1900, 1, 1, 12, 12, 12).replace(tzinfo=timezone.utc)
+            'min_time_created': self.tables[table_key]['min_time_created'],
+            'max_time_created': self.tables[table_key]['max_time_created']
         }
         self.partially_processed_tables.append(table_key)
 
