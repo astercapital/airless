@@ -6,3 +6,8 @@ dist/
 .terraform/
 *.tfstate
 *.tfstate.backup
+__pycache__/
+
+.coverage
+pytest.xml
+cov.xml

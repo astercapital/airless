@@ -1,5 +1,7 @@
 
 **unreleased**
+- [Refactor] Rewrite logic `BatchWriteDetectAggregateOperator` to be more clear
+- [Feature] Write tests for `BatchWriteDetectAggregateOperator`
 
 **v0.0.65**
 - [Feature] Allow slack hook and operator to use parameters `response_url`, `response_type` and `replace_original`
