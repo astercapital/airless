@@ -1,5 +1,7 @@
 
 **unreleased**
+
+**v0.0.66**
 - [Refactor] Rewrite logic `BatchWriteDetectAggregateOperator` to be more clear
 - [Feature] Write tests for `BatchWriteDetectAggregateOperator`
 
