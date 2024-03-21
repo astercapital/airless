@@ -1,5 +1,6 @@
 
 **unreleased**
+- [Refactor] Change GCS batch size to 100
 
 **v0.0.66**
 - [Refactor] Rewrite logic `BatchWriteDetectAggregateOperator` to be more clear

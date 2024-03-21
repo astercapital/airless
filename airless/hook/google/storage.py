@@ -136,7 +136,7 @@ class GcsHook(BaseHook):
         # the copy operation is faster because it can be sent in batches, which rewrite can't
         # but it can only be used for small files, it can fail to larger files
 
-        batch_size = 1000
+        batch_size = 100
         count = 0
 
         while count < len(blobs):
@@ -162,7 +162,7 @@ class GcsHook(BaseHook):
         self.delete_blobs(blobs)
 
     def delete_blobs(self, blobs):
-        batch_size = 1000
+        batch_size = 100
         count = 0
 
         while count < len(blobs):
