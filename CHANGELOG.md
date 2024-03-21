@@ -1,5 +1,7 @@
 
 **unreleased**
+
+**v0.0.67**
 - [Refactor] Change GCS batch size to 100
 
 **v0.0.66**
