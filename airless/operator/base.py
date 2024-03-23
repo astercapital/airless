@@ -169,7 +169,7 @@ class BaseHttpOperator(BaseOperator):
             }
             self.trigger_base_url = request.base_url
 
-            self.execute(request)
+            return self.execute(request)
 
         except Exception as e:
             self.report_error(f'{str(e)}\n{traceback.format_exc()}')
