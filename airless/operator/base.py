@@ -19,6 +19,7 @@ class BaseOperator():
         self.pubsub_hook = PubsubHook()
         self.trigger_type = None
         self.message_id = None
+        self.has_error = False
 
     def extract_message_id(self, cloud_event):
         return cloud_event['id']
@@ -34,6 +35,8 @@ class BaseOperator():
             project=get_config('GCP_PROJECT'),
             topic=get_config('PUBSUB_TOPIC_ERROR'),
             data=error_obj)
+
+        has_error = True
 
     def build_error_message(self, message, data):
         raise NotImplementedError()
@@ -120,8 +123,9 @@ class BaseEventOperator(BaseOperator):
 
             self.execute(self.trigger_event_data, self.trigger_event_topic)
 
-            tasks = self.trigger_event_data.get('metadata', {}).get('run_next', [])
-            self.run_next(tasks)
+            if not self.has_error:
+                tasks = self.trigger_event_data.get('metadata', {}).get('run_next', [])
+                self.run_next(tasks)
 
         except Exception as e:
             self.report_error(f'{str(e)}\n{traceback.format_exc()}')
