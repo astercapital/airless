@@ -36,7 +36,7 @@ class BaseOperator():
             topic=get_config('PUBSUB_TOPIC_ERROR'),
             data=error_obj)
 
-        has_error = True
+        self.has_error = True
 
     def build_error_message(self, message, data):
         raise NotImplementedError()
