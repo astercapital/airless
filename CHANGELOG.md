@@ -1,5 +1,7 @@
 
 **unreleased**
+
+**v0.0.68**
 - [Feature] Return custom http response from operator
 - [Feature] Do not execute next tasks if an error was thrown
 
