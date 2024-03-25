@@ -1,5 +1,7 @@
 
 **unreleased**
+- [Feature] Return custom http response from operator
+- [Feature] Do not execute next tasks if an error was thrown
 
 **v0.0.67**
 - [Refactor] Change GCS batch size to 100
