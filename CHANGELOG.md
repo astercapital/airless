@@ -1,5 +1,6 @@
 
 **unreleased**
+- [Refactor] Remove old batch detect/aggregate functions
 
 **v0.0.68**
 - [Feature] Return custom http response from operator
