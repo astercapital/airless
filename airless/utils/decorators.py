@@ -10,7 +10,7 @@ def deprecatedF(func):
             cls_name = func.__self__.__class__.__name__
         else:
             cls_name = func.__module__
-        message = f"This function is deprecated ---- {cls_name}.{func.__name__}."
+        message = f"This function is deprecated {cls_name}.{func.__name__}."
 
         warnings.simplefilter('always', DeprecationWarning)  # turn off filter
         warnings.warn(message, category=DeprecationWarning, stacklevel=2)
