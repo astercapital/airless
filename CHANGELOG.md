@@ -1,6 +1,8 @@
 
 **unreleased**
 - [Refactor] Remove old batch detect/aggregate functions
+- [Feature] Add new service base class
+- [Feature] Create deprecated decorators
 
 **v0.0.68**
 - [Feature] Return custom http response from operator
