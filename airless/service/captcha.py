@@ -7,5 +7,5 @@ class CaptchaService(BaseService):
     def __init__(self):
         super().__init__()
 
-    def run(self, version, key, url, action='verify'):
+    def solve(self, version, key, url, action='verify'):
         raise NotImplementedError()
