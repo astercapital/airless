@@ -1,9 +1,9 @@
 
 from airless.config import get_config
-from airless.utils.decorators import deprecated
+from airless.utils.decorators import deprecatedCls
 
 
-@deprecated
+@deprecatedCls
 class PubsubToBqDto():
 
     def __init__(self, event_id, resource, to_project, to_dataset, to_table, to_schema, to_partition_column,
