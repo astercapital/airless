@@ -19,6 +19,7 @@ def deprecatedF(func):
         return func(*args, **kwargs)
     return wrapper
 
+
 def deprecatedCls(cls):
     class NewCls(cls):
         def __init__(self, *args, **kwargs):
