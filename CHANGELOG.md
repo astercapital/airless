@@ -1,5 +1,7 @@
 
 **unreleased**
+
+**v0.0.69**
 - [Refactor] Remove old batch detect/aggregate functions
 - [Feature] Add new service base class
 - [Feature] Create deprecated decorators
