@@ -1,5 +1,6 @@
 
 **unreleased**
+- [Feature] Add namespace in setuptools
 
 **v0.0.69**
 - [Refactor] Remove old batch detect/aggregate functions
