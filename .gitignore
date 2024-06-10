@@ -11,3 +11,6 @@ __pycache__/
 .coverage
 pytest.xml
 cov.xml
+
+Pipfile.lock
+Pipfile
