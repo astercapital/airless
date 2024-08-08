@@ -2,6 +2,8 @@
 import os
 import re
 
+from datetime import datetime
+
 from airless.hook.file.file import FileHook
 from airless.hook.google.storage import GcsHook
 from airless.operator.base import BaseEventOperator
@@ -45,12 +47,13 @@ class FileUrlToGcsOperator(BaseEventOperator):
             directory = dest.get('directory', f"{dest.get('dataset')}/{dest.get('table')}/{dest.get('mode')}")
             remove_null_byte = dest.get('remove_null_byte')
             regex = dest.get('regex', '.*')
+            time_partition = dest.get('time_partition', False)
 
             if re.search(regex, local_filepath, re.IGNORECASE):
 
                 if remove_null_byte:
                     self.remove_null_byte(local_filepath)
-                self.gcs_hook.upload(local_filepath, bucket, directory)
+                self.gcs_hook.upload(local_filepath, bucket, directory + (f'/date={datetime.today().strftime("%Y-%m-%d")}' if time_partition else ''))
 
                 if local_filepath != original_filepath:  # revert to original filename
                     local_filepath = self.file_hook.rename(
