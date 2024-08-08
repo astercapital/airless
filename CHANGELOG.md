@@ -1,5 +1,7 @@
 
 **unreleased**
+
+**v0.0.71**
 - [Feature] Allow file url to gcs operator to save file to a date partitioned directory structure
 
 **v0.0.70**
