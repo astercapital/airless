@@ -72,6 +72,7 @@ class GcsHook(BaseHook):
             compression='GZIP',
             filesystem=gcs
         )
+        return output_filepath
 
     def upload(self, local_filepath, bucket_name, directory):
         filename = self.file_hook.extract_filename(local_filepath)
