@@ -51,7 +51,7 @@ class GcsHook(BaseHook):
         local_filename = self.file_hook.get_tmp_filepath(filename, add_timestamp)
         try:
             self.file_hook.write(local_filename, data)
-            self.upload(local_filename, bucket, directory)
+            return self.upload(local_filename, bucket, directory)
 
         finally:
             if os.path.exists(local_filename):
@@ -64,18 +64,21 @@ class GcsHook(BaseHook):
         local_filename = self.file_hook.get_tmp_filepath(filename, add_timestamp)
         local_filename = local_filename.split('/')[-1]
 
+        output_filepath = f'{bucket}/{directory}/{local_filename}'
+
         parquet.write_table(
             table_casted,
-            f'{bucket}/{directory}/{local_filename}',
+            output_filepath,
             compression='GZIP',
             filesystem=gcs
         )
 
-    def upload(self, local_filepath, bucket, directory):
+    def upload(self, local_filepath, bucket_name, directory):
         filename = self.file_hook.extract_filename(local_filepath)
-        bucket = self.storage_client.bucket(bucket)
+        bucket = self.storage_client.bucket(bucket_name)
         blob = bucket.blob(f"{directory}/{filename}")
         blob.upload_from_filename(local_filepath)
+        return f"{bucket_name}/{directory}/{filename}"
 
     def upload_folder(self, local_path, bucket, gcs_path):
         for root, _, files in os.walk(local_path):
@@ -227,7 +230,7 @@ class GcsDatalakeHook(GcsHook):
                     ('_json', pa.string()),
                     ('_created_at', pa.timestamp('us'))
                 ])
-                self.upload_parquet_from_memory(
+                return self.upload_parquet_from_memory(
                     data=prepared_rows,
                     bucket=get_config('GCS_BUCKET_LANDING_ZONE'),
                     directory=f'{dataset}/{table}/{time_partition_name}={now.strftime("%Y-%m-%d")}',
@@ -235,7 +238,7 @@ class GcsDatalakeHook(GcsHook):
                     add_timestamp=True,
                     schema=schema)
             else:
-                self.upload_from_memory(
+                return self.upload_from_memory(
                     data=prepared_rows,
                     bucket=get_config('GCS_BUCKET_LANDING_ZONE'),
                     directory=f'{dataset}/{table}',
