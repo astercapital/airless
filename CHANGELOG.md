@@ -1,5 +1,7 @@
 
 **unreleased**
+
+**v0.0.72**
 - [Feature] Return target filename after uploading data to GCS
 
 **v0.0.71**
