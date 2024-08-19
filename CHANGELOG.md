@@ -1,5 +1,6 @@
 
 **unreleased**
+- [Feature] Return target filename after uploading data to GCS
 
 **v0.0.71**
 - [Feature] Allow file url to gcs operator to save file to a date partitioned directory structure
