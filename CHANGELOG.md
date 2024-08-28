@@ -1,5 +1,6 @@
 
 **unreleased**
+- [Feature] Update `bigquery` package
 
 **v0.0.72**
 - [Feature] Return target filename after uploading data to GCS
