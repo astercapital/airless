@@ -1,6 +1,6 @@
 [project]
 name = "airless-core"
-version = "0.1.0.dev2"
+version = "0.1.0.dev3"
 description = "Airless is a package that aims to build a serverless and lightweight orchestration platform, creating workflows of multiple tasks being executed on FaaS platform"
 readme = "README.md"
 dynamic = ["dependencies", "requires-python"]

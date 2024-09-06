@@ -3,7 +3,7 @@ name: Publish Python 🐍 distributions 📦 to PyPI
 on:
   push:
     tags:
-      - '*|*'  # Match pattern for tags like airless-captcha:v0.21.2
+      - '*|*'
 
 jobs:
   build-n-publish:
@@ -18,8 +18,8 @@ jobs:
         version=$(echo $tag_name | cut -d "|" -f 2)
         echo "Package: $package_name"
         echo "Version: $version"
-        echo "::set-output name=package::$package_name"
-        echo "::set-output name=version::$version"
+        echo "package=$package_name" >> $GITHUB_ENV
+        echo "version=$version" >> $GITHUB_ENV
     - name: Checkout repository
       uses: actions/checkout@v3
     - name: Set up Python 3.10
@@ -42,7 +42,7 @@ jobs:
       id: changelog
       run: |
         changelog=$(awk '/^\*\*v[0-9]+\.[0-9]+\.[0-9]+\*\*/{p=0}p;/^\*\*v'${{ steps.tag_split.outputs.version }}'\*\*/{p=1}' packages/${{ steps.tag_split.outputs.package }}/CHANGELOG.md)
-        echo "::set-output name=changelog::$changelog"
+        echo "changelog=$changelog" >> $GITHUB_ENV
     - name: Create GitHub Release
       uses: actions/create-release@v1
       with:
@@ -52,4 +52,4 @@ jobs:
         draft: false
         prerelease: false
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.PAT }}
