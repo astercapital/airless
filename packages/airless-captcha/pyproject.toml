@@ -1,0 +1,19 @@
+[project]
+name = "airless-captcha"
+version = "0.0.4.dev5"
+description = "Airless Captcha is a package that resolve captcha challenge and based on airless framework"
+readme = "README.md"
+dynamic = ["dependencies", "requires-python"]
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project.urls]
+"Homepage" = "https://github.com/astercapital/airless"
+"Bug Tracker" = "https://github.com/astercapital/airless/issues"
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "--capture=sys --cache-clear --disable-warnings --junitxml=pytest.xml --cov-report=xml:cov.xml --cov-report=term-missing:skip-covered --cov=providers"
+testpaths = ["tests"]

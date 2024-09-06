@@ -1,0 +1,16 @@
+# Distribution / packaging
+dist/
+*.egg-info/
+
+.terraform.lock.hcl
+.terraform/
+*.tfstate
+*.tfstate.backup
+__pycache__/
+
+.coverage
+pytest.xml
+cov.xml
+
+Pipfile.lock
+Pipfile
