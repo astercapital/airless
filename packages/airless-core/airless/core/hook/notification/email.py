@@ -7,10 +7,10 @@ from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.application import MIMEApplication
 
-from airless.hook.base import BaseHook
-from airless.hook.google.secret_manager import SecretManagerHook
+from airless.core.hook.base import BaseHook
+from airless.core.hook.google.secret_manager import SecretManagerHook
 
-from airless.config import get_config
+from airless.core.config import get_config
 
 
 class EmailHook(BaseHook):

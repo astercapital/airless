@@ -1,8 +1,8 @@
 
-from airless.config import get_config
-from airless.operator.base import BaseEventOperator
-from airless.hook.google.secret_manager import SecretManagerHook
-from airless.hook.notification.slack import SlackHook
+from airless.core.config import get_config
+from airless.core.operator.base import BaseEventOperator
+from airless.core.hook.google.secret_manager import SecretManagerHook
+from airless.core.hook.notification.slack import SlackHook
 
 
 class SlackSendOperator(BaseEventOperator):

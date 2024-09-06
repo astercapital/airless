@@ -3,8 +3,8 @@ import json
 
 from google.cloud import pubsub_v1
 
-from airless.hook.base import BaseHook
-from airless.config import get_config
+from airless.core.hook.base import BaseHook
+from airless.core.config import get_config
 
 
 class PubsubHook(BaseHook):

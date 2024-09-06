@@ -1,7 +1,7 @@
 
-from airless.operator.base import BaseEventOperator
+from airless.core.operator.base import BaseEventOperator
 
-from airless.config import get_config
+from airless.core.config import get_config
 
 
 class RedirectOperator(BaseEventOperator):

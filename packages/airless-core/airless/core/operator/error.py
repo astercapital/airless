@@ -4,9 +4,9 @@ import time
 
 from datetime import datetime
 
-from airless.config import get_config
-from airless.dto.pubsub_to_bq import PubsubToBqDto
-from airless.operator.base import BaseEventOperator
+from airless.core.config import get_config
+from airless.core.dto.pubsub_to_bq import PubsubToBqDto
+from airless.core.operator.base import BaseEventOperator
 
 
 class ErrorReprocessOperator(BaseEventOperator):

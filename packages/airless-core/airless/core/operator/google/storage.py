@@ -5,11 +5,11 @@ from datetime import datetime, timedelta
 
 from google.api_core.exceptions import NotFound
 
-from airless.config import get_config
-from airless.hook.google.bigquery import BigqueryHook
-from airless.hook.google.storage import GcsHook
-from airless.hook.file.file import FileHook
-from airless.operator.base import BaseFileOperator, BaseEventOperator
+from airless.core.config import get_config
+from airless.core.hook.google.bigquery import BigqueryHook
+from airless.core.hook.google.storage import GcsHook
+from airless.core.hook.file.file import FileHook
+from airless.core.operator.base import BaseFileOperator, BaseEventOperator
 
 
 class FileDetectOperator(BaseFileOperator):

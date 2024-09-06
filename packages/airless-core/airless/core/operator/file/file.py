@@ -4,9 +4,9 @@ import re
 
 from datetime import datetime
 
-from airless.hook.file.file import FileHook
-from airless.hook.google.storage import GcsHook
-from airless.operator.base import BaseEventOperator
+from airless.core.hook.file.file import FileHook
+from airless.core.hook.google.storage import GcsHook
+from airless.core.operator.base import BaseEventOperator
 
 
 class FileUrlToGcsOperator(BaseEventOperator):

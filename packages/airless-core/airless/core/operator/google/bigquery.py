@@ -5,11 +5,11 @@ import re
 from datetime import datetime
 from unidecode import unidecode
 
-from airless.config import get_config
-from airless.dto.pubsub_to_bq import PubsubToBqDto
-from airless.hook.google.bigquery import BigqueryHook
-from airless.hook.google.storage import GcsHook
-from airless.operator.base import BaseEventOperator
+from airless.core.config import get_config
+from airless.core.dto.pubsub_to_bq import PubsubToBqDto
+from airless.core.hook.google.bigquery import BigqueryHook
+from airless.core.hook.google.storage import GcsHook
+from airless.core.operator.base import BaseEventOperator
 
 
 class GcsQueryToBigqueryOperator(BaseEventOperator):

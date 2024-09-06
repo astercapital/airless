@@ -1,7 +1,7 @@
 
 import requests
 
-from airless.hook.base import BaseHook
+from airless.core.hook.base import BaseHook
 
 
 class SlackHook(BaseHook):

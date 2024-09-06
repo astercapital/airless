@@ -1,8 +1,8 @@
 
 import os
 
-from airless.hook.file.ftp import FtpHook
-from airless.operator.file.file import FileUrlToGcsOperator
+from airless.core.hook.file.ftp import FtpHook
+from airless.core.operator.file.file import FileUrlToGcsOperator
 
 
 class FtpToGcsOperator(FileUrlToGcsOperator):

@@ -1,6 +1,6 @@
-from airless.operator.base import BaseEventOperator
-from airless.hook.notification.email import EmailHook
-from airless.hook.google.storage import GcsHook
+from airless.core.operator.base import BaseEventOperator
+from airless.core.hook.notification.email import EmailHook
+from airless.core.hook.google.storage import GcsHook
 
 
 class EmailSendOperator(BaseEventOperator):

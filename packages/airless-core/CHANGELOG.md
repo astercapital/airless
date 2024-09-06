@@ -1,8 +1,9 @@
 
 **unreleased**
 
-**v0.1.0.dev6**
-- [Feature] Just a test
+**v0.1.0**
+- [Feature] Split packages
+- [Feature] 
 
 **v0.0.73**
 - [Feature] Update `bigquery` package

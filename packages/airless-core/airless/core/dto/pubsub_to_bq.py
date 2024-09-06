@@ -1,6 +1,6 @@
 
-from airless.config import get_config
-from airless.utils.decorators import deprecatedCls
+from airless.core.config import get_config
+from airless.core.utils.decorators import deprecatedCls
 
 
 @deprecatedCls

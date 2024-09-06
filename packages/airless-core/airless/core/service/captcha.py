@@ -1,5 +1,5 @@
 
-from airless.service.base import BaseService
+from airless.core.service.base import BaseService
 
 
 class CaptchaService(BaseService):

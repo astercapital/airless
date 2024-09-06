@@ -1,7 +1,7 @@
 
 import functions_framework
 
-from airless.config import get_config
+from airless.core.config import get_config
 
 exec(f'{get_config("OPERATOR_IMPORT")} as op')
 

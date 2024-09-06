@@ -7,7 +7,7 @@ import uuid
 
 from datetime import datetime
 
-from airless.hook.base import BaseHook
+from airless.core.hook.base import BaseHook
 
 
 class FileHook(BaseHook):

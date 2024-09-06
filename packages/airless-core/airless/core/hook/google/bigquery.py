@@ -3,7 +3,7 @@ from concurrent.futures._base import TimeoutError
 from google.cloud import bigquery
 from google.cloud.exceptions import NotFound
 
-from airless.hook.base import BaseHook
+from airless.core.hook.base import BaseHook
 
 
 class BigqueryHook(BaseHook):
