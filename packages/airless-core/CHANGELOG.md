@@ -1,7 +1,7 @@
 
 **unreleased**
 
-**v0.1.0.dev5**
+**v0.1.0.dev6**
 - [Feature] Just a test
 
 **v0.0.73**

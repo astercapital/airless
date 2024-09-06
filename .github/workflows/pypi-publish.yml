@@ -41,13 +41,13 @@ jobs:
     - name: Extract changelog for package
       id: changelog
       run: |
-        changelog=$(awk '/^\*\*v[0-9]+\.[0-9]+\.[0-9]+\*\*/{p=0}p;/^\*\*v'${{ env.version }}'\*\*/{p=1}' packages/${{ env.package }}/CHANGELOG.md)
+        changelog=$(awk '/^\*\*v[0-9]+\.[0-9]+\.[0-9]+\*\*/{p=0}p;/^\*\*'${{ env.version }}'\*\*/{p=1}' packages/${{ env.package }}/CHANGELOG.md)
         echo "changelog=$changelog" >> $GITHUB_ENV
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v2
       with:
         tag_name: ${{ github.ref }}
-        release_name: ${{ env.package }} v${{ env.version }}
+        name: ${{ env.package }} - v${{ env.version }}
         body: ${{ env.changelog }}
         draft: false
         prerelease: false
