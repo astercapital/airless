@@ -44,7 +44,7 @@ jobs:
         changelog=$(awk '/^\*\*v[0-9]+\.[0-9]+\.[0-9]+\*\*/{p=0}p;/^\*\*v'${{ env.version }}'\*\*/{p=1}' packages/${{ env.package }}/CHANGELOG.md)
         echo "changelog=$changelog" >> $GITHUB_ENV
     - name: Create GitHub Release
-      uses: actions/create-release@v1
+      uses: softprops/action-gh-release@v2
       with:
         tag_name: ${{ github.ref }}
         release_name: ${{ env.package }} v${{ env.version }}
