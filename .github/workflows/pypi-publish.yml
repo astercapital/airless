@@ -34,7 +34,7 @@ name: Publish Python 🐍 distributions 📦 to PyPI
 on:
   push:
     tags:
-      - '*:*'  # Match pattern for tags like airless-captcha:v0.21.2
+      - '*|*'  # Match pattern for tags like airless-captcha:v0.21.2
 
 jobs:
   build-n-publish:
@@ -45,8 +45,8 @@ jobs:
       id: tag_split
       run: |
         tag_name=${GITHUB_REF#refs/tags/}
-        package_name=$(echo $tag_name | cut -d ":" -f 1)
-        version=$(echo $tag_name | cut -d ":" -f 2)
+        package_name=$(echo $tag_name | cut -d "|" -f 1)
+        version=$(echo $tag_name | cut -d "|" -f 2)
         echo "Package: $package_name"
         echo "Version: $version"
         echo "::set-output name=package::$package_name"
