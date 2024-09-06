@@ -47,7 +47,7 @@ jobs:
       uses: softprops/action-gh-release@v2
       with:
         tag_name: ${{ github.ref }}
-        name: ${{ env.package }} - v${{ env.version }}
+        name: ${{ env.package }} ${{ env.version }}
         body: ${{ env.changelog }}
         draft: false
         prerelease: false
