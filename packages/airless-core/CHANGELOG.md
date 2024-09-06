@@ -1,6 +1,8 @@
 
 **unreleased**
 
+**v0.1.0.dev2**
+
 **v0.0.73**
 - [Feature] Update `bigquery` package
 

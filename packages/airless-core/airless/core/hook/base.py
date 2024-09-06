@@ -1,7 +1,7 @@
 
 import logging
 
-from airless.config import get_config
+from airless.core.config import get_config
 
 
 class BaseHook():
