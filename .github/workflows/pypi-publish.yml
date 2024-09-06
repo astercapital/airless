@@ -31,23 +31,23 @@ jobs:
         python -m pip install -r requirements-dev.txt
     - name: Build a binary wheel
       run: |
-        cd packages/${{ steps.tag_split.outputs.package }}
+        cd packages/${{ env.package }}
         python -m build
     - name: Publish distribution 📦 to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
         password: ${{ secrets.PYPI_API_TOKEN }}
-        packages-dir: packages/${{ steps.tag_split.outputs.package }}/dist
+        packages-dir: packages/${{ env.package }}/dist
     - name: Extract changelog for package
       id: changelog
       run: |
-        changelog=$(awk '/^\*\*v[0-9]+\.[0-9]+\.[0-9]+\*\*/{p=0}p;/^\*\*v'${{ steps.tag_split.outputs.version }}'\*\*/{p=1}' packages/${{ steps.tag_split.outputs.package }}/CHANGELOG.md)
+        changelog=$(awk '/^\*\*v[0-9]+\.[0-9]+\.[0-9]+\*\*/{p=0}p;/^\*\*v'${{ env.version }}'\*\*/{p=1}' packages/${{ env.package }}/CHANGELOG.md)
         echo "changelog=$changelog" >> $GITHUB_ENV
     - name: Create GitHub Release
       uses: actions/create-release@v1
       with:
         tag_name: ${{ github.ref }}
-        release_name: ${{ steps.tag_split.outputs.package }} v${{ steps.tag_split.outputs.version }}
+        release_name: ${{ env.package }} v${{ env.version }}
         body: ${{ steps.changelog.outputs.changelog }}
         draft: false
         prerelease: false
