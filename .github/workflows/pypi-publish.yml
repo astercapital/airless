@@ -48,7 +48,7 @@ jobs:
       with:
         tag_name: ${{ github.ref }}
         release_name: ${{ env.package }} v${{ env.version }}
-        body: ${{ steps.changelog.outputs.changelog }}
+        body: ${{ env.changelog }}
         draft: false
         prerelease: false
       env:
