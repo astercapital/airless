@@ -6,10 +6,12 @@ from datetime import datetime, timedelta
 from google.api_core.exceptions import NotFound
 
 from airless.core.config import get_config
-from airless.core.hook.google.bigquery import BigqueryHook
-from airless.core.hook.google.storage import GcsHook
+from airless.core.utils.decorators import deprecatedCls
 from airless.core.hook.file import FileHook
 from airless.core.operator.base import BaseFileOperator, BaseEventOperator
+
+from airless.google.cloud.bigquery.hook import BigqueryHook
+from airless.google.cloud.storage.hook import GcsHook
 
 
 class FileDetectOperator(BaseFileOperator):
@@ -170,6 +172,7 @@ class FileToBigqueryOperator(BaseEventOperator):
             raise Exception(f'File format {file_format} load not implemented')
 
 
+@deprecatedCls
 class BatchWriteDetectOperator(BaseEventOperator):
     # Will be deprecreated
 
