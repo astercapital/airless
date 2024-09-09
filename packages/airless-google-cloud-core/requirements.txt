@@ -1,0 +1,2 @@
+google-cloud-pubsub==2.13.11
+airless-core>=0.1.0
