@@ -2,7 +2,7 @@
 import requests
 import time
 
-from airless.service.captcha import CaptchaService
+from airless.core.service.captcha import CaptchaService
 
 
 class Solver2CaptchaService(CaptchaService):
