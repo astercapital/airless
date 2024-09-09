@@ -8,7 +8,7 @@ from google.api_core.exceptions import NotFound
 from airless.core.config import get_config
 from airless.core.hook.google.bigquery import BigqueryHook
 from airless.core.hook.google.storage import GcsHook
-from airless.core.hook.file.file import FileHook
+from airless.core.hook.file import FileHook
 from airless.core.operator.base import BaseFileOperator, BaseEventOperator
 
 

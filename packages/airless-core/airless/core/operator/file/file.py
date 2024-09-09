@@ -4,7 +4,7 @@ import re
 
 from datetime import datetime
 
-from airless.core.hook.file.file import FileHook
+from airless.core.hook.file import FileHook
 from airless.core.hook.google.storage import GcsHook
 from airless.core.operator.base import BaseEventOperator
 

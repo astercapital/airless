@@ -4,7 +4,7 @@ import re
 from dateutil import parser
 from ftplib import FTP
 
-from airless.core.hook.file.file import FileHook
+from airless.core.hook.file import FileHook
 
 
 class FtpHook(FileHook):
