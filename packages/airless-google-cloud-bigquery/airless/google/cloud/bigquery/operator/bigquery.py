@@ -6,10 +6,11 @@ from datetime import datetime
 from unidecode import unidecode
 
 from airless.core.config import get_config
-from airless.core.dto.pubsub_to_bq import PubsubToBqDto
-from airless.core.hook.google.bigquery import BigqueryHook
-from airless.core.hook.google.storage import GcsHook
+from airless.core.dto.base import BaseDto
 from airless.core.operator.base import BaseEventOperator
+
+from airless.google.cloud.bigquery.hook.bigquery import BigqueryHook
+from airless.google.cloud.storage.hook.storage import GcsHook
 
 
 class GcsQueryToBigqueryOperator(BaseEventOperator):
@@ -64,7 +65,7 @@ class PubsubToBqOperator(BaseEventOperator):
         self.bigquery_hook = BigqueryHook()
 
     def execute(self, data, topic):
-        dto = PubsubToBqDto.from_dict(data)
+        dto = BaseDto.from_dict(data)
 
         prepared_rows = self.prepare_rows(dto)
 
