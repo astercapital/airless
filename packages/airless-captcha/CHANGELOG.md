@@ -1,5 +1,6 @@
 
 **unreleased**
+- [Feature] Change package to mono repo
 
 **v0.0.3**
 - [Feature] Add namespace in setuptools

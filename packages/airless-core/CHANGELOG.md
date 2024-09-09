@@ -1,9 +1,6 @@
 
 **unreleased**
-
-**v0.1.0**
-- [Feature] Split packages
-- [Feature] 
+- [Feature] Split modules into new packages
 
 **v0.0.73**
 - [Feature] Update `bigquery` package
