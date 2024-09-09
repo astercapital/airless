@@ -1,34 +1,35 @@
 
 import json
 
-from airless.core.hook.base import BaseHook
+from airless.core.config import get_config
+from airless.core.hook.secret import SecretManagerHook
 
 from google.cloud import secretmanager
 
 
-class SecretManagerHook(BaseHook):
+class GoogleSecretManagerHook(SecretManagerHook):
 
     def __init__(self):
         super().__init__()
         self.client = secretmanager.SecretManagerServiceClient()
 
-    def list_secrets(self, project_id):
+    def list_secrets(self):
         request = {
-            'parent': f'projects/{project_id}'
+            'parent': f"projects/{get_config('GCP_PROJECT')}"
         }
         return [secret.name.split('/')[-1] for secret in self.client.list_secrets(request=request)]
 
-    def list_secret_versions(self, project_id, secret_name, filter='state:(ENABLED OR DISABLED)'):
+    def list_secret_versions(self, secret_name, filter='state:(ENABLED OR DISABLED)'):
         request = {
-            'parent': self.client.secret_path(project_id, secret_name),
+            'parent': self.client.secret_path(get_config('GCP_PROJECT'), secret_name),
             'filter': filter
         }
 
         return [version.name.split('/')[-1] for version in self.client.list_secret_versions(request=request)]
 
-    def destroy_secret_version(self, project_id, secret_name, version):
+    def destroy_secret_version(self, secret_name, version):
         request = {
-            'name': f'projects/{project_id}/secrets/{secret_name}/versions/{version}'
+            'name': f'projects/{get_config('GCP_PROJECT')}/secrets/{secret_name}/versions/{version}'
         }
         response = self.client.destroy_secret_version(request=request)
 
