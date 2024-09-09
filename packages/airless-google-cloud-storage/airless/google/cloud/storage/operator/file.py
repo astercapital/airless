@@ -4,8 +4,8 @@ import re
 
 from datetime import datetime
 
-from airless.core.hook.file import FileHook
-from airless.core.operator.base import BaseEventOperator
+from airless.core.hook import FileHook
+from airless.core.operator import BaseEventOperator
 from airless.google.cloud.storage.hook import GcsHook
 
 

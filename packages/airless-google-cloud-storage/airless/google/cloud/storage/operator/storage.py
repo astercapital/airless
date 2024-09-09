@@ -7,8 +7,8 @@ from google.api_core.exceptions import NotFound
 
 from airless.core.config import get_config
 from airless.core.utils.decorators import deprecatedCls
-from airless.core.hook.file import FileHook
-from airless.core.operator.base import BaseFileOperator, BaseEventOperator
+from airless.core.hook import FileHook
+from airless.core.operator import BaseFileOperator, BaseEventOperator
 
 from airless.google.cloud.bigquery.hook import BigqueryHook
 from airless.google.cloud.storage.hook import GcsHook

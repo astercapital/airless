@@ -10,8 +10,7 @@ from google.cloud.storage.retry import DEFAULT_RETRY
 from pyarrow import fs, parquet
 
 from airless.core.config import get_config
-from airless.core.hook.base import BaseHook
-from airless.core.hook.file import FileHook
+from airless.core.hook import BaseHook, FileHook
 
 
 class GcsHook(BaseHook):
