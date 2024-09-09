@@ -31,7 +31,7 @@ class RedirectOperator(BaseEventOperator):
         messages = self.add_params_to_messages(messages, params)
 
         for msg in messages:
-            self.pubsub_hook.publish(to_project, to_topic, msg)
+            self.queue_hook.publish(to_project, to_topic, msg)
 
     def add_params_to_messages(self, messages, params):
         for param in params:

@@ -5,7 +5,7 @@ import time
 from datetime import datetime
 
 from airless.core.config import get_config
-from airless.core.dto.pubsub_to_bq import PubsubToBqDto
+from airless.core.dto.base import BaseDto
 from airless.core.operator.base import BaseEventOperator
 
 
@@ -29,13 +29,13 @@ class ErrorReprocessOperator(BaseEventOperator):
         if (input_type == 'event') and (retries < max_retries):
             time.sleep(min(retry_interval ** retries, 480))  # Cloud function max execution time is 540s (9 min), so set it to wait max 480s (8 min)
             original_data.setdefault('metadata', {})['retries'] = retries + 1
-            self.pubsub_hook.publish(
+            self.queue_hook.publish(
                 project=get_config('GCP_PROJECT'),
                 topic=origin,
                 data=original_data)
 
         else:
-            dto = PubsubToBqDto(
+            dto = BaseDto(
                 event_id=message_id,
                 resource=origin,
                 to_project=get_config('GCP_PROJECT'),
@@ -46,7 +46,7 @@ class ErrorReprocessOperator(BaseEventOperator):
                 to_extract_to_cols=False,
                 to_keys_format=None,
                 data=data)
-            self.pubsub_hook.publish(
+            self.queue_hook.publish(
                 project=get_config('GCP_PROJECT'),
                 topic=get_config('PUBSUB_TOPIC_PUBSUB_TO_BQ'),
                 data=dto.as_dict())
@@ -66,7 +66,7 @@ class ErrorReprocessOperator(BaseEventOperator):
             'subject': f'{origin} | {message_id}',
             'content': f'Input Type: {data["input_type"]} Origin: {origin}\nMessage ID: {message_id}\n\n {json.dumps(data["data"])}\n\n{data["error"]}'
         }
-        self.pubsub_hook.publish(
+        self.queue_hook.publish(
             project=get_config('GCP_PROJECT'),
             topic=get_config('PUBSUB_TOPIC_EMAIL_SEND'),
             data=email_message)
@@ -76,7 +76,7 @@ class ErrorReprocessOperator(BaseEventOperator):
             'channels': eval(get_config('SLACK_CHANNELS_ERROR')),
             'message': f'{origin} | {message_id}\n\n{json.dumps(data["data"])}\n\n{data["error"]}'
         }
-        self.pubsub_hook.publish(
+        self.queue_hook.publish(
             project=get_config('GCP_PROJECT'),
             topic=get_config('PUBSUB_TOPIC_SLACK_SEND'),
             data=slack_message)

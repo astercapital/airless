@@ -3,11 +3,11 @@ import json
 
 from google.cloud import pubsub_v1
 
-from airless.core.hook.base import BaseHook
+from airless.core.hook.queue import QueueHook
 from airless.core.config import get_config
 
 
-class PubsubHook(BaseHook):
+class PubsubHook(QueueHook):
 
     def __init__(self):
         super().__init__()

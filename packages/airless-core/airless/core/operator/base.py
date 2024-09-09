@@ -6,8 +6,8 @@ import traceback
 
 from base64 import b64decode
 
-from airless.config import get_config
-from airless.hook.google.pubsub import PubsubHook
+from airless.core.config import get_config
+from airless.core.hook.queue import QueueHook
 
 
 class BaseOperator():
@@ -16,7 +16,7 @@ class BaseOperator():
         self.logger = logging.getLogger(f'{self.__class__.__module__}.{self.__class__.__name__}')
         logging.basicConfig(level=logging.getLevelName(get_config('LOG_LEVEL')))
         logging.debug(f'Created class instance {self.__class__.__name__}')
-        self.pubsub_hook = PubsubHook()
+        self.queue_hook = QueueHook()  # Have to redefine this attribute for each vendor
         self.trigger_type = None
         self.message_id = None
         self.has_error = False
@@ -31,7 +31,7 @@ class BaseOperator():
             logging.debug(f'[DEV] Error {message}')
 
         error_obj = self.build_error_message(message, data)
-        self.pubsub_hook.publish(
+        self.queue_hook.publish(
             project=get_config('GCP_PROJECT'),
             topic=get_config('PUBSUB_TOPIC_ERROR'),
             data=error_obj)
@@ -134,7 +134,7 @@ class BaseEventOperator(BaseOperator):
         if tasks:
             time.sleep(10)
         for t in tasks:
-            self.pubsub_hook.publish(
+            self.queue_hook.publish(
                 project=t.get('project', get_config('GCP_PROJECT')),
                 topic=t['topic'],
                 data=t['data'])
