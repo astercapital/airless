@@ -1,7 +1,7 @@
 
-from airless.core.config import get_config
 from airless.core.operator.base import BaseEventOperator
-from airless.core.hook.google.secret_manager import SecretManagerHook
+from airless.core.hook.google.secret_manager import GoogleSecretManagerHook
+from airless.core.hook.secret import SecretManagerHook
 from airless.slack.hook import SlackHook
 
 
@@ -24,7 +24,7 @@ class SlackSendOperator(BaseEventOperator):
         response_type = data.get('response_type')
         replace_original = data.get('replace_original')
 
-        token = self.secret_manager_hook.get_secret(get_config('GCP_PROJECT'), secret_id, True)['bot_token']
+        token = self.secret_manager_hook.get_secret(secret_id, True)['bot_token']
         self.slack_hook.set_token(token)
 
         if not channels and not response_url:
@@ -68,8 +68,26 @@ class SlackReactOperator(BaseEventOperator):
         reaction = data.get('reaction')
         ts = data.get('ts')
 
-        token = self.secret_manager_hook.get_secret(get_config('GCP_PROJECT'), secret_id, True)['bot_token']
+        token = self.secret_manager_hook.get_secret(secret_id, True)['bot_token']
         self.slack_hook.set_token(token)
 
         response = self.slack_hook.react(channel, reaction, ts)
         self.logger.debug(response)
+
+
+class GoogleSlackSendOperator(SlackSendOperator):
+    """
+    Slack operator using google secret manager to get secrets
+    """
+    def __init__(self):
+        super().__init__()
+        self.secret_manager_hook = GoogleSecretManagerHook()
+
+
+class GoogleSlackReactOperator(SlackReactOperator):
+    """
+    Slack operator using google secret manager to get secrets
+    """
+    def __init__(self):
+        super().__init__()
+        self.secret_manager_hook = GoogleSecretManagerHook()
