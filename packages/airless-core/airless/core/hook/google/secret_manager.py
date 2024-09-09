@@ -1,12 +1,15 @@
 
 import json
 
+from airless.core.hook.base import BaseHook
+
 from google.cloud import secretmanager
 
 
-class SecretManagerHook():
+class SecretManagerHook(BaseHook):
 
     def __init__(self):
+        super().__init__()
         self.client = secretmanager.SecretManagerServiceClient()
 
     def list_secrets(self, project_id):
