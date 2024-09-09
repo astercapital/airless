@@ -29,7 +29,7 @@ class GoogleSecretManagerHook(SecretManagerHook):
 
     def destroy_secret_version(self, secret_name, version):
         request = {
-            'name': f'projects/{get_config('GCP_PROJECT')}/secrets/{secret_name}/versions/{version}'
+            'name': f"projects/{get_config('GCP_PROJECT')}/secrets/{secret_name}/versions/{version}"
         }
         response = self.client.destroy_secret_version(request=request)
 

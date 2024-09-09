@@ -1,1 +1,1 @@
-from .email import (EmailGoogleSendOperator)
+from .email import (GoogleEmailSendOperator)
