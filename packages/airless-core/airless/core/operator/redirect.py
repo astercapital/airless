@@ -7,12 +7,12 @@ from airless.core.config import get_config
 class RedirectOperator(BaseEventOperator):
 
     """
-    Operator that receives one event from a pubsub topic
+    Operator that receives one event from a queue topic
     and publish multiple messages to another topic.
 
     It can receive 4 parameters:
-    project: the project where the destination pubsub is hosted
-    topic: the pubsub topic it must publish the newly generated messages
+    project: the project where the destination queue is hosted
+    topic: the queue topic it must publish the newly generated messages
     messages: a list of messages to publish the topic
     params: a list of dicts containing a key and a list of values
 
