@@ -1,7 +1,7 @@
 
 from airless.core.operator import BaseEventOperator
 from airless.core.hook import SecretManagerHook
-from airless.google.cloud.hook import GoogleSecretManagerHook
+from airless.google.cloud.secret_manager.hook import GoogleSecretManagerHook
 
 from airless.slack.hook import SlackHook
 
