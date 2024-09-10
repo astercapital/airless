@@ -7,7 +7,7 @@ from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.application import MIMEApplication
 
-from airless.core.hook.base import BaseHook
+from airless.core.hook import BaseHook
 
 
 class EmailHook(BaseHook):

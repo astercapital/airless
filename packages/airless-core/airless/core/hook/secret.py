@@ -1,5 +1,5 @@
 
-from airless.core.hook.base import BaseHook
+from airless.core.hook import BaseHook
 
 
 class SecretManagerHook(BaseHook):

@@ -1,5 +1,5 @@
 
-from airless.core.operator.base import BaseEventOperator
+from airless.core.operator import BaseEventOperator
 from time import sleep
 
 

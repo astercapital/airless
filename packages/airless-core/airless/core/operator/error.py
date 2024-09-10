@@ -6,7 +6,7 @@ from datetime import datetime
 
 from airless.core.config import get_config
 from airless.core.dto.base import BaseDto
-from airless.core.operator.base import BaseEventOperator
+from airless.core.operator import BaseEventOperator
 
 
 class ErrorReprocessOperator(BaseEventOperator):
