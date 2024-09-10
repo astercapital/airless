@@ -5,11 +5,11 @@ import re
 from datetime import datetime
 
 from airless.core.hook import FileHook
-from airless.core.operator import BaseEventOperator
+from airless.google.cloud.core.operator import GoogleBaseEventOperator
 from airless.google.cloud.storage.hook import GcsHook
 
 
-class FileUrlToGcsOperator(BaseEventOperator):
+class FileUrlToGcsOperator(GoogleBaseEventOperator):
 
     def __init__(self):
         super().__init__()

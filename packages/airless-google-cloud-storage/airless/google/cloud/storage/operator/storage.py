@@ -8,12 +8,12 @@ from google.api_core.exceptions import NotFound
 from airless.core.config import get_config
 from airless.core.utils.decorators import deprecatedCls
 from airless.core.hook import FileHook
-from airless.core.operator import BaseFileOperator, BaseEventOperator
+from airless.google.cloud.core.operator import GoogleBaseFileOperator, GoogleBaseEventOperator
 
 from airless.google.cloud.storage.hook import GcsHook
 
 
-class FileDetectOperator(BaseFileOperator):
+class FileDetectOperator(GoogleBaseFileOperator):
 
     def __init__(self):
         super().__init__()
@@ -142,7 +142,7 @@ class FileDetectOperator(BaseFileOperator):
 
 
 @deprecatedCls
-class BatchWriteDetectOperator(BaseEventOperator):
+class BatchWriteDetectOperator(GoogleBaseEventOperator):
     # Will be deprecreated
 
     def __init__(self):
@@ -198,7 +198,7 @@ class BatchWriteDetectOperator(BaseEventOperator):
             data={'bucket': bucket, 'directory': directory, 'files': files})
 
 
-class BatchWriteProcessOperator(BaseEventOperator):
+class BatchWriteProcessOperator(GoogleBaseEventOperator):
 
     def __init__(self):
         super().__init__()
@@ -247,7 +247,7 @@ class BatchWriteProcessOperator(BaseEventOperator):
         return local_filepath
 
 
-class FileDeleteOperator(BaseEventOperator):
+class FileDeleteOperator(GoogleBaseEventOperator):
 
     def __init__(self):
         super().__init__()
@@ -265,7 +265,7 @@ class FileDeleteOperator(BaseEventOperator):
         self.gcs_hook.delete(bucket, prefix, files)
 
 
-class FileMoveOperator(BaseEventOperator):
+class FileMoveOperator(GoogleBaseEventOperator):
 
     def __init__(self):
         super().__init__()

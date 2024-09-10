@@ -1,11 +1,11 @@
 
-from airless.core.operator.base import BaseEventOperator
+from airless.google.cloud.core.operator import GoogleBaseEventOperator
 
 from airless.google.cloud.storage.hook import GcsHook
 from airless.email.hook import GoogleEmailHook
 
 
-class GoogleEmailSendOperator(BaseEventOperator):
+class GoogleEmailSendOperator(GoogleBaseEventOperator):
 
     def __init__(self):
         super().__init__()

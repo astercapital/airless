@@ -7,13 +7,13 @@ from unidecode import unidecode
 
 from airless.core.config import get_config
 from airless.core.dto import BaseDto
-from airless.core.operator import BaseEventOperator
 
+from airless.google.cloud.core.operator import GoogleBaseEventOperator
 from airless.google.cloud.bigquery.hook import BigqueryHook
 from airless.google.cloud.storage.hook import GcsHook
 
 
-class GcsQueryToBigqueryOperator(BaseEventOperator):
+class GcsQueryToBigqueryOperator(GoogleBaseEventOperator):
 
     def __init__(self):
         super().__init__()
@@ -58,7 +58,7 @@ class GcsQueryToBigqueryOperator(BaseEventOperator):
             timeout=float(get_config('BIGQUERY_JOB_TIMEOUT', False, 480)))
 
 
-class PubsubToBqOperator(BaseEventOperator):
+class PubsubToBigqueryOperator(GoogleBaseEventOperator):
 
     def __init__(self):
         super().__init__()
@@ -114,7 +114,7 @@ class PubsubToBqOperator(BaseEventOperator):
         return re.sub(r'[^a-z0-9_]', '', unidecode(key.lower().replace(' ', '_')))
 
 
-class FileToBigqueryOperator(BaseEventOperator):
+class FileToBigqueryOperator(GoogleBaseEventOperator):
 
     def __init__(self):
         super().__init__()
