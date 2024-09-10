@@ -1,6 +1,6 @@
 [project]
 name = "airless-captcha"
-version = "0.0.3"
+version = "0.0.4"
 description = "Airless Captcha is a package that resolve captcha challenge and based on airless framework"
 readme = "README.md"
 dynamic = ["dependencies", "requires-python"]

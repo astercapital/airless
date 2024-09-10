@@ -1,5 +1,7 @@
 
 **unreleased**
+
+**v0.0.4**
 - [Feature] Change package to mono repo
 
 **v0.0.3**
