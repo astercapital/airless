@@ -1,0 +1,19 @@
+[project]
+name = "airless-core"
+version = "0.0.73"
+description = "Airless is a package that aims to build a serverless and lightweight orchestration platform, creating workflows of multiple tasks being executed on FaaS platform"
+readme = "README.md"
+dynamic = ["dependencies", "requires-python"]
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project.urls]
+"Homepage" = "https://github.com/astercapital/airless"
+"Bug Tracker" = "https://github.com/astercapital/airless/issues"
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "--capture=sys --cache-clear --disable-warnings --junitxml=pytest.xml --cov-report=xml:cov.xml --cov-report=term-missing:skip-covered --cov=airless"
+testpaths = ["tests"]
