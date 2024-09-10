@@ -1,6 +1,6 @@
 from .slack import (
     SlackSendOperator,
-    GoogleSlackSendOperator,
     SlackReactOperator,
+    GoogleSlackSendOperator,
     GoogleSlackReactOperator
 )
