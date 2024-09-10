@@ -4,4 +4,3 @@ pyarrow>=11.0.0
 pyarrow<=17.0.0
 
 airless-core>=0.1.0.dev1
-airless-google-cloud-bigquery>=0.0.1.dev1
