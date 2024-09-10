@@ -1,12 +1,10 @@
 
-from time import sleep
-
-from airless.core.operator.delay import DelayOperator
-from airless.google.cloud.core.base import BaseGoogleEventOperator
+from airless.core.operator import DelayOperator
+from airless.google.cloud.core.operator import GoogleBaseEventOperator
 
 
 
-class GoogleDelayOperator(BaseGoogleEventOperator, DelayOperator):
+class GoogleDelayOperator(GoogleBaseEventOperator, DelayOperator):
 
     """
     Operator that adds a delay to the pipeline. The maximum delay is 500 due

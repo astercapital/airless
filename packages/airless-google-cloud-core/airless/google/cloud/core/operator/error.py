@@ -5,11 +5,11 @@ import time
 from datetime import datetime
 
 from airless.core.config import get_config
-from airless.core.dto.base import BaseDto
-from airless.google.cloud.core.base import BaseGoogleEventOperator
+from airless.core.dto import BaseDto
+from airless.google.cloud.core.operator import GoogleBaseEventOperator
 
 
-class GoogleErrorReprocessOperator(BaseGoogleEventOperator):
+class GoogleErrorReprocessOperator(GoogleBaseEventOperator):
 
     def __init__(self):
         super().__init__()

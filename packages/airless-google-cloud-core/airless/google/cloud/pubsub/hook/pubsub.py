@@ -3,7 +3,7 @@ import json
 
 from google.cloud import pubsub_v1
 
-from airless.core.hook.queue import QueueHook
+from airless.core.hook import QueueHook
 from airless.core.config import get_config
 
 

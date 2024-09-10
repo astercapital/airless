@@ -1,9 +1,9 @@
 
-from airless.core.operator.redirect import RedirectOperator
-from airless.google.cloud.core.base import BaseGoogleEventOperator
+from airless.core.operator import RedirectOperator
+from airless.google.cloud.core.operator import GoogleBaseEventOperator
 
 
-class GoogleRedirectOperator(BaseGoogleEventOperator, RedirectOperator):
+class GoogleRedirectOperator(GoogleBaseEventOperator, RedirectOperator):
 
     """
     Operator that receives one event from a pubsub topic
