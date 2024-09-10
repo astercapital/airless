@@ -1,1 +1,1 @@
-from .bigquery import (GcsQueryToBigqueryOperator, PubsubToBqOperator)
+from .bigquery import (GcsQueryToBigqueryOperator, PubsubToBqOperator, FileToBigqueryOperator)

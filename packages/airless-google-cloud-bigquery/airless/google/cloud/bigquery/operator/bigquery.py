@@ -112,3 +112,33 @@ class PubsubToBqOperator(BaseEventOperator):
 
     def format_key(self, key):
         return re.sub(r'[^a-z0-9_]', '', unidecode(key.lower().replace(' ', '_')))
+
+
+class FileToBigqueryOperator(BaseEventOperator):
+
+    def __init__(self):
+        super().__init__()
+        self.gcs_hook = GcsHook()
+        self.bigquery_hook = BigqueryHook()
+
+    def execute(self, data, topic):
+        metadata = data['metadata']
+        file_format = metadata['file_format']
+
+        if file_format in ('csv', 'json'):
+            self.bigquery_hook.load_file(
+                from_filepath=self.gcs_hook.build_filepath(metadata['bucket'], metadata['file']),
+                from_file_format=file_format,
+                from_separator=metadata.get('separator'),
+                from_skip_leading_rows=metadata.get('skip_leading_rows'),
+                from_quote_character=metadata.get('quote_character'),
+                from_encoding=metadata.get('encoding'),
+                to_project=get_config('GCP_PROJECT'),
+                to_dataset=metadata['destination_dataset'],
+                to_table=metadata['destination_table'],
+                to_mode=metadata['mode'],
+                to_schema=metadata.get('schema'),
+                to_time_partitioning=metadata.get('time_partitioning'))
+
+        else:
+            raise Exception(f'File format {file_format} load not implemented')
