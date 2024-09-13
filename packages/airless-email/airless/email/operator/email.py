@@ -24,7 +24,7 @@ class GoogleEmailSendOperator(GoogleBaseEventOperator):
         for att in attachments:
             attachment_contents.append({
                 'type': att.get('type', 'text'),
-                'content': self.gcs_hook.read(att['bucket'], att['filepath'], att['encoding'])
+                'content': self.gcs_hook.read_as_string(att['bucket'], att['filepath'], att['encoding'])
             })
 
         self.email_hook.send(subject, content, recipients, sender, attachment_contents, mime_type)

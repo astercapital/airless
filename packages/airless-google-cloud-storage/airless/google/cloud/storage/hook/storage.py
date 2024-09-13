@@ -23,7 +23,7 @@ class GcsHook(BaseHook):
     def build_filepath(self, bucket, filepath):
         return f'gs://{bucket}/{filepath}'
 
-    def read(self, bucket, filepath, encoding=None):
+    def read_as_string(self, bucket, filepath, encoding=None):
         bucket = self.storage_client.get_bucket(bucket)
 
         blob = bucket.blob(filepath)
@@ -32,6 +32,12 @@ class GcsHook(BaseHook):
             return content.decode(encoding)
         else:
             return content.decode()
+
+    def read_as_bytes(self, bucket, filepath):
+        bucket = self.storage_client.get_bucket(bucket)
+
+        blob = bucket.blob(filepath)
+        return blob.download_as_bytes()
 
     def download(self, bucket, filepath, target_filepath=None):
         bucket = self.storage_client.get_bucket(bucket)

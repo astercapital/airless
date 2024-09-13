@@ -48,7 +48,7 @@ class GcsQueryToBigqueryOperator(GoogleBaseEventOperator):
             to_write_disposition = data.get('write_disposition')
             to_time_partitioning = data.get('time_partitioning')
 
-        sql = self.gcs_hook.read(query_bucket, query_filepath, 'utf-8')
+        sql = self.gcs_hook.read_as_string(query_bucket, query_filepath, 'utf-8')
         for k, v in query_params.items():
             sql = sql.replace(f':{k}', str(v))
 
