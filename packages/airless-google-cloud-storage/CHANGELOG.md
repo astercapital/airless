@@ -1,5 +1,6 @@
 
 **unreleased**
+- [Bugfix] Add `airless-google-cloud-core` as a dependency
 
 **v0.0.2**
 - [Feature] Add method `read_as_bytes` to `GcsHook` class
