@@ -1,5 +1,8 @@
 
 **unreleased**
+- [Feature] Add new utils `enum` that have `baseEnum` class for basic list of objects selection class
+- [Feature] Add `BaseLLMHook` to interact with LLMs
+- [Feature] Change `config.py` from `airless` root to `utils` folder, for enhance the package structure
 
 **v0.1.0**
 - [Feature] Split modules into new packages
