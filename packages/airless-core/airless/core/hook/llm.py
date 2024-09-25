@@ -4,13 +4,12 @@ from airless.core.hook import BaseHook
 
 class LLMHook(BaseHook):
 
-    def __init__(self):
+    def __init__(self, model_name, **kwargs):
         super().__init__()
-        self.user_prompt = []
-        self.responses = []
+        self.historic = ''
 
-    def config(self, model_name, **kwargs):
-        raise NotImplementedError()
+    def historic_append(self, text, actor):
+        self.historic += f"---\n{actor}\n---\n{text}\n"
 
-    def generate_completion(self, user, **kwargs):
+    def generate_completion(self, content, **kwargs):
         raise NotImplementedError()
