@@ -1,0 +1,19 @@
+[project]
+name = "airless-google-cloud-vertexai"
+version = "0.0.1.dev1"
+description = "Airless package to manage google cloud vertexai"
+readme = "README.md"
+dynamic = ["dependencies", "requires-python"]
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project.urls]
+"Homepage" = "https://github.com/astercapital/airless"
+"Bug Tracker" = "https://github.com/astercapital/airless/issues"
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "--capture=sys --cache-clear --disable-warnings --junitxml=pytest.xml --cov-report=xml:cov.xml --cov-report=term-missing:skip-covered --cov=airless"
+testpaths = ["tests"]

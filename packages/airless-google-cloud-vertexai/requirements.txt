@@ -1,0 +1,3 @@
+google-cloud-aiplatform>=1.66.0
+google-cloud-aiplatform<2.0.0
+airless-core>=0.1.0.dev4
