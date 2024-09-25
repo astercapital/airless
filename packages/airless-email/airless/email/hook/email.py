@@ -2,7 +2,7 @@
 import smtplib
 
 from airless.core.hook import EmailHook
-from airless.core.config import get_config
+from airless.core.utils import get_config
 
 from airless.google.cloud.secret_manager.hook import GoogleSecretManagerHook
 

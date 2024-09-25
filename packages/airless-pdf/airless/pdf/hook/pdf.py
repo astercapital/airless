@@ -45,7 +45,7 @@ class PDFHook(BaseHook):
         doc.close()
         return chunks
 
-    def generate_page_screenshot(filepath: str, dpi: int = 300, output_format: str = 'png') -> List[str]:
+    def generate_page_screenshot(self, filepath: str, dpi: int = 300, output_format: str = 'png') -> List[str]:
         """
         Converts each page of a PDF into an image.
 

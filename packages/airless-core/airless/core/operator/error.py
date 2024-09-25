@@ -4,7 +4,7 @@ import time
 
 from datetime import datetime
 
-from airless.core.config import get_config
+from airless.core.utils import get_config
 from airless.core.dto.base import BaseDto
 from airless.core.operator import BaseEventOperator
 

@@ -1,6 +1,6 @@
 [project]
 name = "airless-google-cloud-core"
-version = "0.0.1"
+version = "0.0.2.dev1"
 description = "Airless package with the main components to use airless in google cloud"
 readme = "README.md"
 dynamic = ["dependencies", "requires-python"]

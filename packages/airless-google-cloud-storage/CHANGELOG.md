@@ -1,5 +1,7 @@
 
 **unreleased**
+- [Feature] Get method `get_config` to new path
+- [Feature] Enhance dependencies
 
 **v0.0.3**
 - [Bugfix] Add `airless-google-cloud-core` as a dependency

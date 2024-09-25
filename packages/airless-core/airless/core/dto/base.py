@@ -1,5 +1,5 @@
 
-from airless.core.config import get_config
+from airless.core.utils import get_config
 
 
 class BaseDto():

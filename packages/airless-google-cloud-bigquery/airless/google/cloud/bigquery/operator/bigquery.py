@@ -5,7 +5,7 @@ import re
 from datetime import datetime
 from unidecode import unidecode
 
-from airless.core.config import get_config
+from airless.core.utils import get_config
 from airless.core.dto import BaseDto
 
 from airless.google.cloud.core.operator import GoogleBaseEventOperator

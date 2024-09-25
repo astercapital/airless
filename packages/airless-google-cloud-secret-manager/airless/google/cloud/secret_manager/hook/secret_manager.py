@@ -1,7 +1,7 @@
 
 import json
 
-from airless.core.config import get_config
+from airless.core.utils import get_config
 from airless.core.hook import SecretManagerHook
 
 from google.cloud import secretmanager
