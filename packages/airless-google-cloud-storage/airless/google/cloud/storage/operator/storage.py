@@ -5,11 +5,9 @@ from datetime import datetime, timedelta
 
 from google.api_core.exceptions import NotFound
 
-from airless.core.config import get_config
-from airless.core.utils.decorators import deprecatedCls
+from airless.core.utils import get_config, deprecatedCls
 from airless.core.hook import FileHook
 from airless.google.cloud.core.operator import GoogleBaseFileOperator, GoogleBaseEventOperator
-
 from airless.google.cloud.storage.hook import GcsHook
 
 

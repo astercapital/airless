@@ -6,7 +6,7 @@ import traceback
 
 from base64 import b64decode
 
-from airless.core.config import get_config
+from airless.core.utils import get_config
 from airless.core.hook import QueueHook
 
 

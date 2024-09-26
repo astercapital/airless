@@ -1,2 +1,4 @@
-airless-core>=0.1.0.dev1
+airless-core>=0.1.1.dev6
+airless-core<0.2.0
 airless-google-cloud-secret-manager>=0.0.1.dev1
+airless-google-cloud-secret-manager<0.1.0
