@@ -1,5 +1,7 @@
 
 **unreleased**
+
+**v0.0.4**
 - [Feature] Get method `get_config` to new path
 - [Feature] Enhance dependencies
 
