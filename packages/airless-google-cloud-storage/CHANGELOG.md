@@ -1,5 +1,7 @@
 
 **unreleased**
+
+**v0.0.5**
 - [Feature] Change some methods in `GcsHook` to support `**kwargs` arguments
 
 **v0.0.4**
