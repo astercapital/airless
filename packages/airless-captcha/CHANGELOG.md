@@ -1,5 +1,7 @@
 
 **unreleased**
+
+**v0.0.5**
 - [Feature] Enhance dependencies
 
 **v0.0.4**
