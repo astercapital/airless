@@ -7,6 +7,7 @@ import uuid
 import re
 from dateutil import parser
 from ftplib import FTP
+from typing import Any
 
 from datetime import datetime
 
@@ -18,20 +19,56 @@ class FileHook(BaseHook):
     def __init__(self):
         super().__init__()
 
-    def write(self, local_filepath, data, use_ndjson=False):
-        with open(local_filepath, 'w') as f:
-            if isinstance(data, dict) or isinstance(data, list):
-                if use_ndjson:
-                    ndjson.dump(data, f)
-                else:
-                    json.dump(data, f)
+    def write(self, local_filepath: str, data: Any, **kwargs) -> None:
+        """
+        Writes data to a local file with support for JSON and NDJSON formats.
+
+        Args:
+            local_filepath (str):
+                The path to the local file where the data will be written.
+            data (Any):
+                The data to write to the file. It can be a string, dictionary, list,
+                or any other type that can be serialized to JSON or converted to a string.
+        Kwargs:
+            use_ndjson (bool):
+                If `True` and the data is a dictionary or list, the data will be
+                written in NDJSON format. Defaults to `False`.
+            mode (str):
+                The mode in which the file is opened. Common modes include:
+                - `'w'`: Write mode, which overwrites the file if it exists.
+                - `'wb'`: Write binary mode, which overwrites the file if it exists.
+                Defaults to `'w'`.
+        """
+        use_ndjson = kwargs.get('use_ndjson', False)
+        mode = kwargs.get('mode', 'w')
+
+        with open(local_filepath, mode) as f:
+            if mode == 'wb':
+                f.write(data)
+            elif isinstance(data, (dict, list)):
+                dump = ndjson.dump if use_ndjson else json.dump
+                dump(data, f)
             else:
                 f.write(str(data))
 
     def extract_filename(self, filepath_or_url):
         return filepath_or_url.split('/')[-1].split('?')[0].split('#')[0]
 
-    def get_tmp_filepath(self, filepath_or_url, add_timestamp=True):
+    def get_tmp_filepath(self, filepath_or_url: str, **kwargs) -> str:
+        """
+        Generates a temporary file path based on the provided filepath or URL.
+
+        Args:
+            filepath_or_url (str):
+                The original file path or URL from which the filename is extracted.
+
+        Kwargs:
+            add_timestamp (bool, optional):
+                If `True`, a timestamp and a UUID will be prefixed to the filename to ensure uniqueness.
+                Defaults to `True`.
+        """
+        add_timestamp = kwargs.get('add_timestamp', True)
+
         filename = self.extract_filename(filepath_or_url)
         if add_timestamp:
             timestamp = datetime.now().strftime('%Y%m%d%H%M%S')

@@ -1,5 +1,7 @@
 
 **unreleased**
+- [Feature] Add support to `FileHook` write binary data
+- [Feature] Change some methods in `FileHook` to support `**kwargs` arguments
 
 **v0.1.1**
 - [Feature] Add new utils `enum` that have `baseEnum` class for basic list of objects selection class
