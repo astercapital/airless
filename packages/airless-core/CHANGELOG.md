@@ -1,5 +1,6 @@
 
 **unreleased**
+- [Feature] Add support to `FileHook` write binary data
 
 **v0.1.1**
 - [Feature] Add new utils `enum` that have `baseEnum` class for basic list of objects selection class

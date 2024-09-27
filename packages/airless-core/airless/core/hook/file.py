@@ -7,6 +7,7 @@ import uuid
 import re
 from dateutil import parser
 from ftplib import FTP
+from typing import Any
 
 from datetime import datetime
 
@@ -18,13 +19,31 @@ class FileHook(BaseHook):
     def __init__(self):
         super().__init__()
 
-    def write(self, local_filepath, data, use_ndjson=False):
-        with open(local_filepath, 'w') as f:
-            if isinstance(data, dict) or isinstance(data, list):
-                if use_ndjson:
-                    ndjson.dump(data, f)
-                else:
-                    json.dump(data, f)
+    def write(self, local_filepath: str, data: Any, use_ndjson: bool = False, mode: str = 'w') -> None:
+        """
+        Writes data to a local file with support for JSON and NDJSON formats.
+
+        Args:
+            local_filepath (str):
+                The path to the local file where the data will be written.
+            data (Any):
+                The data to write to the file. It can be a string, dictionary, list,
+                or any other type that can be serialized to JSON or converted to a string.
+            use_ndjson (bool, optional):
+                If `True` and the data is a dictionary or list, the data will be
+                written in NDJSON format. Defaults to `False`.
+            mode (str, optional):
+                The mode in which the file is opened. Common modes include:
+                - `'w'`: Write mode, which overwrites the file if it exists.
+                - `'wb'`: Write binary mode, which overwrites the file if it exists.
+                Defaults to `'w'`.
+        """
+        with open(local_filepath, mode) as f:
+            if mode == 'wb':
+                f.write(data)
+            elif isinstance(data, (dict, list)):
+                dump = ndjson.dump if use_ndjson else json.dump
+                dump(data, f)
             else:
                 f.write(str(data))
 
