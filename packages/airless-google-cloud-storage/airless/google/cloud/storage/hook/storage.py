@@ -3,6 +3,7 @@ import json
 import ndjson
 import os
 import pyarrow as pa
+from typing import Any
 
 from datetime import datetime
 from google.cloud import storage
@@ -52,21 +53,92 @@ class GcsHook(BaseHook):
     def read_ndjson(self, bucket, filepath, encoding=None):
         return ndjson.loads(self.read(bucket, filepath, encoding))
 
-    def upload_from_memory(self, data, bucket, directory, filename, add_timestamp):
-        local_filename = self.file_hook.get_tmp_filepath(filename, add_timestamp)
+    def upload_from_memory(
+            self,
+            data: Any,
+            bucket: str,
+            directory: str,
+            filename: str,
+            **kwargs
+        ) -> str:
+        """
+        Uploads data from memory to a specified bucket and directory.
+
+        Args:
+            data (Any):
+                The data to be uploaded. It can be of any type that is supported by the
+                `write` method of `self.file_hook`.
+            bucket (str):
+                The name of the bucket where the file will be uploaded.
+            directory (str):
+                The directory within the bucket where the file will be stored.
+            filename (str):
+                The name of the file to be created and uploaded.
+
+        Kwargs:
+            # Arguments for `self.file_hook.get_tmp_filepath`
+            add_timestamp (bool, optional):
+                If `True`, a timestamp and a UUID will be prefixed to the filename to ensure uniqueness.
+                Defaults to `True`.
+
+            # Arguments for `self.file_hook.write`
+            use_ndjson (bool, optional):
+                If `True` and the data is a dictionary or list, the data will be written in NDJSON format.
+                Defaults to `False`.
+            mode (str, optional):
+                The mode in which the file is opened. Common modes include:
+                - `'w'`: Write mode, which overwrites the file if it exists.
+                - `'wb'`: Write binary mode, which overwrites the file if it exists.
+                Defaults to `'w'`.
+        """
+        local_filename = self.file_hook.get_tmp_filepath(filename, **kwargs)
         try:
-            self.file_hook.write(local_filename, data)
+            self.file_hook.write(local_filename, data, **kwargs)
             return self.upload(local_filename, bucket, directory)
 
         finally:
             if os.path.exists(local_filename):
                 os.remove(local_filename)
 
-    def upload_parquet_from_memory(self, data, bucket, directory, filename, add_timestamp, schema=None):
+    def upload_parquet_from_memory(
+            self,
+            data: Any,
+            bucket: str,
+            directory: str,
+            filename: str,
+            **kwargs
+        ) -> str:
+        """
+        Uploads Parquet data from memory to a specified bucket and directory.
+
+        Args:
+            data (Any):
+                The data to be uploaded. It should be a list of dictionaries or objects that can be
+                converted into a PyArrow table.
+            bucket (str):
+                The name of the bucket where the Parquet file will be uploaded.
+            directory (str):
+                The directory within the bucket where the Parquet file will be stored.
+            filename (str):
+                The name of the Parquet file to be created and uploaded.
+
+        Kwargs:
+            # Additional arguments
+            schema (pa.Schema, optional):
+                An optional PyArrow schema to cast the table before writing. If provided, the table will
+                be cast to this schema. Defaults to `None`.
+
+            # Arguments for `self.file_hook.get_tmp_filepath`
+            add_timestamp (bool, optional):
+                If `True`, a timestamp and a UUID will be prefixed to the filename to ensure uniqueness.
+                Defaults to `True`.
+        """
+        schema = kwargs.get(schema, None)
+
         gcs = fs.GcsFileSystem()
         table = pa.Table.from_pylist(data)
         table_casted = table.cast(schema) if schema else table
-        local_filename = self.file_hook.get_tmp_filepath(filename, add_timestamp)
+        local_filename = self.file_hook.get_tmp_filepath(filename, **kwargs)
         local_filename = local_filename.split('/')[-1]
 
         output_filepath = f'{bucket}/{directory}/{local_filename}'

@@ -1,5 +1,6 @@
 
 **unreleased**
+- [Feature] Change some methods in `GcsHook` to support `**kwargs` arguments
 
 **v0.0.4**
 - [Feature] Get method `get_config` to new path
