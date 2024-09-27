@@ -19,7 +19,7 @@ class FileHook(BaseHook):
     def __init__(self):
         super().__init__()
 
-    def write(self, local_filepath: str, data: Any, use_ndjson: bool = False, mode: str = 'w') -> None:
+    def write(self, local_filepath: str, data: Any, **kwargs) -> None:
         """
         Writes data to a local file with support for JSON and NDJSON formats.
 
@@ -29,15 +29,19 @@ class FileHook(BaseHook):
             data (Any):
                 The data to write to the file. It can be a string, dictionary, list,
                 or any other type that can be serialized to JSON or converted to a string.
-            use_ndjson (bool, optional):
+        Kwargs:
+            use_ndjson (bool):
                 If `True` and the data is a dictionary or list, the data will be
                 written in NDJSON format. Defaults to `False`.
-            mode (str, optional):
+            mode (str):
                 The mode in which the file is opened. Common modes include:
                 - `'w'`: Write mode, which overwrites the file if it exists.
                 - `'wb'`: Write binary mode, which overwrites the file if it exists.
                 Defaults to `'w'`.
         """
+        use_ndjson = kwargs.get('use_ndjson', False)
+        mode = kwargs.get('mode', 'w')
+
         with open(local_filepath, mode) as f:
             if mode == 'wb':
                 f.write(data)
@@ -50,7 +54,21 @@ class FileHook(BaseHook):
     def extract_filename(self, filepath_or_url):
         return filepath_or_url.split('/')[-1].split('?')[0].split('#')[0]
 
-    def get_tmp_filepath(self, filepath_or_url, add_timestamp=True):
+    def get_tmp_filepath(self, filepath_or_url: str, **kwargs) -> str:
+        """
+        Generates a temporary file path based on the provided filepath or URL.
+
+        Args:
+            filepath_or_url (str):
+                The original file path or URL from which the filename is extracted.
+
+        Kwargs:
+            add_timestamp (bool, optional):
+                If `True`, a timestamp and a UUID will be prefixed to the filename to ensure uniqueness.
+                Defaults to `True`.
+        """
+        add_timestamp = kwargs.get('add_timestamp', True)
+
         filename = self.extract_filename(filepath_or_url)
         if add_timestamp:
             timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
