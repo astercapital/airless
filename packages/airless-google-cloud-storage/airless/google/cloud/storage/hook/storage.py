@@ -133,7 +133,7 @@ class GcsHook(BaseHook):
                 If `True`, a timestamp and a UUID will be prefixed to the filename to ensure uniqueness.
                 Defaults to `True`.
         """
-        schema = kwargs.get(schema, None)
+        schema = kwargs.get('schema', None)
 
         gcs = fs.GcsFileSystem()
         table = pa.Table.from_pylist(data)
