@@ -5,7 +5,7 @@ ndjson<0.4.0
 pyarrow>=11.0.0
 pyarrow<=17.0.0
 
-airless-core>=0.1.1.dev6
+airless-core>=0.1.2
 airless-core<0.2.0
 airless-google-cloud-core>=0.0.1.dev1
 airless-google-cloud-core<0.1.0

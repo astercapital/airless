@@ -1,5 +1,7 @@
 
 **unreleased**
+
+**v0.1.2**
 - [Feature] Add support to `FileHook` write binary data
 - [Feature] Change some methods in `FileHook` to support `**kwargs` arguments
 
