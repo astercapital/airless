@@ -4,6 +4,8 @@ ndjson>=0.3.0
 ndjson<0.4.0
 pyarrow>=11.0.0
 pyarrow<=17.0.0
+deprecation>=2.1.0
+
 
 airless-core>=0.1.2
 airless-core<0.2.0

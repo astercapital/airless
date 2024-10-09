@@ -3,9 +3,10 @@ import os
 import logging
 from datetime import datetime, timedelta
 
+from deprecation import deprecated
 from google.api_core.exceptions import NotFound
 
-from airless.core.utils import get_config, deprecatedCls
+from airless.core.utils import get_config
 from airless.core.hook import FileHook
 from airless.google.cloud.core.operator import GoogleBaseFileOperator, GoogleBaseEventOperator
 from airless.google.cloud.storage.hook import GcsHook
@@ -139,7 +140,8 @@ class FileDetectOperator(GoogleBaseFileOperator):
             return {'file_format': 'json', 'time_partitioning': {'type': 'DAY', 'field': '_created_at'}}
 
 
-@deprecatedCls
+@deprecated(deprecated_in="0.0.5", removed_in="1.0.0",
+            details="This class will be deprecated. Please write files directly to datalake using `GcsDatalakeHook`")
 class BatchWriteDetectOperator(GoogleBaseEventOperator):
     # Will be deprecreated
 
@@ -196,6 +198,8 @@ class BatchWriteDetectOperator(GoogleBaseEventOperator):
             data={'bucket': bucket, 'directory': directory, 'files': files})
 
 
+@deprecated(deprecated_in="0.0.5", removed_in="1.0.0",
+            details="This class will be deprecated. Please write files directly to datalake using `GcsDatalakeHook`")
 class BatchWriteProcessOperator(GoogleBaseEventOperator):
 
     def __init__(self):
