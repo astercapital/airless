@@ -6,16 +6,14 @@ import traceback
 
 from base64 import b64decode
 
+from airless.core import BaseClass
 from airless.core.utils import get_config
 from airless.core.hook import QueueHook
 
 
-class BaseOperator():
+class BaseOperator(BaseClass):
 
     def __init__(self):
-        self.logger = logging.getLogger(f'{self.__class__.__module__}.{self.__class__.__name__}')
-        logging.basicConfig(level=logging.getLevelName(get_config('LOG_LEVEL')))
-        logging.debug(f'Created class instance {self.__class__.__name__}')
         self.queue_hook = QueueHook()  # Have to redefine this attribute for each vendor
         self.trigger_type = None
         self.message_id = None
