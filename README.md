@@ -46,6 +46,6 @@ Airless builts its workflows based on serverless functions, queues and scheduler
 
 ## Getting Started
 
-* [Google Cloud Platform](example/gcp-getting-started/README.md)
+* [Google Cloud Platform](example/gcp-getting-started)
 * Amazon Web Services
 * Microsoft Azure
