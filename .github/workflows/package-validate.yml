@@ -11,8 +11,11 @@ on:
 
 jobs:
 
-  package_validate:
+  list_packages:
     runs-on: ubuntu-latest
+
+    outputs:
+      packages: ${{ steps.list_packages.outputs.packages }}
 
     steps:
 
@@ -29,3 +32,12 @@ jobs:
         uses: ./.github/workflows/package-validate-reusable-workflow.yml
         with:
           package: ${{ matrix.package }}
+
+  package_validate:
+    needs: list_packages
+    strategy:
+      matrix:
+        package: ${{ fromJson(needs.list_packages.outputs.packages) }}
+    uses: ./.github/workflows/package-validate-reusable-workflow.yml
+    with:
+      package: ${{ matrix.package }}
