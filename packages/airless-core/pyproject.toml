@@ -24,8 +24,7 @@ testpaths = ["tests"]
 [tool.setuptools.packages.find]
 include = ["airless*"]
 
-[tool.flake8]
-# List of patterns to ignore
+[tool.ruff]
 exclude = [
     ".git",
     "__pycache__",
@@ -34,14 +33,23 @@ exclude = [
     "*.pyc",
     "*.egg-info",
     "*.egg",
-    "temp"
+    "temp",
+    "venv"
 ]
+line-length = 88
+indent-width = 4
+target-version = "py39"
 
-# Ignore error max line length
+[tool.ruff.lint]
 ignore = ["E501"]
+fixable = ["ALL"]
+unfixable = []
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
 
-# Maximum allowed line length
-max-line-length = 120
-
-# Cyclomatic complexity threshold
-max-complexity = 15
+[tool.ruff.format]
+quote-style = "single"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+docstring-code-format = false
+docstring-code-line-length = "dynamic"

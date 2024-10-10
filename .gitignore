@@ -15,3 +15,5 @@ cov.xml
 
 Pipfile.lock
 Pipfile
+
+.ruff_cache/
