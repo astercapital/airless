@@ -1,7 +1,11 @@
 
+from deprecation import deprecated
+
 from airless.core.utils import get_config
 
 
+@deprecated(deprecated_in="0.1.2", removed_in="1.0.0",
+            details="This class will be deprecated. Please write files directly to datalake instead of stream inserting data to a database")
 class BaseDto():
 
     def __init__(self, event_id, resource, to_project, to_dataset, to_table, to_schema, to_partition_column,
@@ -68,7 +72,7 @@ class BaseDto():
             extract_to_cols = d['metadata'].get('extract_to_cols', True)
             keys_format = d['metadata'].get('keys_format')
 
-        return PubsubToBqDto(
+        return BaseDto(
             event_id=d['metadata'].get('event_id'),
             resource=d['metadata'].get('resource'),
             to_project=project,

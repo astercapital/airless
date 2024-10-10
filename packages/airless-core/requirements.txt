@@ -4,3 +4,4 @@ python-dateutil>=2.0.0
 python-dateutil<3.0.0
 requests>=2.0.0
 requests<3.0.0
+deprecation>=2.1.0

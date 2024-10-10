@@ -6,7 +6,11 @@
 
 <!-- [![PyPI version](https://badge.fury.io/py/airless.svg)](https://badge.fury.io/py/airless) -->
 
-Airless is a package that aims to build a serverless and lightweight orchestration platform, creating workflows of multiple tasks being executed on [Google Cloud Functions](https://cloud.google.com/functions)
+Airless is a package that aims to build a serverless and lightweight orchestration platform, creating workflows of multiple tasks being executed on serverless functions. It is build to be Cloud agnostic, so using any Cloud provider is possible
+
+* [Google Cloud Functions](https://cloud.google.com/functions)
+* [AWS Lambda](https://aws.amazon.com/pm/lambda)
+* [Azure Functions](https://learn.microsoft.com/en-us/azure/azure-functions/)
 
 
 ## Why not just use [Apache Airflow](https://airflow.apache.org/)?
@@ -33,26 +37,15 @@ In order to built this massive parallel processing workflow that we explained on
 
 ## How it works
 
-Airless builts its workflows based on [Google Cloud Functions](https://cloud.google.com/functions), [Google Pub/Sub](https://cloud.google.com/pubsub) and [Google Cloud Scheduler](https://cloud.google.com/scheduler).
+Airless builts its workflows based on serverless functions, queues and schedulers. All of them serverless.
 
-1. Everything starts with the Cloud Scheduler, which is a serverless product from Google Cloud that is able to publish a message to a Pub/Sub with a cron scheduler
-2. When a message is published to a Pub/Sub it can trigger a Cloud Function and get executed with that message as an input
-3. This Cloud Functions is able to publish as many messages as it wants to as many Pub/Sub topics as it wants
+1. Everything starts with the scheduler, which is able to publish a message to a queue with a cron scheduler
+2. When a message is published to the queue it can trigger a serverless function and get executed with that message as an input
+3. This serverless function is able to publish as many messages as it wants to as many queue topics as it wants
 4. Repeat from 2
 
+## Getting Started
 
-## Preparation
-
-### Environment variables
-
-* `ENV`
-* `GCP_PROJECT`
-* `PUBSUB_TOPIC_ERROR`
-* `LOG_LEVEL`
-* `PUBSUB_TOPIC_EMAIL_SEND`
-* `PUBSUB_TOPIC_SLACK_SEND`
-* `BIGQUERY_DATASET_ERROR`
-* `BIGQUERY_TABLE_ERROR`
-* `EMAIL_SENDER_ERROR`
-* `EMAIL_RECIPIENTS_ERROR`
-* `SLACK_CHANNELS_ERROR`
+* [Google Cloud Platform](example/gcp-getting-started)
+* Amazon Web Services
+* Microsoft Azure

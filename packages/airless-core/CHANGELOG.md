@@ -1,5 +1,9 @@
 
 **unreleased**
+- [Refactor] Remove references to cloud-specific products in `README.md` 
+- [Feature] Add unit tests for the utils functions
+- [Refactor] Deprecate `BaseDto`
+- [Refactor] Use [`deprecation`](https://pypi.org/project/deprecation/) to deprecate functions instead of custom decorator
 
 **v0.1.2**
 - [Feature] Add support to `FileHook` write binary data
