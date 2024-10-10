@@ -2,6 +2,7 @@
 **unreleased**
 - [Refactor] Use [`deprecation`](https://pypi.org/project/deprecation/) to deprecate functions instead of custom decorator
 - [Refactor] Schedule deprecation for `BatchWriteProcessOperator` to version `1.0.0`
+- [Refactor] Remove `__init__.py` from root namespace
 
 **v0.0.5**
 - [Feature] Change some methods in `GcsHook` to support `**kwargs` arguments

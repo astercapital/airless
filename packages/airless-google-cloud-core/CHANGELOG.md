@@ -1,5 +1,6 @@
 
 **unreleased**
+- [Refactor] Remove `__init__.py` from root namespace
 
 **v0.0.2**
 - [Feature] Get method `get_config` to new path
