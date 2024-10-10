@@ -24,15 +24,6 @@ jobs:
         run: |
           echo "packages=$(ls packages | jq -R -s -c 'split("\n")[:-1]')" >> $GITHUB_OUTPUT
 
-      - id: package_validate
-        name: Trigger 1 package validation workflow for each package
-        strategy:
-          matrix:
-            package: ${{ steps.list_packages.outputs.packages }}
-        uses: ./.github/workflows/package-validate-reusable-workflow.yml
-        with:
-          package: ${{ matrix.package }}
-
   package_validate:
     needs: list_packages
     strategy:
