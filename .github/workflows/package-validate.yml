@@ -1,12 +1,16 @@
 name: Validate packages
 
-on: [pull_request]
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
 
 jobs:
   package_validate:
     strategy:
       matrix:
         package: [airless-core, airless-pdf]
-    uses: ./.github/reusable-workflow/package-validate.yml
+    uses: ./.github/sworkflows/package-validate-reusable-workflow.yml
     with:
       package: ${{ matrix.package }}
