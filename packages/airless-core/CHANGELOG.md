@@ -5,6 +5,7 @@
 - [Refactor] Deprecate `BaseDto`
 - [Refactor] Use [`deprecation`](https://pypi.org/project/deprecation/) to deprecate functions instead of custom decorator
 - [Refactor] Remove `__init__.py` from root namespace
+- [Refactor] Move all build configurations to `pyproject.toml`
 
 **v0.1.2**
 - [Feature] Add support to `FileHook` write binary data

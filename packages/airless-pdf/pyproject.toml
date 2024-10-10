@@ -3,7 +3,9 @@ name = "airless-pdf"
 version = "0.0.1"
 description = "Airless package to manipulate pdf"
 readme = "README.md"
-dynamic = ["dependencies", "requires-python"]
+requires-python = ">=3.9"
+dynamic = ["dependencies"]
+license = {text = "MIT License"}
 
 [build-system]
 requires = ["setuptools", "wheel"]
@@ -15,5 +17,30 @@ build-backend = "setuptools.build_meta"
 
 [tool.pytest.ini_options]
 minversion = "6.0"
-addopts = "--capture=sys --cache-clear --disable-warnings --junitxml=pytest.xml --cov-report=xml:cov.xml --cov-report=term-missing:skip-covered --cov=airless"
+addopts = "--capture=sys --cache-clear --disable-warnings --junitxml=pytest.xml --cov-report=xml:cov.xml --cov=airless"
 testpaths = ["tests"]
+
+[tool.setuptools.packages.find]
+include = ["airless*"]
+
+[tool.flake8]
+# List of patterns to ignore
+exclude = [
+    ".git",
+    "__pycache__",
+    "build",
+    "dist",
+    "*.pyc",
+    "*.egg-info",
+    "*.egg",
+    "temp"
+]
+
+# Ignore error max line length
+ignore = ["E501"]
+
+# Maximum allowed line length
+max-line-length = 120
+
+# Cyclomatic complexity threshold
+max-complexity = 15

@@ -1,5 +1,7 @@
 
 **unreleased**
+- [Refactor] Move all build configurations to `pyproject.toml`
+- [Refactor] Remove `__init__.py` from root namespace
 
 **v0.0.5**
 - [Feature] Enhance dependencies
