@@ -14,8 +14,8 @@ jobs:
   steps:
 
     - id: list_packages
-        run: |
-          echo "packages=$(ls packages | jq -R -s -c 'split("\n")[:-1]')" >> $GITHUB_OUTPUT  
+      run: |
+        echo "packages=$(ls packages | jq -R -s -c 'split("\n")[:-1]')" >> $GITHUB_OUTPUT
 
     - id: package_validate
       strategy:
