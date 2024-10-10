@@ -4,6 +4,7 @@
 - [Refactor] Schedule deprecation for `BatchWriteProcessOperator` to version `1.0.0`
 - [Refactor] Move all build configurations to `pyproject.toml`
 - [Refactor] Remove `__init__.py` from root namespace
+- [Refactor] add `__all__` object to reference package classes
 
 **v0.0.5**
 - [Feature] Change some methods in `GcsHook` to support `**kwargs` arguments
