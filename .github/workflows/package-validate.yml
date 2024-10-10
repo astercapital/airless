@@ -1,0 +1,12 @@
+name: Validate package
+
+on: [pull_request]
+
+jobs:
+  package_validate:
+    strategy:
+      matrix:
+        package: [airless-core, airless-pdf]
+    uses: astercapital/airless/.github/reusable-workflow/package-validate.yml
+    with:
+      package: ${{ matrix.package }}
