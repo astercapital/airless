@@ -19,6 +19,10 @@ jobs:
 
     steps:
 
+      - id: checkout_repo
+        name: Checkout repository
+        uses: actions/checkout@v4
+
       - id: list_packages
         name: List all packages
         run: |
