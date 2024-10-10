@@ -11,6 +11,6 @@ jobs:
     strategy:
       matrix:
         package: [airless-core, airless-pdf]
-    uses: ./.github/sworkflows/package-validate-reusable-workflow.yml
+    uses: ./.github/workflows/package-validate-reusable-workflow.yml
     with:
       package: ${{ matrix.package }}
