@@ -7,3 +7,13 @@ from .storage import (
     FileDeleteOperator,
     FileMoveOperator
 )
+
+__all__ = [
+    'FileUrlToGcsOperator',
+    'FtpToGcsOperator',
+    'FileDetectOperator',
+    'BatchWriteDetectOperator',
+    'BatchWriteProcessOperator',
+    'FileDeleteOperator',
+    'FileMoveOperator',
+]
