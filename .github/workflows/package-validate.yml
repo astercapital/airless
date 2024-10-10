@@ -10,10 +10,17 @@ on:
     branches: [ main ]
 
 jobs:
-  package_validate:
-    strategy:
-      matrix:
-        package: [airless-core, airless-pdf]
-    uses: ./.github/workflows/package-validate-reusable-workflow.yml
-    with:
-      package: ${{ matrix.package }}
+
+  steps:
+
+    - id: list_packages
+        run: |
+          echo "packages=$(ls packages | jq -R -s -c 'split("\n")[:-1]')" >> $GITHUB_OUTPUT  
+
+    - id: package_validate
+      strategy:
+        matrix:
+          package: ${{ steps.list_packages.outputs.packages }}
+      uses: ./.github/workflows/package-validate-reusable-workflow.yml
+      with:
+        package: ${{ matrix.package }}
