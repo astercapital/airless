@@ -11,16 +11,21 @@ on:
 
 jobs:
 
-  steps:
+  package_validate:
+    runs-on: ubuntu-latest
 
-    - id: list_packages
-      run: |
-        echo "packages=$(ls packages | jq -R -s -c 'split("\n")[:-1]')" >> $GITHUB_OUTPUT
+    steps:
 
-    - id: package_validate
-      strategy:
-        matrix:
-          package: ${{ steps.list_packages.outputs.packages }}
-      uses: ./.github/workflows/package-validate-reusable-workflow.yml
-      with:
-        package: ${{ matrix.package }}
+      - id: list_packages
+        name: List all packages
+        run: |
+          echo "packages=$(ls packages | jq -R -s -c 'split("\n")[:-1]')" >> $GITHUB_OUTPUT
+
+      - id: package_validate
+        name: Trigger 1 package validation workflow for each package
+        strategy:
+          matrix:
+            package: ${{ steps.list_packages.outputs.packages }}
+        uses: ./.github/workflows/package-validate-reusable-workflow.yml
+        with:
+          package: ${{ matrix.package }}
