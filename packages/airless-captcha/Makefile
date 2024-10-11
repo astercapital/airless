@@ -25,7 +25,7 @@ publish-dev-version:
 
 lint:
 	@make clean
-	@flake8 airless_captcha --count --show-source --statistics
+	@ruff check --statistics
 
 test:
 	@make clean

@@ -4,3 +4,10 @@ from .slack import (
     GoogleSlackSendOperator,
     GoogleSlackReactOperator
 )
+
+__all__ = [
+    'SlackSendOperator',
+    'SlackReactOperator',
+    'GoogleSlackSendOperator',
+    'GoogleSlackReactOperator'
+]

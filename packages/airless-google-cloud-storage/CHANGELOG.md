@@ -2,6 +2,10 @@
 **unreleased**
 - [Refactor] Use [`deprecation`](https://pypi.org/project/deprecation/) to deprecate functions instead of custom decorator
 - [Refactor] Schedule deprecation for `BatchWriteProcessOperator` to version `1.0.0`
+- [Refactor] Move all build configurations to `pyproject.toml`
+- [Refactor] Remove `__init__.py` from root namespace
+- [Refactor] add `__all__` object to reference package classes
+- [Refactor] Change linter from `flake8` to `ruff`
 
 **v0.0.5**
 - [Feature] Change some methods in `GcsHook` to support `**kwargs` arguments
