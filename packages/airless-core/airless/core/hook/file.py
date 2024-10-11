@@ -198,6 +198,22 @@ class FtpHook(FileHook):
         if dir:
             self.ftp.cwd(dir)
 
+    def dir(self):
+        """Lists the files and directories in the current directory of the FTP server.
+
+        This method retrieves a list of files and directories from the FTP server's 
+        current working directory. It populates a list with the directory entries 
+        and returns it.
+
+        Returns:
+            list: A list of directory entries as strings, each representing a file 
+            or directory in the FTP server's current working directory.
+        """
+        lines = []
+        self.ftp.dir("", lines.append)
+        return lines
+
+
     def list(self, regex=None, updated_after=None, updated_before=None):
         """Lists files in the current directory of the FTP server with optional filters.
 
@@ -212,8 +228,7 @@ class FtpHook(FileHook):
                 - A list of directories (dictionaries with 'name' and 'updated_at').
         """
 
-        lines = []
-        self.ftp.dir("", lines.append)
+        lines = self.dir()
 
         files = []
         directories = []
