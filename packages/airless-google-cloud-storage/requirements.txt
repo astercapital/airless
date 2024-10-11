@@ -3,5 +3,5 @@ ndjson>=0.3.0,<0.4.0
 pyarrow>=11.0.0,<=17.0.0
 deprecation>=2.1.0,<2.2.0
 
-airless-core>=0.1.3.dev2
-airless-google-cloud-core>=0.0.3.dev2
+airless-core>=0.1.2,<0.2.0
+airless-google-cloud-core>=0.0.1.dev1,<0.1.0

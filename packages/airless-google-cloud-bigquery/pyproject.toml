@@ -3,9 +3,7 @@ name = "airless-google-cloud-bigquery"
 version = "0.0.3"
 description = "Airless package to works with google cloud bigquery"
 readme = "README.md"
-requires-python = ">=3.9"
-dynamic = ["dependencies"]
-license = {text = "MIT License"}
+dynamic = ["dependencies", "requires-python"]
 
 [build-system]
 requires = ["setuptools", "wheel"]
@@ -17,38 +15,5 @@ build-backend = "setuptools.build_meta"
 
 [tool.pytest.ini_options]
 minversion = "6.0"
-addopts = "--capture=sys --cache-clear --disable-warnings --junitxml=pytest.xml --cov-report=xml:cov.xml --cov=airless"
+addopts = "--capture=sys --cache-clear --disable-warnings --junitxml=pytest.xml --cov-report=xml:cov.xml --cov-report=term-missing:skip-covered --cov=airless"
 testpaths = ["tests"]
-
-[tool.setuptools.packages.find]
-include = ["airless*"]
-
-[tool.ruff]
-exclude = [
-    ".git",
-    "__pycache__",
-    "build",
-    "dist",
-    "*.pyc",
-    "*.egg-info",
-    "*.egg",
-    "temp",
-    "venv"
-]
-line-length = 88
-indent-width = 4
-target-version = "py39"
-
-[tool.ruff.lint]
-ignore = ["E501"]
-fixable = ["ALL"]
-unfixable = []
-dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
-
-[tool.ruff.format]
-quote-style = "single"
-indent-style = "space"
-skip-magic-trailing-comma = false
-line-ending = "lf"
-docstring-code-format = false
-docstring-code-line-length = "dynamic"

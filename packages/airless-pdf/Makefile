@@ -25,7 +25,7 @@ publish-dev-version:
 
 lint:
 	@make clean
-	@ruff check --statistics
+	@flake8 airless --count --show-source --statistics
 
 test:
 	@make clean
