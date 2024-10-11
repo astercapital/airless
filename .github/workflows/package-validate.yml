@@ -1,0 +1,38 @@
+name: Validate packages
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+  push:
+    branches: [ main ]
+
+jobs:
+
+  list_packages:
+    runs-on: ubuntu-latest
+
+    outputs:
+      packages: ${{ steps.list_packages.outputs.packages }}
+
+    steps:
+
+      - id: checkout_repo
+        name: Checkout repository
+        uses: actions/checkout@v4
+
+      - id: list_packages
+        name: List all packages
+        run: |
+          echo "packages=$(ls packages | jq -R -s -c 'split("\n")[:-1]')" >> $GITHUB_OUTPUT
+
+  package_validate:
+    needs: list_packages
+    strategy:
+      matrix:
+        package: ${{ fromJson(needs.list_packages.outputs.packages) }}
+    uses: ./.github/workflows/package-validate-reusable-workflow.yml
+    with:
+      package: ${{ matrix.package }}
