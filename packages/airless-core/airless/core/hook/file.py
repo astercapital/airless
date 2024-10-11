@@ -3,20 +3,30 @@ import json
 import ndjson
 import os
 import requests
-import uuid
 import re
+import uuid
+
+from datetime import datetime
 from dateutil import parser
 from ftplib import FTP
 from typing import Any
-
-from datetime import datetime
 
 from airless.core.hook import BaseHook
 
 
 class FileHook(BaseHook):
+    """FileHook class for handling file operations.
+
+    This class provides methods to write data to local files in
+    various formats (JSON and NDJSON), download files, rename files,
+    and list files in a directory.
+
+    Inherits from:
+        BaseHook: The base class for hooks in the airless framework.
+    """
 
     def __init__(self):
+        """Initializes a new instance of the FileHook class."""
         super().__init__()
 
     def write(self, local_filepath: str, data: Any, **kwargs) -> None:
@@ -39,6 +49,7 @@ class FileHook(BaseHook):
                 - `'wb'`: Write binary mode, which overwrites the file if it exists.
                 Defaults to `'w'`.
         """
+
         use_ndjson = kwargs.get('use_ndjson', False)
         mode = kwargs.get('mode', 'w')
 
@@ -52,6 +63,14 @@ class FileHook(BaseHook):
                 f.write(str(data))
 
     def extract_filename(self, filepath_or_url):
+        """Extracts the filename from a filepath or URL.
+
+        Args:
+            filepath_or_url (str): The original file path or URL.
+
+        Returns:
+            str: The extracted filename.
+        """
         return filepath_or_url.split('/')[-1].split('?')[0].split('#')[0]
 
     def get_tmp_filepath(self, filepath_or_url: str, **kwargs) -> str:
@@ -66,6 +85,9 @@ class FileHook(BaseHook):
             add_timestamp (bool, optional):
                 If `True`, a timestamp and a UUID will be prefixed to the filename to ensure uniqueness.
                 Defaults to `True`.
+
+        Returns:
+            str: The temporary file path.
         """
         add_timestamp = kwargs.get('add_timestamp', True)
 
@@ -76,6 +98,18 @@ class FileHook(BaseHook):
         return f'/tmp/{filename}'
 
     def download(self, url, headers, timeout=500, proxies=None):
+        """Downloads a file from a given URL and saves it to a temporary path.
+
+        Args:
+            url (str): The URL of the file to download.
+            headers (dict): The headers to include in the request.
+            timeout (int, optional): The request timeout in seconds. Defaults to 500.
+            proxies (dict, optional): Proxy settings for the request. Defaults to None.
+
+        Returns:
+            str: The local filename where the downloaded file is saved.
+        """
+
         local_filename = self.get_tmp_filepath(url)
         with requests.get(url, stream=True, verify=False, headers=headers, timeout=timeout, proxies=proxies) as r:
             r.raise_for_status()
@@ -85,16 +119,42 @@ class FileHook(BaseHook):
         return local_filename
 
     def rename(self, from_filename, to_filename):
+        """Renames a file from the original filename to the new filename.
+
+        Args:
+            from_filename (str): The original filename to rename.
+            to_filename (str): The new filename.
+
+        Returns:
+            str: The new filename after renaming.
+        """
+
         to_filename_formatted = ('' if to_filename.startswith('/tmp/') else '/tmp/') + to_filename
         os.rename(from_filename, to_filename_formatted)
         return to_filename_formatted
 
     def rename_files(self, dir, prefix):
+        """Renames all files in a directory by prepending a prefix.
+
+        Args:
+            dir (str): The directory containing files to rename.
+            prefix (str): The prefix to prepend to each file name.
+        """
+
         for root, subdirs, files in os.walk(dir):
             for filename in files:
                 os.rename(os.path.join(root, filename), os.path.join(root, f'{prefix}_{filename}'))
 
     def list_files(self, folder):
+        """Lists all files in a specified directory.
+
+        Args:
+            folder (str): The folder path to search for files.
+
+        Returns:
+            list: A list of file paths found in the directory.
+        """
+
         file_list = []
         for root, subdirs, files in os.walk(folder):
             for filename in files:
@@ -105,20 +165,53 @@ class FileHook(BaseHook):
 
 
 class FtpHook(FileHook):
+    """FtpHook class for handling FTP file operations.
+
+    This class extends FileHook with methods specific to FTP file operations including
+    connecting to an FTP server, navigating directories, and downloading files.
+    """
 
     def __init__(self):
+        """Initializes a new instance of the FtpHook class."""
         super().__init__()
         self.ftp = None
 
     def login(self, host, user, password):
+        """Logs into the FTP server using the provided credentials.
+
+        Args:
+            host (str): The FTP server hostname or IP address.
+            user (str): The username for the FTP server.
+            password (str): The password for the FTP server.
+        """
+
         self.ftp = FTP(host, user, password)
         self.ftp.login()
 
     def cwd(self, dir):
+        """Changes the current working directory on the FTP server.
+
+        Args:
+            dir (str): The directory to change to.
+        """
+
         if dir:
             self.ftp.cwd(dir)
 
     def list(self, regex=None, updated_after=None, updated_before=None):
+        """Lists files in the current directory of the FTP server with optional filters.
+
+        Args:
+            regex (str, optional): A regular expression to filter file names. Defaults to None.
+            updated_after (datetime, optional): Filter files updated after this date. Defaults to None.
+            updated_before (datetime, optional): Filter files updated before this date. Defaults to None.
+
+        Returns:
+            tuple: A tuple containing two lists:
+                - A list of files (dictionaries with 'name' and 'updated_at').
+                - A list of directories (dictionaries with 'name' and 'updated_at').
+        """
+
         lines = []
         self.ftp.dir("", lines.append)
 
@@ -153,6 +246,16 @@ class FtpHook(FileHook):
         return files, directories
 
     def download(self, dir, filename):
+        """Downloads a file from the FTP server to a temporary local file.
+
+        Args:
+            dir (str): The directory on the FTP server where the file is located.
+            filename (str): The name of the file to download.
+
+        Returns:
+            str: The local filepath where the downloaded file is saved.
+        """
+
         self.cwd(dir)
         local_filepath = self.get_tmp_filepath(filename)
         with open(local_filepath, 'wb') as file:
