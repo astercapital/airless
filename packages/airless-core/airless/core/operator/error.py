@@ -1,4 +1,3 @@
-
 import time
 
 from airless.core.dto.base import BaseDto
@@ -6,12 +5,39 @@ from airless.core.operator import BaseEventOperator
 
 
 class ErrorReprocessOperator(BaseEventOperator):
+    """Operator to handle processing of erroneous events.
 
+    This operator manages the retry logic for events that fail.
+    It can reprocess events based on configured retries and intervals, 
+    and if the maximum retries are exceeded, it forwards the error 
+    details to a specified destination.
+    """
+    
     def __init__(self):
+        """Initializes the ErrorReprocessOperator.
+        
+        Inherits from the BaseEventOperator and performs any necessary 
+        initialization.  
+        """
         super().__init__()
 
     def execute(self, data, topic):
+        """Executes the error processing logic for the given data.
 
+        Args:
+            data (dict): The event data that needs to be processed.
+            topic (str): The topic from which the event is received.
+
+        Raises:
+            KeyError: If required keys are missing in the data dictionary.
+
+        This method retrieves necessary metadata from the input data, 
+        handles retries based on the specified parameters, and publishes 
+        either the retried event back to the original topic or the 
+        error details to the destination topic if maximum retries have 
+        been exceeded.
+        """
+        
         project = data.get('project', 'undefined')
 
         input_type = data['input_type']
