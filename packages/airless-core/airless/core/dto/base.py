@@ -1,13 +1,28 @@
-
 from deprecation import deprecated
 
 
 @deprecated(deprecated_in="0.1.2", removed_in="1.0.0",
             details="This class will be deprecated. Please write files directly to datalake instead of stream inserting data to a database")
-class BaseDto():
+class BaseDto:
+    """Base Data Transfer Object for handling data."""
 
-    def __init__(self, event_id, resource, to_project, to_dataset, to_table, to_schema, to_partition_column,
-                 to_extract_to_cols, to_keys_format, data):
+    def __init__(self, event_id: int, resource: str, to_project: str, to_dataset: str, to_table: str,
+                 to_schema: list, to_partition_column: str, to_extract_to_cols: bool,
+                 to_keys_format: str, data: dict) -> None:
+        """Initializes the BaseDto.
+
+        Args:
+            event_id (int): The event ID.
+            resource (str): The resource name.
+            to_project (str): The target project.
+            to_dataset (str): The target dataset.
+            to_table (str): The target table.
+            to_schema (list): The schema for the data.
+            to_partition_column (str): The partition column.
+            to_extract_to_cols (bool): Flag to extract columns.
+            to_keys_format (str): The format for keys.
+            data (dict): The data to be transferred.
+        """
         self.event_id = event_id or 1234
         self.resource = resource or 'local'
         self.to_project = to_project
@@ -33,7 +48,12 @@ class BaseDto():
             self.to_keys_format = 'nothing'
         self.data = data
 
-    def as_dict(self):
+    def as_dict(self) -> dict:
+        """Converts the DTO to a dictionary.
+
+        Returns:
+            dict: The dictionary representation of the DTO.
+        """
         return {
             'metadata': {
                 'event_id': self.event_id,
@@ -51,7 +71,16 @@ class BaseDto():
             'data': self.data
         }
 
-    def from_dict(d):
+    @staticmethod
+    def from_dict(d: dict) -> 'BaseDto':
+        """Creates a BaseDto from a dictionary.
+
+        Args:
+            d (dict): The dictionary to convert.
+
+        Returns:
+            BaseDto: The created BaseDto instance.
+        """
         to = d.get('metadata', {}).get('to')
         if to:
             project = to.get('project')

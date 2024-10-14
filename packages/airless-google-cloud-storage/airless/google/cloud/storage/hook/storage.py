@@ -2,12 +2,12 @@
 import json
 import ndjson
 import os
-import pyarrow as pa
-from typing import Any
+from typing import Any, Dict, List, Optional, Union, Tuple
 
 from datetime import datetime
 from google.cloud import storage
 from google.cloud.storage.retry import DEFAULT_RETRY
+import pyarrow as pa
 from pyarrow import fs, parquet
 
 from airless.core.utils import get_config
@@ -15,16 +15,37 @@ from airless.core.hook import BaseHook, FileHook
 
 
 class GcsHook(BaseHook):
+    """Hook for interacting with Google Cloud Storage."""
 
-    def __init__(self):
+    def __init__(self) -> None:
+        """Initializes the GcsHook."""
         super().__init__()
         self.storage_client = storage.Client()
         self.file_hook = FileHook()
 
-    def build_filepath(self, bucket, filepath):
+    def build_filepath(self, bucket: str, filepath: str) -> str:
+        """Builds the full GCS file path.
+
+        Args:
+            bucket (str): The name of the GCS bucket.
+            filepath (str): The file path.
+
+        Returns:
+            str: The full GCS file path.
+        """
         return f'gs://{bucket}/{filepath}'
 
-    def read_as_string(self, bucket, filepath, encoding=None):
+    def read_as_string(self, bucket: str, filepath: str, encoding: Optional[str] = None) -> str:
+        """Reads a file from GCS as a string.
+
+        Args:
+            bucket (str): The name of the GCS bucket.
+            filepath (str): The file path.
+            encoding (Optional[str]): The encoding to use. Defaults to None.
+
+        Returns:
+            str: The content of the file as a string.
+        """
         bucket = self.storage_client.get_bucket(bucket)
 
         blob = bucket.blob(filepath)
@@ -34,23 +55,59 @@ class GcsHook(BaseHook):
         else:
             return content.decode()
 
-    def read_as_bytes(self, bucket, filepath):
+    def read_as_bytes(self, bucket: str, filepath: str) -> bytes:
+        """Reads a file from GCS as bytes.
+
+        Args:
+            bucket (str): The name of the GCS bucket.
+            filepath (str): The file path.
+
+        Returns:
+            bytes: The content of the file as bytes.
+        """
         bucket = self.storage_client.get_bucket(bucket)
 
         blob = bucket.blob(filepath)
         return blob.download_as_bytes()
 
-    def download(self, bucket, filepath, target_filepath=None):
+    def download(self, bucket: str, filepath: str, target_filepath: Optional[str] = None) -> None:
+        """Downloads a file from GCS.
+
+        Args:
+            bucket (str): The name of the GCS bucket.
+            filepath (str): The file path.
+            target_filepath (Optional[str]): The target file path. Defaults to None.
+        """
         bucket = self.storage_client.get_bucket(bucket)
 
         filename = filepath.split('/')[-1]
         blob = bucket.blob(filepath)
         blob.download_to_filename(target_filepath or filename)
 
-    def read_json(self, bucket, filepath, encoding=None):
+    def read_json(self, bucket: str, filepath: str, encoding: Optional[str] = None) -> Any:
+        """Reads a JSON file from GCS.
+
+        Args:
+            bucket (str): The name of the GCS bucket.
+            filepath (str): The file path.
+            encoding (Optional[str]): The encoding to use. Defaults to None.
+
+        Returns:
+            Any: The content of the JSON file.
+        """
         return json.loads(self.read(bucket, filepath, encoding))
 
-    def read_ndjson(self, bucket, filepath, encoding=None):
+    def read_ndjson(self, bucket: str, filepath: str, encoding: Optional[str] = None) -> List[Any]:
+        """Reads an NDJSON file from GCS.
+
+        Args:
+            bucket (str): The name of the GCS bucket.
+            filepath (str): The file path.
+            encoding (Optional[str]): The encoding to use. Defaults to None.
+
+        Returns:
+            List[Any]: The content of the NDJSON file.
+        """
         return ndjson.loads(self.read(bucket, filepath, encoding))
 
     def upload_from_memory(
@@ -59,37 +116,23 @@ class GcsHook(BaseHook):
             bucket: str,
             directory: str,
             filename: str,
-            **kwargs
+            **kwargs: Any
         ) -> str:
-        """
-        Uploads data from memory to a specified bucket and directory.
+        """Uploads data from memory to GCS.
 
         Args:
-            data (Any):
-                The data to be uploaded. It can be of any type that is supported by the
-                `write` method of `self.file_hook`.
-            bucket (str):
-                The name of the bucket where the file will be uploaded.
-            directory (str):
-                The directory within the bucket where the file will be stored.
-            filename (str):
-                The name of the file to be created and uploaded.
+            data (Any): The data to upload.
+            bucket (str): The name of the GCS bucket.
+            directory (str): The directory within the bucket.
+            filename (str): The name of the file to create.
 
         Kwargs:
-            # Arguments for `self.file_hook.get_tmp_filepath`
-            add_timestamp (bool, optional):
-                If `True`, a timestamp and a UUID will be prefixed to the filename to ensure uniqueness.
-                Defaults to `True`.
+            add_timestamp (bool, optional): If True, adds a timestamp to the filename. Defaults to True.
+            use_ndjson (bool, optional): If True, writes data in NDJSON format. Defaults to False.
+            mode (str, optional): The mode for opening the file. Defaults to 'w'.
 
-            # Arguments for `self.file_hook.write`
-            use_ndjson (bool, optional):
-                If `True` and the data is a dictionary or list, the data will be written in NDJSON format.
-                Defaults to `False`.
-            mode (str, optional):
-                The mode in which the file is opened. Common modes include:
-                - `'w'`: Write mode, which overwrites the file if it exists.
-                - `'wb'`: Write binary mode, which overwrites the file if it exists.
-                Defaults to `'w'`.
+        Returns:
+            str: The path to the uploaded file.
         """
         local_filename = self.file_hook.get_tmp_filepath(filename, **kwargs)
         try:
@@ -106,32 +149,22 @@ class GcsHook(BaseHook):
             bucket: str,
             directory: str,
             filename: str,
-            **kwargs
+            **kwargs: Any
         ) -> str:
-        """
-        Uploads Parquet data from memory to a specified bucket and directory.
+        """Uploads Parquet data from memory to GCS.
 
         Args:
-            data (Any):
-                The data to be uploaded. It should be a list of dictionaries or objects that can be
-                converted into a PyArrow table.
-            bucket (str):
-                The name of the bucket where the Parquet file will be uploaded.
-            directory (str):
-                The directory within the bucket where the Parquet file will be stored.
-            filename (str):
-                The name of the Parquet file to be created and uploaded.
+            data (Any): The data to upload.
+            bucket (str): The name of the GCS bucket.
+            directory (str): The directory within the bucket.
+            filename (str): The name of the Parquet file to create.
 
         Kwargs:
-            # Additional arguments
-            schema (pa.Schema, optional):
-                An optional PyArrow schema to cast the table before writing. If provided, the table will
-                be cast to this schema. Defaults to `None`.
+            schema (pa.Schema, optional): The schema for the Parquet table. Defaults to None.
+            add_timestamp (bool, optional): If True, adds a timestamp to the filename. Defaults to True.
 
-            # Arguments for `self.file_hook.get_tmp_filepath`
-            add_timestamp (bool, optional):
-                If `True`, a timestamp and a UUID will be prefixed to the filename to ensure uniqueness.
-                Defaults to `True`.
+        Returns:
+            str: The path to the uploaded Parquet file.
         """
         schema = kwargs.get('schema', None)
 
@@ -151,14 +184,31 @@ class GcsHook(BaseHook):
         )
         return output_filepath
 
-    def upload(self, local_filepath, bucket_name, directory):
+    def upload(self, local_filepath: str, bucket_name: str, directory: str) -> str:
+        """Uploads a local file to GCS.
+
+        Args:
+            local_filepath (str): The path to the local file.
+            bucket_name (str): The name of the GCS bucket.
+            directory (str): The directory within the bucket.
+
+        Returns:
+            str: The path to the uploaded file in GCS.
+        """
         filename = self.file_hook.extract_filename(local_filepath)
         bucket = self.storage_client.bucket(bucket_name)
         blob = bucket.blob(f"{directory}/{filename}")
         blob.upload_from_filename(local_filepath)
         return f"{bucket_name}/{directory}/{filename}"
 
-    def upload_folder(self, local_path, bucket, gcs_path):
+    def upload_folder(self, local_path: str, bucket: str, gcs_path: str) -> None:
+        """Uploads a folder to GCS.
+
+        Args:
+            local_path (str): The local folder path.
+            bucket (str): The name of the GCS bucket.
+            gcs_path (str): The GCS path to upload to.
+        """
         for root, _, files in os.walk(local_path):
             for file in files:
                 local_file_path = os.path.join(root, file)
@@ -169,25 +219,61 @@ class GcsHook(BaseHook):
                 blob = bucket_.blob(gcs_blob_name)
                 blob.upload_from_filename(local_file_path)
 
-    def check_existance(self, bucket, filepath):
+    def check_existance(self, bucket: str, filepath: str) -> bool:
+        """Checks if a file exists in GCS.
+
+        Args:
+            bucket (str): The name of the GCS bucket.
+            filepath (str): The file path.
+
+        Returns:
+            bool: True if the file exists, False otherwise.
+        """
         blobs = self.storage_client.list_blobs(bucket, prefix=filepath, max_results=1, page_size=1)
         return len(list(blobs)) > 0
 
-    def move(self, from_bucket, from_prefix, to_bucket, to_directory, rewrite=False):
+    def move(self, from_bucket: str, from_prefix: str, to_bucket: str, to_directory: str, rewrite: bool) -> None:
+        """Moves files from one GCS location to another.
+
+        Args:
+            from_bucket (str): The source bucket.
+            from_prefix (str): The source prefix.
+            to_bucket (str): The destination bucket.
+            to_directory (str): The destination directory.
+            rewrite (bool): Whether to overwrite existing files.
+        """
         bucket = self.storage_client.get_bucket(from_bucket)
         dest_bucket = self.storage_client.bucket(to_bucket)
 
         blobs = list(bucket.list_blobs(prefix=from_prefix, fields='items(name),nextPageToken'))
         self.move_blobs(bucket, blobs, dest_bucket, to_directory, rewrite)
 
-    def move_files(self, from_bucket, files, to_bucket, to_directory, rewrite):
+    def move_files(self, from_bucket: str, files: List[str], to_bucket: str, to_directory: str, rewrite: bool) -> None:
+        """Moves specified files from one GCS location to another.
+
+        Args:
+            from_bucket (str): The source bucket.
+            files (List[str]): The list of files to move.
+            to_bucket (str): The destination bucket.
+            to_directory (str): The destination directory.
+            rewrite (bool): Whether to overwrite existing files.
+        """
         bucket = self.storage_client.get_bucket(from_bucket)
         dest_bucket = self.storage_client.bucket(to_bucket)
 
         blobs = self.files_to_blobs(bucket, files)
         self.move_blobs(bucket, blobs, dest_bucket, to_directory, rewrite)
 
-    def move_blobs(self, bucket, blobs, to_bucket, to_directory, rewrite):
+    def move_blobs(self, bucket: storage.Bucket, blobs: List[storage.Blob], to_bucket: storage.Bucket, to_directory: str, rewrite: bool) -> None:
+        """Moves blobs from one bucket to another.
+
+        Args:
+            bucket (storage.Bucket): The source bucket.
+            blobs (List[storage.Blob]): The list of blobs to move.
+            to_bucket (storage.Bucket): The destination bucket.
+            to_directory (str): The destination directory.
+            rewrite (bool): Whether to overwrite existing files.
+        """
         if rewrite:
             self.rewrite_blobs(blobs, to_bucket, to_directory)
         else:
@@ -195,7 +281,14 @@ class GcsHook(BaseHook):
 
         self.delete_blobs(blobs)
 
-    def rewrite_blobs(self, blobs, to_bucket, to_directory):
+    def rewrite_blobs(self, blobs: List[storage.Blob], to_bucket: storage.Bucket, to_directory: str) -> None:
+        """Rewrites blobs in the destination bucket.
+
+        Args:
+            blobs (List[storage.Blob]): The list of blobs to rewrite.
+            to_bucket (storage.Bucket): The destination bucket.
+            to_directory (str): The destination directory.
+        """
         for blob in blobs:
             if not blob.name.endswith('/'):
                 rewrite_token = False
@@ -206,17 +299,22 @@ class GcsHook(BaseHook):
                     rewrite_token, bytes_rewritten, bytes_to_rewrite = dest_blob.rewrite(
                         source=blob,
                         token=rewrite_token,
-                        retry=DEFAULT_RETRY  # retries any API request which returns a “transient” error
+                        retry=DEFAULT_RETRY
                     )
                     self.logger.debug(f'{to_directory}/{filename} - Progress so far: {bytes_rewritten}/{bytes_to_rewrite} bytes')
 
                     if not rewrite_token:
                         break
 
-    def copy_blobs(self, bucket, blobs, to_bucket, to_directory):
-        # the copy operation is faster because it can be sent in batches, which rewrite can't
-        # but it can only be used for small files, it can fail to larger files
+    def copy_blobs(self, bucket: storage.Bucket, blobs: List[storage.Blob], to_bucket: storage.Bucket, to_directory: str) -> None:
+        """Copies blobs from one bucket to another.
 
+        Args:
+            bucket (storage.Bucket): The source bucket.
+            blobs (List[storage.Blob]): The list of blobs to copy.
+            to_bucket (storage.Bucket): The destination bucket.
+            to_directory (str): The destination directory.
+        """
         batch_size = 100
         count = 0
 
@@ -229,11 +327,18 @@ class GcsHook(BaseHook):
                             blob=blob,
                             destination_bucket=to_bucket,
                             new_name=f'{to_directory}/{filename}',
-                            retry=DEFAULT_RETRY  # retries any API request which returns a “transient” error
+                            retry=DEFAULT_RETRY
                         )
                 count = count + batch_size
 
-    def delete(self, bucket_name, prefix, files=None):
+    def delete(self, bucket_name: str, prefix: Optional[str] = None, files: Optional[List[str]] = None) -> None:
+        """Deletes files from GCS.
+
+        Args:
+            bucket_name (str): The name of the GCS bucket.
+            prefix (Optional[str]): The prefix for files to delete. Defaults to None.
+            files (Optional[List[str]]): The list of specific files to delete. Defaults to None.
+        """
         bucket = self.storage_client.get_bucket(bucket_name)
         if files:
             blobs = self.files_to_blobs(bucket, files)
@@ -242,7 +347,12 @@ class GcsHook(BaseHook):
 
         self.delete_blobs(blobs)
 
-    def delete_blobs(self, blobs):
+    def delete_blobs(self, blobs: List[storage.Blob]) -> None:
+        """Deletes a list of blobs.
+
+        Args:
+            blobs (List[storage.Blob]): The list of blobs to delete.
+        """
         batch_size = 100
         count = 0
 
@@ -250,32 +360,71 @@ class GcsHook(BaseHook):
             with self.storage_client.batch():
                 for blob in blobs[count:count + batch_size]:
                     self.logger.debug(f'Deleting blob {blob.name}')
-                    blob.delete(retry=DEFAULT_RETRY)  # retries any API request which returns a “transient” error
+                    blob.delete(retry=DEFAULT_RETRY)
                 count = count + batch_size
 
-    def list(self, bucket_name, prefix=None):
+    def list(self, bucket_name: str, prefix: Optional[str] = None) -> List[storage.Blob]:
+        """Lists blobs in a GCS bucket.
+
+        Args:
+            bucket_name (str): The name of the GCS bucket.
+            prefix (Optional[str]): The prefix to filter blobs. Defaults to None.
+
+        Returns:
+            List[storage.Blob]: The list of blobs.
+        """
         return self.storage_client.list_blobs(
             bucket_name,
             prefix=prefix,
             fields='items(name,size,timeCreated,timeDeleted),nextPageToken'
         )
 
-    def files_to_blobs(self, bucket, files):
+    def files_to_blobs(self, bucket: storage.Bucket, files: List[str]) -> List[storage.Blob]:
+        """Converts a list of file names to blobs.
+
+        Args:
+            bucket (storage.Bucket): The GCS bucket.
+            files (List[str]): The list of file names.
+
+        Returns:
+            List[storage.Blob]: The list of blobs.
+        """
         return [bucket.blob(f) for f in files]
 
 
 class GcsDatalakeHook(GcsHook):
+    """Hook for interacting with GCS Datalake."""
 
-    def __init__(self):
+    def __init__(self) -> None:
+        """Initializes the GcsDatalakeHook."""
         super().__init__()
 
-    def build_metadata(self, message_id, origin):
+    def build_metadata(self, message_id: Optional[int], origin: Optional[str]) -> Dict[str, Any]:
+        """Builds metadata for the data being sent.
+
+        Args:
+            message_id (Optional[int]): The message ID.
+            origin (Optional[str]): The origin of the data.
+
+        Returns:
+            Dict[str, Any]: The metadata dictionary.
+        """
         return {
             'event_id': message_id or 1234,
             'resource': origin or 'local'
         }
 
-    def prepare_row(self, row, metadata, now):
+    def prepare_row(self, row: Any, metadata: Dict[str, Any], now: datetime) -> Dict[str, Any]:
+        """Prepares a row for insertion into the datalake.
+
+        Args:
+            row (Any): The row data.
+            metadata (Dict[str, Any]): The metadata for the row.
+            now (datetime): The current timestamp.
+
+        Returns:
+            Dict[str, Any]: The prepared row.
+        """
         return {
             '_event_id': metadata['event_id'],
             '_resource': metadata['resource'],
@@ -283,13 +432,34 @@ class GcsDatalakeHook(GcsHook):
             '_created_at': str(now)
         }
 
-    def prepare_rows(self, data, metadata):
+    def prepare_rows(self, data: Any, metadata: Dict[str, Any]) -> Tuple[List[Dict[str, Any]], datetime]:
+        """Prepares multiple rows for insertion into the datalake.
+
+        Args:
+            data (Any): The data to prepare.
+            metadata (Dict[str, Any]): The metadata for the rows.
+
+        Returns:
+            Tuple[List[Dict[str, Any]], datetime]: The prepared rows and the current timestamp.
+        """
         now = datetime.now()
         prepared_rows = data if isinstance(data, list) else [data]
         return [self.prepare_row(row, metadata, now) for row in prepared_rows], now
 
-    def send_to_landing_zone(self, data, dataset, table, message_id, origin, time_partition=False):
+    def send_to_landing_zone(self, data: Any, dataset: str, table: str, message_id: Optional[int], origin: Optional[str], time_partition: bool = False) -> Union[str, None]:
+        """Sends data to the landing zone in GCS.
 
+        Args:
+            data (Any): The data to send.
+            dataset (str): The dataset name.
+            table (str): The table name.
+            message_id (Optional[int]): The message ID.
+            origin (Optional[str]): The origin of the data.
+            time_partition (bool, optional): Whether to use time partitioning. Defaults to False.
+
+        Returns:
+            Union[str, None]: The path to the uploaded file or None.
+        """
         if isinstance(data, list) and (len(data) == 0):
             raise Exception(f'Trying to send empty list to landing zone: {dataset}.{table}')
 

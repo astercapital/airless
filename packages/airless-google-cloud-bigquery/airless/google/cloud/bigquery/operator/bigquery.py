@@ -1,6 +1,7 @@
 
 import json
 import re
+from typing import Any, Dict, List, Optional
 
 from datetime import datetime
 from unidecode import unidecode
@@ -14,15 +15,22 @@ from airless.google.cloud.storage.hook import GcsHook
 
 
 class GcsQueryToBigqueryOperator(GoogleBaseEventOperator):
+    """Operator for executing queries from GCS to BigQuery."""
 
-    def __init__(self):
+    def __init__(self) -> None:
+        """Initializes the GcsQueryToBigqueryOperator."""
         super().__init__()
 
         self.gcs_hook = GcsHook()
         self.bigquery_hook = BigqueryHook()
 
-    def execute(self, data, topic):
+    def execute(self, data: Dict[str, Any], topic: str) -> None:
+        """Executes the query from GCS to BigQuery.
 
+        Args:
+            data (Dict[str, Any]): The data containing query information.
+            topic (str): The Pub/Sub topic.
+        """
         query = data['query']
         if isinstance(query, dict):
             query_bucket = query.get('bucket', get_config('GCS_BUCKET_SQL'))
@@ -59,12 +67,20 @@ class GcsQueryToBigqueryOperator(GoogleBaseEventOperator):
 
 
 class PubsubToBigqueryOperator(GoogleBaseEventOperator):
+    """Operator for transferring messages from Pub/Sub to BigQuery."""
 
-    def __init__(self):
+    def __init__(self) -> None:
+        """Initializes the PubsubToBigqueryOperator."""
         super().__init__()
         self.bigquery_hook = BigqueryHook()
 
-    def execute(self, data, topic):
+    def execute(self, data: Dict[str, Any], topic: str) -> None:
+        """Executes the transfer from Pub/Sub to BigQuery.
+
+        Args:
+            data (Dict[str, Any]): The data containing message information.
+            topic (str): The Pub/Sub topic.
+        """
         dto = BaseDto.from_dict(data)
 
         prepared_rows = self.prepare_rows(dto)
@@ -77,7 +93,19 @@ class PubsubToBigqueryOperator(GoogleBaseEventOperator):
             partition_column=dto.to_partition_column,
             rows=prepared_rows)
 
-    def prepare_row(self, row, event_id, resource, extract_to_cols, keys_format):
+    def prepare_row(self, row: Dict[str, Any], event_id: str, resource: str, extract_to_cols: bool, keys_format: Optional[str]) -> Dict[str, Any]:
+        """Prepares a single row for BigQuery insertion.
+
+        Args:
+            row (Dict[str, Any]): The row data.
+            event_id (str): The event ID.
+            resource (str): The resource name.
+            extract_to_cols (bool): Whether to extract to columns.
+            keys_format (Optional[str]): The format for keys.
+
+        Returns:
+            Dict[str, Any]: The prepared row.
+        """
         prepared_row = {
             '_event_id': event_id,
             '_resource': resource,
@@ -103,42 +131,36 @@ class PubsubToBigqueryOperator(GoogleBaseEventOperator):
 
         return prepared_row
 
-    def prepare_rows(self, dto):
+    def prepare_rows(self, dto: BaseDto) -> List[Dict[str, Any]]:
+        """Prepares multiple rows for BigQuery insertion.
+
+        Args:
+            dto (BaseDto): The data transfer object containing the data.
+
+        Returns:
+            List[Dict[str, Any]]: The list of prepared rows.
+        """
         prepared_rows = dto.data if isinstance(dto.data, list) else [dto.data]
         return [self.prepare_row(row, dto.event_id, dto.resource, dto.to_extract_to_cols, dto.to_keys_format) for row in prepared_rows]
 
-    def camel_to_snake(self, s):
+    def camel_to_snake(self, s: str) -> str:
+        """Converts a camelCase string to snake_case.
+
+        Args:
+            s (str): The camelCase string.
+
+        Returns:
+            str: The converted snake_case string.
+        """
         return ''.join(['_' + c.lower() if c.isupper() else c for c in s]).lstrip('_')
 
-    def format_key(self, key):
+    def format_key(self, key: str) -> str:
+        """Formats a key by removing invalid characters.
+
+        Args:
+            key (str): The key to format.
+
+        Returns:
+            str: The formatted key.
+        """
         return re.sub(r'[^a-z0-9_]', '', unidecode(key.lower().replace(' ', '_')))
-
-
-class FileToBigqueryOperator(GoogleBaseEventOperator):
-
-    def __init__(self):
-        super().__init__()
-        self.gcs_hook = GcsHook()
-        self.bigquery_hook = BigqueryHook()
-
-    def execute(self, data, topic):
-        metadata = data['metadata']
-        file_format = metadata['file_format']
-
-        if file_format in ('csv', 'json'):
-            self.bigquery_hook.load_file(
-                from_filepath=self.gcs_hook.build_filepath(metadata['bucket'], metadata['file']),
-                from_file_format=file_format,
-                from_separator=metadata.get('separator'),
-                from_skip_leading_rows=metadata.get('skip_leading_rows'),
-                from_quote_character=metadata.get('quote_character'),
-                from_encoding=metadata.get('encoding'),
-                to_project=get_config('GCP_PROJECT'),
-                to_dataset=metadata['destination_dataset'],
-                to_table=metadata['destination_table'],
-                to_mode=metadata['mode'],
-                to_schema=metadata.get('schema'),
-                to_time_partitioning=metadata.get('time_partitioning'))
-
-        else:
-            raise Exception(f'File format {file_format} load not implemented')

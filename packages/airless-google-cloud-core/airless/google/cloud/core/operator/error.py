@@ -1,6 +1,7 @@
 
 import json
 import time
+from typing import Any, Dict, List, Optional
 
 from datetime import datetime
 
@@ -10,12 +11,19 @@ from airless.google.cloud.core.operator import GoogleBaseEventOperator
 
 
 class GoogleErrorReprocessOperator(GoogleBaseEventOperator):
+    """Operator for reprocessing errors in Google Cloud."""
 
-    def __init__(self):
+    def __init__(self) -> None:
+        """Initializes the GoogleErrorReprocessOperator."""
         super().__init__()
 
-    def execute(self, data, topic):
+    def execute(self, data: Dict[str, Any], topic: str) -> None:
+        """Executes the error reprocessing logic.
 
+        Args:
+            data (Dict[str, Any]): The input data containing error information.
+            topic (str): The Pub/Sub topic to publish messages to.
+        """
         input_type = data['input_type']
         origin = data.get('origin', 'undefined')
         message_id = data.get('event_id')
@@ -25,7 +33,7 @@ class GoogleErrorReprocessOperator(GoogleBaseEventOperator):
         retry_interval = metadata.get('retry_interval', 5)
         retries = metadata.get('retries', 0)
         max_retries = metadata.get('max_retries', 2)
-        max_interval = metadata.get('max_interval', 480)  # Cloud function max execution time is 540s (9 min), so set it to wait max 480s (8 min)
+        max_interval = metadata.get('max_interval', 480)
 
         if (input_type == 'event') and (retries < max_retries):
             time.sleep(min(retry_interval ** retries, max_interval))
@@ -60,7 +68,14 @@ class GoogleErrorReprocessOperator(GoogleBaseEventOperator):
             if slack_send_topic and (origin != slack_send_topic):
                 self.notify_slack(origin, message_id, data)
 
-    def notify_email(self, origin, message_id, data):
+    def notify_email(self, origin: str, message_id: str, data: Dict[str, Any]) -> None:
+        """Sends a notification email.
+
+        Args:
+            origin (str): The origin of the error.
+            message_id (str): The ID of the message.
+            data (Dict[str, Any]): The data related to the error.
+        """
         email_message = {
             'sender': get_config('EMAIL_SENDER_ERROR'),
             'recipients': eval(get_config('EMAIL_RECIPIENTS_ERROR')),
@@ -72,7 +87,14 @@ class GoogleErrorReprocessOperator(GoogleBaseEventOperator):
             topic=get_config('PUBSUB_TOPIC_EMAIL_SEND'),
             data=email_message)
 
-    def notify_slack(self, origin, message_id, data):
+    def notify_slack(self, origin: str, message_id: str, data: Dict[str, Any]) -> None:
+        """Sends a notification to Slack.
+
+        Args:
+            origin (str): The origin of the error.
+            message_id (str): The ID of the message.
+            data (Dict[str, Any]): The data related to the error.
+        """
         slack_message = {
             'channels': eval(get_config('SLACK_CHANNELS_ERROR')),
             'message': f'{origin} | {message_id}\n\n{json.dumps(data["data"])}\n\n{data["error"]}'
@@ -82,7 +104,17 @@ class GoogleErrorReprocessOperator(GoogleBaseEventOperator):
             topic=get_config('PUBSUB_TOPIC_SLACK_SEND'),
             data=slack_message)
 
-    def prepare_row(self, row, message_id, origin):
+    def prepare_row(self, row: Dict[str, Any], message_id: Optional[str], origin: Optional[str]) -> Dict[str, Any]:
+        """Prepares a row for insertion.
+
+        Args:
+            row (Dict[str, Any]): The row data.
+            message_id (Optional[str]): The message ID.
+            origin (Optional[str]): The origin of the message.
+
+        Returns:
+            Dict[str, Any]: The prepared row.
+        """
         return {
             '_event_id': message_id or 1234,
             '_resource': origin or 'local',
@@ -90,6 +122,16 @@ class GoogleErrorReprocessOperator(GoogleBaseEventOperator):
             '_created_at': str(datetime.now())
         }
 
-    def prepare_rows(self, data, message_id, origin):
+    def prepare_rows(self, data: Any, message_id: Optional[str], origin: Optional[str]) -> List[Dict[str, Any]]:
+        """Prepares multiple rows for insertion.
+
+        Args:
+            data (Any): The data to prepare.
+            message_id (Optional[str]): The message ID.
+            origin (Optional[str]): The origin of the message.
+
+        Returns:
+            List[Dict[str, Any]]: The list of prepared rows.
+        """
         prepared_rows = data if isinstance(data, list) else [data]
         return [self.prepare_row(row, message_id, origin) for row in prepared_rows]

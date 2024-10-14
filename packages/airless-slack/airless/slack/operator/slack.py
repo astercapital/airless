@@ -1,4 +1,6 @@
 
+from typing import Any, Dict, List, Optional
+
 from airless.core.operator import BaseEventOperator
 from airless.core.hook import SecretManagerHook
 from airless.google.cloud.secret_manager.hook import GoogleSecretManagerHook
@@ -7,25 +9,33 @@ from airless.slack.hook import SlackHook
 
 
 class SlackSendOperator(BaseEventOperator):
+    """Operator for sending messages to Slack."""
 
-    def __init__(self):
+    def __init__(self) -> None:
+        """Initializes the SlackSendOperator."""
         super().__init__()
         self.slack_hook = SlackHook()
         self.secret_manager_hook = SecretManagerHook()
 
-    def execute(self, data, topic):
-        channels = data.get('channels', [])
-        secret_id = data.get('secret_id', 'slack_alert')
-        message = data.get('message')
-        blocks = data.get('blocks')
-        attachments = data.get('attachments')
-        thread_ts = data.get('thread_ts')
-        reply_broadcast = data.get('reply_broadcast', False)
-        response_url = data.get('response_url')
-        response_type = data.get('response_type')
-        replace_original = data.get('replace_original')
+    def execute(self, data: Dict[str, Any], topic: str) -> None:
+        """Executes the sending of messages to Slack.
 
-        token = self.secret_manager_hook.get_secret(secret_id, True)['bot_token']
+        Args:
+            data (Dict[str, Any]): The data containing message information.
+            topic (str): The Pub/Sub topic.
+        """
+        channels: List[str] = data.get('channels', [])
+        secret_id: str = data.get('secret_id', 'slack_alert')
+        message: str = data.get('message')
+        blocks: Optional[List[Dict[str, Any]]] = data.get('blocks')
+        attachments: Optional[List[Dict[str, Any]]] = data.get('attachments')
+        thread_ts: Optional[str] = data.get('thread_ts')
+        reply_broadcast: bool = data.get('reply_broadcast', False)
+        response_url: Optional[str] = data.get('response_url')
+        response_type: Optional[str] = data.get('response_type')
+        replace_original: Optional[bool] = data.get('replace_original')
+
+        token: str = self.secret_manager_hook.get_secret(secret_id, True)['bot_token']
         self.slack_hook.set_token(token)
 
         if not channels and not response_url:
@@ -57,19 +67,27 @@ class SlackSendOperator(BaseEventOperator):
 
 
 class SlackReactOperator(BaseEventOperator):
+    """Operator for reacting to Slack messages."""
 
-    def __init__(self):
+    def __init__(self) -> None:
+        """Initializes the SlackReactOperator."""
         super().__init__()
         self.slack_hook = SlackHook()
         self.secret_manager_hook = SecretManagerHook()
 
-    def execute(self, data, topic):
-        channel = data['channel']
-        secret_id = data.get('secret_id', 'slack_alert')
-        reaction = data.get('reaction')
-        ts = data.get('ts')
+    def execute(self, data: Dict[str, Any], topic: str) -> None:
+        """Executes the reaction to a Slack message.
 
-        token = self.secret_manager_hook.get_secret(secret_id, True)['bot_token']
+        Args:
+            data (Dict[str, Any]): The data containing reaction information.
+            topic (str): The Pub/Sub topic.
+        """
+        channel: str = data['channel']
+        secret_id: str = data.get('secret_id', 'slack_alert')
+        reaction: str = data.get('reaction')
+        ts: str = data.get('ts')
+
+        token: str = self.secret_manager_hook.get_secret(secret_id, True)['bot_token']
         self.slack_hook.set_token(token)
 
         response = self.slack_hook.react(channel, reaction, ts)
@@ -77,18 +95,18 @@ class SlackReactOperator(BaseEventOperator):
 
 
 class GoogleSlackSendOperator(SlackSendOperator):
-    """
-    Slack operator using google secret manager to get secrets
-    """
-    def __init__(self):
+    """Slack operator using Google Secret Manager to get secrets."""
+
+    def __init__(self) -> None:
+        """Initializes the GoogleSlackSendOperator."""
         super().__init__()
         self.secret_manager_hook = GoogleSecretManagerHook()
 
 
 class GoogleSlackReactOperator(SlackReactOperator):
-    """
-    Slack operator using google secret manager to get secrets
-    """
-    def __init__(self):
+    """Slack operator using Google Secret Manager to get secrets."""
+
+    def __init__(self) -> None:
+        """Initializes the GoogleSlackReactOperator."""
         super().__init__()
         self.secret_manager_hook = GoogleSecretManagerHook()
