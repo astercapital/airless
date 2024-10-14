@@ -2,7 +2,6 @@
 from typing import Any
 
 from airless.core.operator import BaseEventOperator
-from airless.core.utils import get_config
 
 
 class RedirectOperator(BaseEventOperator):
@@ -43,7 +42,7 @@ class RedirectOperator(BaseEventOperator):
             None
         """
 
-        to_project = data.get('project', get_config('GCP_PROJECT'))
+        to_project = data.get('project')
         to_topic = data['topic']
         messages = data.get('messages', [{}])
         params = data.get('params', [])

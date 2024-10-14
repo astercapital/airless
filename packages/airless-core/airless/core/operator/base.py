@@ -59,7 +59,7 @@ class BaseOperator(BaseClass):
 
         error_obj = self.build_error_message(message, data)
         self.queue_hook.publish(
-            project=get_config('GCP_PROJECT'),
+            project=None,
             topic=get_config('PUBSUB_TOPIC_ERROR'),
             data=error_obj)
 
@@ -247,7 +247,7 @@ class BaseEventOperator(BaseOperator):
             time.sleep(10)
         for t in tasks:
             self.queue_hook.publish(
-                project=t.get('project', get_config('GCP_PROJECT')),
+                project=t.get('project'),
                 topic=t['topic'],
                 data=t['data'])
 

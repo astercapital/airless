@@ -56,7 +56,7 @@ class BaseDto():
     def from_dict(d):
         to = d.get('metadata', {}).get('to')
         if to:
-            project = to.get('project', get_config('GCP_PROJECT'))
+            project = to.get('project')
             dataset = to['dataset']
             table = to['table']
             schema = to.get('schema')
@@ -64,7 +64,7 @@ class BaseDto():
             extract_to_cols = to.get('extract_to_cols', False)
             keys_format = to.get('keys_format')
         else:
-            project = get_config('GCP_PROJECT')
+            project = None
             dataset = d['metadata']['destination_dataset']
             table = d['metadata']['destination_table']
             schema = None
