@@ -1,4 +1,5 @@
 
+import os
 import unittest
 
 from cloudevents.http import CloudEvent
@@ -13,6 +14,9 @@ class TestBaseOperator(unittest.TestCase):
         self.operator = BaseOperator()
         self.operator.queue_hook = MagicMock()
 
+        os.environ['ENV'] = 'dev'
+        os.environ['QUEUE_TOPIC_ERROR'] = 'dev-error'
+
     def test_extract_message_id(self):
         cloud_event = {'id': '12345'}
         message_id = self.operator.extract_message_id(cloud_event)
@@ -20,9 +24,8 @@ class TestBaseOperator(unittest.TestCase):
 
     def test_report_error(self):
         self.operator.build_error_message = MagicMock()
-        with patch('airless.core.utils.get_config', return_value='dev'):
-            self.operator.report_error('An error occurred', {'key': 'value'})
-            self.assertTrue(self.operator.has_error)
+        self.operator.report_error('An error occurred', {'key': 'value'})
+        self.assertTrue(self.operator.has_error)
 
         self.operator.build_error_message.assert_called_once()
         self.operator.queue_hook.publish.assert_called_once()
@@ -68,6 +71,9 @@ class TestBaseFileOperator(unittest.TestCase):
         self.cloud_event = CloudEvent(attributes, data)
         self.cloud_event['bucket'] = 'test_bucket'
 
+        os.environ['ENV'] = 'dev'
+        os.environ['QUEUE_TOPIC_ERROR'] = 'dev-error'
+
     @patch.object(BaseFileOperator, 'execute', return_value=None)
     def test_run_success(self, mock_execute):
         self.operator.run(self.cloud_event)
@@ -97,6 +103,9 @@ class TestBaseEventOperator(unittest.TestCase):
         self.cloud_event = CloudEvent(attributes, data)
         self.cloud_event['source'] = 'path/to/topic-name'
 
+        os.environ['ENV'] = 'dev'
+        os.environ['QUEUE_TOPIC_ERROR'] = 'dev-error'
+
     @patch.object(BaseEventOperator, 'execute', return_value=None)
     def test_run_success(self, mock_execute):
         self.operator.run(self.cloud_event)
@@ -113,6 +122,9 @@ class TestBaseHttpOperator(unittest.TestCase):
     def setUp(self):
         self.operator = BaseHttpOperator()
         self.operator.queue_hook = MagicMock()
+
+        os.environ['ENV'] = 'dev'
+        os.environ['QUEUE_TOPIC_ERROR'] = 'dev-error'
 
     @patch.object(BaseHttpOperator, 'execute', return_value=None)
     def test_run_success(self, mock_execute):
