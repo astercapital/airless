@@ -1,8 +1,6 @@
 
 from deprecation import deprecated
 
-from airless.core.utils import get_config
-
 
 @deprecated(deprecated_in="0.1.2", removed_in="1.0.0",
             details="This class will be deprecated. Please write files directly to datalake instead of stream inserting data to a database")

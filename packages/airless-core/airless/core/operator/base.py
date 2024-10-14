@@ -60,7 +60,7 @@ class BaseOperator(BaseClass):
         error_obj = self.build_error_message(message, data)
         self.queue_hook.publish(
             project=None,
-            topic=get_config('PUBSUB_TOPIC_ERROR'),
+            topic=get_config('QUEUE_TOPIC_ERROR'),
             data=error_obj)
 
         self.has_error = True
