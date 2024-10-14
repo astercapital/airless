@@ -1,0 +1,31 @@
+{
+    "attributes": {
+        "specversion": "1.0",
+        "id": "6276202538691611",
+        "source": "//storage.googleapis.com/projects/_/buckets/{bucket}",
+        "type": "google.cloud.storage.object.v1.finalized",
+        "datacontenttype": "application/json",
+        "subject": "{file}",
+        "time": "2022-11-18T18:24:21.181561Z",
+        "bucket": "{bucket}"
+    },
+    "data": {
+        "kind": "storage#object",
+        "id": "{id}",
+        "selfLink": "{link}",
+        "name": "{filename}",
+        "bucket": "{bucket}",
+        "generation": "1668795861038011",
+        "metageneration": "1",
+        "contentType": "text/plain",
+        "timeCreated": "2022-11-18T18:24:21.181Z",
+        "updated": "2022-11-18T18:24:21.181Z",
+        "storageClass": "STANDARD",
+        "timeStorageClassUpdated": "2022-11-18T18:24:21.181Z",
+        "size": "0",
+        "md5Hash": "{hash}",
+        "mediaLink": "{link}",
+        "crc32c": "AAAAAA==",
+        "etag": "CLvn/4OtuPsCEAE="
+    }
+}
