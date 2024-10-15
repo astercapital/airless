@@ -1,0 +1,349 @@
+pages:
+- page: packages/airless-pdf/airless/pdf/hook/pdf.md
+  source: packages/airless-pdf/airless/pdf/hook/pdf.py
+  classes:
+  - PDFHook:
+    - __init__
+    - chunk_in_pages
+    - generate_page_screenshot
+- page: packages/airless-google-cloud-secret-manager/airless/google/cloud/secret_manager/hook/secret_manager.md
+  source: packages/airless-google-cloud-secret-manager/airless/google/cloud/secret_manager/hook/secret_manager.py
+  classes:
+  - GoogleSecretManagerHook:
+    - __init__
+    - list_secrets
+    - list_secret_versions
+    - destroy_secret_version
+    - get_secret
+    - add_secret_version
+- page: packages/airless-email/airless/email/operator/email.md
+  source: packages/airless-email/airless/email/operator/email.py
+  classes:
+  - GoogleEmailSendOperator:
+    - __init__
+    - execute
+- page: packages/airless-email/airless/email/hook/email.md
+  source: packages/airless-email/airless/email/hook/email.py
+  classes:
+  - GoogleEmailHook:
+    - __init__
+    - send
+- page: packages/airless-slack/airless/slack/operator/slack.md
+  source: packages/airless-slack/airless/slack/operator/slack.py
+  classes:
+  - SlackSendOperator:
+    - __init__
+    - execute
+  - SlackReactOperator:
+    - __init__
+    - execute
+  - GoogleSlackSendOperator:
+    - __init__
+  - GoogleSlackReactOperator:
+    - __init__
+- page: packages/airless-slack/airless/slack/hook/slack.md
+  source: packages/airless-slack/airless/slack/hook/slack.py
+  classes:
+  - SlackHook:
+    - __init__
+    - set_token
+    - get_headers
+    - send
+    - react
+- page: packages/airless-google-cloud-bigquery/airless/google/cloud/bigquery/operator/bigquery.md
+  source: packages/airless-google-cloud-bigquery/airless/google/cloud/bigquery/operator/bigquery.py
+  classes:
+  - GcsQueryToBigqueryOperator:
+    - __init__
+    - execute
+  - PubsubToBigqueryOperator:
+    - __init__
+    - execute
+    - prepare_row
+    - prepare_rows
+    - camel_to_snake
+    - format_key
+- page: packages/airless-google-cloud-bigquery/airless/google/cloud/bigquery/hook/bigquery.md
+  source: packages/airless-google-cloud-bigquery/airless/google/cloud/bigquery/hook/bigquery.py
+  classes:
+  - BigqueryHook:
+    - __init__
+    - build_table_id
+    - list_datasets
+    - get_dataset
+    - get_table
+    - write
+    - update_table_schema
+    - get_all_columns
+    - setup_job_config
+    - execute_load_job
+    - load_file
+    - execute_query_job
+    - export_to_gcs
+    - get_rows_from_table
+    - get_query_results
+- page: packages/airless-core/airless/core/base.md
+  source: packages/airless-core/airless/core/base.py
+  classes:
+  - BaseClass:
+    - __init__
+- page: packages/airless-core/airless/core/dto/base.md
+  source: packages/airless-core/airless/core/dto/base.py
+  classes:
+  - BaseDto:
+    - __init__
+    - as_dict
+    - from_dict
+- page: packages/airless-core/airless/core/service/base.md
+  source: packages/airless-core/airless/core/service/base.py
+  classes:
+  - BaseService:
+    - __init__
+- page: packages/airless-core/airless/core/service/captcha.md
+  source: packages/airless-core/airless/core/service/captcha.py
+  classes:
+  - CaptchaService:
+    - __init__
+    - solve
+- page: packages/airless-core/airless/core/utils/config.md
+  source: packages/airless-core/airless/core/utils/config.py
+  functions:
+  - get_config
+- page: packages/airless-core/airless/core/utils/enum.md
+  source: packages/airless-core/airless/core/utils/enum.py
+  classes:
+  - BaseEnum:
+    - list
+    - find_by_id
+    - __eq__
+- page: packages/airless-core/airless/core/operator/base.md
+  source: packages/airless-core/airless/core/operator/base.py
+  classes:
+  - BaseOperator:
+    - __init__
+    - extract_message_id
+    - report_error
+    - build_error_message
+    - chain_messages
+  - BaseFileOperator:
+    - __init__
+    - execute
+    - run
+    - build_error_message
+  - BaseEventOperator:
+    - __init__
+    - execute
+    - run
+    - run_next
+    - build_error_message
+  - BaseHttpOperator:
+    - __init__
+    - execute
+    - run
+    - build_error_message
+- page: packages/airless-core/airless/core/operator/delay.md
+  source: packages/airless-core/airless/core/operator/delay.py
+  classes:
+  - DelayOperator:
+    - __init__
+    - execute
+- page: packages/airless-core/airless/core/operator/redirect.md
+  source: packages/airless-core/airless/core/operator/redirect.py
+  classes:
+  - RedirectOperator:
+    - __init__
+    - execute
+    - add_params_to_messages
+    - add_param_to_messages
+    - add_param_to_message
+    - add_key
+- page: packages/airless-core/airless/core/operator/error.md
+  source: packages/airless-core/airless/core/operator/error.py
+  classes:
+  - ErrorReprocessOperator:
+    - __init__
+    - execute
+- page: packages/airless-core/airless/core/hook/base.md
+  source: packages/airless-core/airless/core/hook/base.py
+  classes:
+  - BaseHook:
+    - __init__
+- page: packages/airless-core/airless/core/hook/queue.md
+  source: packages/airless-core/airless/core/hook/queue.py
+  classes:
+  - QueueHook:
+    - __init__
+    - publish
+- page: packages/airless-core/airless/core/hook/secret.md
+  source: packages/airless-core/airless/core/hook/secret.py
+  classes:
+  - SecretManagerHook:
+    - __init__
+    - list_secrets
+    - list_secret_versions
+    - destroy_secret_version
+    - get_secret
+    - add_secret_version
+- page: packages/airless-core/airless/core/hook/llm.md
+  source: packages/airless-core/airless/core/hook/llm.py
+  classes:
+  - LLMHook:
+    - __init__
+    - historic_append
+    - generate_completion
+- page: packages/airless-core/airless/core/hook/email.md
+  source: packages/airless-core/airless/core/hook/email.py
+  classes:
+  - EmailHook:
+    - __init__
+    - build_message
+    - send
+- page: packages/airless-core/airless/core/hook/file.md
+  source: packages/airless-core/airless/core/hook/file.py
+  classes:
+  - FileHook:
+    - __init__
+    - write
+    - extract_filename
+    - get_tmp_filepath
+    - download
+    - rename
+    - rename_files
+    - list_files
+  - FtpHook:
+    - __init__
+    - login
+    - cwd
+    - dir
+    - list
+    - download
+- page: packages/airless-google-cloud-core/airless/google/cloud/core/operator/base.md
+  source: packages/airless-google-cloud-core/airless/google/cloud/core/operator/base.py
+  classes:
+  - GoogleBaseFileOperator:
+    - __init__
+  - GoogleBaseEventOperator:
+    - __init__
+- page: packages/airless-google-cloud-core/airless/google/cloud/core/operator/delay.md
+  source: packages/airless-google-cloud-core/airless/google/cloud/core/operator/delay.py
+  classes:
+  - GoogleDelayOperator:
+    - __init__
+- page: packages/airless-google-cloud-core/airless/google/cloud/core/operator/redirect.md
+  source: packages/airless-google-cloud-core/airless/google/cloud/core/operator/redirect.py
+  classes:
+  - GoogleRedirectOperator:
+    - __init__
+- page: packages/airless-google-cloud-core/airless/google/cloud/core/operator/error.md
+  source: packages/airless-google-cloud-core/airless/google/cloud/core/operator/error.py
+  classes:
+  - GoogleErrorReprocessOperator:
+    - __init__
+    - execute
+    - notify_email
+    - notify_slack
+    - prepare_row
+    - prepare_rows
+- page: packages/airless-google-cloud-core/airless/google/cloud/pubsub/hook/pubsub.md
+  source: packages/airless-google-cloud-core/airless/google/cloud/pubsub/hook/pubsub.py
+  classes:
+  - GooglePubsubHook:
+    - __init__
+    - publish
+- page: packages/airless-google-cloud-vertexai/airless/google/cloud/vertexai/hook/generative_model.md
+  source: packages/airless-google-cloud-vertexai/airless/google/cloud/vertexai/hook/generative_model.py
+  classes:
+  - GenerativeModelHook:
+    - __init__
+    - generate_completion
+- page: packages/airless-captcha/airless/captcha/providers/two_captcha.md
+  source: packages/airless-captcha/airless/captcha/providers/two_captcha.py
+  classes:
+  - Solver2CaptchaService:
+    - __init__
+    - _send_request
+    - _request_recaptcha_v2
+    - _request_recaptcha_v3
+    - _send_response_request
+    - report_good_captcha
+    - report_bad_captcha
+    - solve
+- page: packages/airless-google-cloud-storage/airless/google/cloud/storage/operator/storage.md
+  source: packages/airless-google-cloud-storage/airless/google/cloud/storage/operator/storage.py
+  classes:
+  - GcsHook:
+    - __init__
+    - build_filepath
+    - read_as_string
+    - read_as_bytes
+    - download
+    - read_json
+    - read_ndjson
+    - upload_from_memory
+    - upload_parquet_from_memory
+    - upload
+    - upload_folder
+    - check_existance
+    - move
+    - move_files
+    - move_blobs
+    - rewrite_blobs
+    - copy_blobs
+    - delete
+    - delete_blobs
+    - list
+    - files_to_blobs
+  - GcsDatalakeHook:
+    - __init__
+    - build_metadata
+    - prepare_row
+    - prepare_rows
+    - send_to_landing_zone
+- page: packages/airless-google-cloud-storage/airless/google/cloud/storage/operator/ftp.md
+  source: packages/airless-google-cloud-storage/airless/google/cloud/storage/operator/ftp.py
+  classes:
+  - FtpToGcsOperator:
+    - __init__
+    - execute
+- page: packages/airless-google-cloud-storage/airless/google/cloud/storage/operator/file.md
+  source: packages/airless-google-cloud-storage/airless/google/cloud/storage/operator/file.py
+  classes:
+  - FileUrlToGcsOperator:
+    - __init__
+    - execute
+    - move_to_destinations
+    - remove_null_byte
+- page: packages/airless-google-cloud-storage/airless/google/cloud/storage/hook/storage.md
+  source: packages/airless-google-cloud-storage/airless/google/cloud/storage/hook/storage.py
+  classes:
+  - GcsHook:
+    - __init__
+    - build_filepath
+    - read_as_string
+    - read_as_bytes
+    - download
+    - read_json
+    - read_ndjson
+    - upload_from_memory
+    - upload_parquet_from_memory
+    - upload
+    - upload_folder
+    - check_existance
+    - move
+    - move_files
+    - move_blobs
+    - rewrite_blobs
+    - copy_blobs
+    - delete
+    - delete_blobs
+    - list
+    - files_to_blobs
+  - GcsDatalakeHook:
+    - __init__
+    - build_metadata
+    - prepare_row
+    - prepare_rows
+    - send_to_landing_zone
+repo: https://github.com/astercapital/airless
+version: master
+sources_dir: docs/

@@ -1,7 +1,7 @@
 
 import os
 import re
-
+from typing import Dict, List, Union, Any
 from datetime import datetime
 
 from airless.core.hook import FileHook
@@ -10,13 +10,21 @@ from airless.google.cloud.storage.hook import GcsHook
 
 
 class FileUrlToGcsOperator(GoogleBaseEventOperator):
+    """Operator for transferring files from a URL to GCS."""
 
-    def __init__(self):
+    def __init__(self) -> None:
+        """Initializes the FileUrlToGcsOperator."""
         super().__init__()
         self.file_hook = FileHook()
         self.gcs_hook = GcsHook()
 
-    def execute(self, data, topic):
+    def execute(self, data: Dict[str, Any], topic: str) -> None:
+        """Executes the file transfer from URL to GCS.
+
+        Args:
+            data (Dict[str, Any]): The data containing URL and GCS information.
+            topic (str): The Pub/Sub topic.
+        """
         origin = data['origin']
         destination = data['destination']
 
@@ -31,13 +39,17 @@ class FileUrlToGcsOperator(GoogleBaseEventOperator):
 
         os.remove(local_filepath)
 
-    def move_to_destinations(self, local_filepath, destination):
+    def move_to_destinations(self, local_filepath: str, destination: Union[Dict[str, Any], List[Dict[str, Any]]]) -> None:
+        """Moves the downloaded file to the specified destinations.
 
+        Args:
+            local_filepath (str): The local file path.
+            destination (Union[Dict[str, Any], List[Dict[str, Any]]]): The destination(s) for the file.
+        """
         original_filepath = local_filepath
         destinations = destination if isinstance(destination, list) else [destination]
 
         for dest in destinations:
-
             if dest.get('filename'):
                 local_filepath = self.file_hook.rename(
                     from_filename=local_filepath,
@@ -50,7 +62,6 @@ class FileUrlToGcsOperator(GoogleBaseEventOperator):
             time_partition = dest.get('time_partition', False)
 
             if re.search(regex, local_filepath, re.IGNORECASE):
-
                 if remove_null_byte:
                     self.remove_null_byte(local_filepath)
                 self.gcs_hook.upload(local_filepath, bucket, directory + (f'/date={datetime.today().strftime("%Y-%m-%d")}' if time_partition else ''))
@@ -60,7 +71,12 @@ class FileUrlToGcsOperator(GoogleBaseEventOperator):
                         from_filename=local_filepath,
                         to_filename=original_filepath)
 
-    def remove_null_byte(self, local_filepath):
+    def remove_null_byte(self, local_filepath: str) -> None:
+        """Removes null bytes from the specified file.
+
+        Args:
+            local_filepath (str): The local file path.
+        """
         splits = local_filepath.split('/')
         tmp_file = '/'.join(splits[:-1] + ['tmp-' + splits[-1]])
 

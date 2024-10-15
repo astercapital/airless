@@ -1,5 +1,3 @@
-## Contributing
-
 - Make a branch
 - Submete um PR para ver se valida as mudanças
 - Depois sobe um PR de release

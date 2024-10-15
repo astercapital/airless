@@ -1,35 +1,63 @@
 
 import requests
+from typing import Any, Dict, List, Optional
 
 from airless.core.hook import BaseHook
 
 
 class SlackHook(BaseHook):
+    """Hook for interacting with Slack API."""
 
-    def __init__(self):
+    def __init__(self) -> None:
+        """Initializes the SlackHook."""
         super().__init__()
-        self.api_url = 'slack.com'
+        self.api_url: str = 'slack.com'
 
-    def set_token(self, token):
+    def set_token(self, token: str) -> None:
+        """Sets the authorization token for the Slack API.
+
+        Args:
+            token (str): The authorization token.
+        """
         self.token = token
 
-    def get_headers(self):
+    def get_headers(self) -> Dict[str, str]:
+        """Gets the headers for the Slack API requests.
+
+        Returns:
+            Dict[str, str]: The headers including the authorization token.
+        """
         return {
             'Authorization': f'Bearer {self.token}'
         }
 
     def send(
-            self, channel=None, message=None, blocks=None, thread_ts=None,
-            reply_broadcast=False, attachments=None, response_url=None, response_type=None,
-            replace_original=None):
+            self, channel: Optional[str] = None, message: Optional[str] = None, blocks: Optional[List[Dict[str, Any]]] = None,
+            thread_ts: Optional[str] = None, reply_broadcast: bool = False, attachments: Optional[List[Dict[str, Any]]] = None,
+            response_url: Optional[str] = None, response_type: Optional[str] = None, replace_original: Optional[bool] = None) -> Dict[str, Any]:
+        """Sends a message to a Slack channel or a response URL.
 
-        data = {}
+        Args:
+            channel (Optional[str]): The channel to send the message to.
+            message (Optional[str]): The message text.
+            blocks (Optional[List[Dict[str, Any]]]): The message blocks.
+            thread_ts (Optional[str]): The timestamp of the thread to reply to.
+            reply_broadcast (bool): Whether to broadcast the reply to the channel.
+            attachments (Optional[List[Dict[str, Any]]]): The message attachments.
+            response_url (Optional[str]): The response URL to send the message to.
+            response_type (Optional[str]): The response type.
+            replace_original (Optional[bool]): Whether to replace the original message.
+
+        Returns:
+            Dict[str, Any]: The response from the Slack API.
+        """
+        data: Dict[str, Any] = {}
 
         if channel:
             data['channel'] = channel
 
         if message:
-            message = message[:3000]  # slack does not accept long messages
+            message = message[:3000]  # Slack does not accept long messages
             data['text'] = message
 
         if blocks:
@@ -60,8 +88,18 @@ class SlackHook(BaseHook):
             return {'status': response.text}
         return response.json()
 
-    def react(self, channel, reaction, ts):
-        data = {
+    def react(self, channel: str, reaction: str, ts: str) -> Dict[str, Any]:
+        """Adds a reaction to a Slack message.
+
+        Args:
+            channel (str): The channel of the message.
+            reaction (str): The reaction to add.
+            ts (str): The timestamp of the message.
+
+        Returns:
+            Dict[str, Any]: The response from the Slack API.
+        """
+        data: Dict[str, Any] = {
             'channel': channel,
             'name': reaction,
             'timestamp': ts
