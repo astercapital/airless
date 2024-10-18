@@ -35,6 +35,24 @@ Building this workflow that does not know before hand how many tasks are going t
 
 In order to built this massive parallel processing workflow that we explained on the previous topic, we need to be able to dynamically create and send data to the next task. So use the data from the first task as a trigger and an input data for the next tasks. 
 
+## Architectural Decisions
+- Event-Driven Architecture: Utilizes queues to decouple event producers and consumers. Or use HTTP when need synchronous workflows
+- Scalability: Serverless scale automatically based on the number of incoming messages.
+
+**Data Flow**
+- Trigger: A message is published to a queue topic or an HTTP request is made.
+- Cloud Function Invocation: The subscribed serverless service is triggered.
+- Operator Execution: Processes the message using Airless operators.
+- Data Storage/Forwarding: Uses hooks to store data in object stores, for example, or publish new messages to other queues.
+
+**Performance Optimization**
+- Efficient Data Handling: Use hooks to abstract and optimize interactions with external services.
+- Resource Management: Configure appropriate memory and timeout settings in your serverless service.
+
+**Security**
+- Least Privilege: Assign the minimum required permissions to service accounts.
+- Secret Management: Use secret manager to store sensitive information.
+
 ## How it works
 
 Airless builts its workflows based on serverless functions, queues and schedulers. All of them serverless.
