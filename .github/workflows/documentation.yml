@@ -1,6 +1,4 @@
-# This is a basic workflow to help you get started with Actions
-
-name: Docs
+name: documentation-page
 
 # Controls when the workflow will run
 on:
@@ -30,4 +28,4 @@ jobs:
       - name: Generate docs
         run: make generate-docs
       - name: Publish docs
-        run: mkdocs gh-deploy
+        run: mkdocs gh-deploy --force
