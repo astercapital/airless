@@ -16,7 +16,7 @@ class PasteBinOperator(BaseHttpOperator):
     def execute(self, request):
         data = request['data']
 
-        # In productin this method can be call to provide a more rich response parse with metadatas
+        # In production this method can be called to provide a richer response parse with metadatas
         # url = self.trigger_request['url']
         # data = json.loads(self.trigger_request['data'])
 
