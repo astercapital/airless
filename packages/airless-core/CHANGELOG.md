@@ -1,5 +1,7 @@
 
 **unreleased**
+
+**v0.1.3**
 - [Refactor] Remove references to cloud-specific products in `README.md` 
 - [Feature] Add unit tests for the utils functions
 - [Refactor] Deprecate `BaseDto`
