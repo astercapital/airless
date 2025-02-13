@@ -1,6 +1,7 @@
 
 **unreleased**
 - [Bugfix] Add dynamic dependencies from `requirements.txt` to `pyproject.toml`
+- [Feature] Create a new command to generate automatically a tag to deploy a new package version
 
 **v0.0.6**
 - [Refactor] Use [`deprecation`](https://pypi.org/project/deprecation/) to deprecate functions instead of custom decorator

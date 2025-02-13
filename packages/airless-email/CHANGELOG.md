@@ -1,5 +1,6 @@
 
 **unreleased**
+- [Feature] Create a new command to generate automatically a tag to deploy a new package version
 
 **v0.0.5**
 - [Bugfix] Add dynamic dependencies from `requirements.txt` to `pyproject.toml`

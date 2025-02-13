@@ -1,6 +1,7 @@
 
 **unreleased**
 - [Bugfix] Add dynamic dependencies from `requirements.txt` to `pyproject.toml`
+- [Feature] Create a new command to generate automatically a tag to deploy a new package version
 
 **v0.0.3**
 - [Refactor] Move all build configurations to `pyproject.toml`
