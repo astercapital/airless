@@ -1,5 +1,7 @@
 
 **unreleased**
+
+**v0.0.6**
 - [Refactor] Use [`deprecation`](https://pypi.org/project/deprecation/) to deprecate functions instead of custom decorator
 - [Refactor] Schedule deprecation for `BatchWriteProcessOperator` to version `1.0.0`
 - [Refactor] Move all build configurations to `pyproject.toml`
