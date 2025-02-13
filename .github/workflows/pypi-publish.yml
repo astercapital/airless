@@ -38,6 +38,10 @@ jobs:
       with:
         password: ${{ secrets.PYPI_API_TOKEN }}
         packages-dir: packages/${{ env.package }}/dist
+    - name: test env
+      run: |
+        echo "${{ env.version }}"
+        echo "${{ env.package }}"
     - name: Extract changelog for package
       id: changelog
       run: |
