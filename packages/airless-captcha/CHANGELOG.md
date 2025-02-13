@@ -1,5 +1,7 @@
 
 **unreleased**
+
+**v0.0.7**
 - [Bugfix] Add dynamic dependencies from `requirements.txt` to `pyproject.toml`
 
 **v0.0.6**
