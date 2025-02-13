@@ -1,4 +1,3 @@
-
 [project]
 name = "airless-core"
 version = "0.1.3"
@@ -20,6 +19,9 @@ build-backend = "setuptools.build_meta"
 minversion = "6.0"
 addopts = "--capture=sys --cache-clear --disable-warnings --junitxml=pytest.xml --cov-report=xml:cov.xml --cov=airless"
 testpaths = ["tests"]
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
 
 [tool.setuptools.packages.find]
 include = ["airless*"]
