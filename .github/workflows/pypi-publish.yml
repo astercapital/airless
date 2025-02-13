@@ -33,12 +33,17 @@ jobs:
       run: |
         cd packages/${{ env.package }}
         python -m build
+    - name: Extract changelog for package
+      id: changelog
+      run: |
+        changelog=$(awk '/^\*\*v[0-9]+\.[0-9]+\.[0-9]+\*\*/{p=0}p;/^\*\*'${{ env.version }}'\*\*/{p=1}' packages/${{ env.package }}/CHANGELOG.md)
+        echo $changelog >> ${{ env.package }}_${{ env.version }}_CHANGELOG.md
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v2
       with:
         tag_name: ${{ github.ref }}
         name: ${{ env.package }} ${{ env.version }}
-        body: ${{ awk '/^\*\*v[0-9]+\.[0-9]+\.[0-9]+\*\*/{p=0}p;/^\*\*'${{ env.version }}'\*\*/{p=1}' packages/${{ env.package }}/CHANGELOG.md }}
+        body_path: ${{ env.package }}_${{ env.version }}_CHANGELOG.md
         draft: false
         prerelease: false
       env:
