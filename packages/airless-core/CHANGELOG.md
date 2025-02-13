@@ -1,5 +1,6 @@
 
 **unreleased**
+- [Bugfix] Add dynamic dependencies from `requirements.txt` to `pyproject.toml`
 
 **v0.1.3**
 - [Refactor] Remove references to cloud-specific products in `README.md` 

@@ -1,5 +1,6 @@
 
 **unreleased**
+- [Bugfix] Add dynamic dependencies from `requirements.txt` to `pyproject.toml`
 
 **v0.0.2**
 - [Refactor] Move all build configurations to `pyproject.toml`
