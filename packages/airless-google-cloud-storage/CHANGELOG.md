@@ -1,6 +1,12 @@
 
 **unreleased**
 
+**v0.0.7**
+- [Bugfix] Add dynamic dependencies from `requirements.txt` to `pyproject.toml`
+- [Feature] Create a new command to generate automatically a tag to deploy a new package version
+- [Feature] Automatically generate git tag when bumpversion is triggered
+- [Refactor] Add package name to bumpversion commit message
+
 **v0.0.6**
 - [Refactor] Use [`deprecation`](https://pypi.org/project/deprecation/) to deprecate functions instead of custom decorator
 - [Refactor] Schedule deprecation for `BatchWriteProcessOperator` to version `1.0.0`

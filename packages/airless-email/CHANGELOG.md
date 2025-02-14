@@ -1,5 +1,11 @@
 
 **unreleased**
+- [Feature] Create a new command to generate automatically a tag to deploy a new package version
+- [Feature] Automatically generate git tag when bumpversion is triggered
+- [Refactor] Add package name to bumpversion commit message
+
+**v0.0.5**
+- [Bugfix] Add dynamic dependencies from `requirements.txt` to `pyproject.toml`
 
 **v0.0.4**
 - [Refactor] Move all build configurations to `pyproject.toml`

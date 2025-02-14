@@ -1,3 +1,7 @@
+
+PACKAGE_VERSION := $(shell grep -m 1 version pyproject.toml | tr -s ' ' | tr -d '"' | tr -d "'" | cut -d' ' -f3)
+PACKAGE_NAME := $(shell grep -m 1 name pyproject.toml | tr -s ' ' | tr -d '"' | tr -d "'" | cut -d' ' -f3)
+
 release-patch:
 	@bumpversion patch
 
@@ -36,3 +40,6 @@ test:
 
 clean:
 	@find . -type d -name '__pycache__' -exec rm -r {} +
+
+tag:
+	git tag $(PACKAGE_NAME)_v$(PACKAGE_VERSION)

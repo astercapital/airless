@@ -1,6 +1,6 @@
 [project]
 name = "airless-slack"
-version = "0.0.3"
+version = "0.0.4"
 description = "Airless package to manage slack"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -19,6 +19,9 @@ build-backend = "setuptools.build_meta"
 minversion = "6.0"
 addopts = "--capture=sys --cache-clear --disable-warnings --junitxml=pytest.xml --cov-report=xml:cov.xml --cov=airless"
 testpaths = ["tests"]
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
 
 [tool.setuptools.packages.find]
 include = ["airless*"]
