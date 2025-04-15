@@ -2,6 +2,7 @@
 **unreleased**
 - [Feature] Automatically generate git tag when bumpversion is triggered
 - [Refactor] Add package name to bumpversion commit message
+- [Refactor] Change `pubsub_topic` pattern to `queue_topic`
 
 **v0.0.4**
 - [Bugfix] Add dynamic dependencies from `requirements.txt` to `pyproject.toml`
