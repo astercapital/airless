@@ -41,6 +41,7 @@ class DelayOperator(BaseEventOperator):
         The function sleeps for the number of seconds specified, capping
         the maximum wait time at 500 seconds.
         """
+        self.logger.info(f"Data: {data}")
 
         seconds = data['seconds']
         seconds = max(min(seconds, 500), 0)

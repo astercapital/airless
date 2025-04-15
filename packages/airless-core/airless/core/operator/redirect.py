@@ -41,11 +41,12 @@ class RedirectOperator(BaseEventOperator):
         Returns:
             None
         """
-
         to_project = data.get('project')
         to_topic = data['topic']
         messages = data.get('messages', [{}])
         params = data.get('params', [])
+
+        self.logger.info(f"To topic: {to_topic} - Data: {data}")
 
         messages = self.add_params_to_messages(messages, params)
 
