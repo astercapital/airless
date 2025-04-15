@@ -41,6 +41,7 @@ class RedirectOperator(BaseEventOperator):
         Returns:
             None
         """
+
         to_project = data.get('project')
         to_topic = data['topic']
         messages = data.get('messages', [{}])
