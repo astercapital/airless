@@ -57,14 +57,14 @@ class GoogleErrorReprocessOperator(GoogleBaseEventOperator):
                 data=data)
             self.queue_hook.publish(
                 project=get_config('GCP_PROJECT'),
-                topic=get_config('PUBSUB_TOPIC_PUBSUB_TO_BQ'),
+                topic=get_config('QUEUE_TOPIC_PUBSUB_TO_BQ'),
                 data=dto.as_dict())
 
-            email_send_topic = get_config('PUBSUB_TOPIC_EMAIL_SEND', False)
+            email_send_topic = get_config('QUEUE_TOPIC_EMAIL_SEND', False)
             if email_send_topic and (origin != email_send_topic):
                 self.notify_email(origin, message_id, data)
 
-            slack_send_topic = get_config('PUBSUB_TOPIC_SLACK_SEND', False)
+            slack_send_topic = get_config('QUEUE_TOPIC_SLACK_SEND', False)
             if slack_send_topic and (origin != slack_send_topic):
                 self.notify_slack(origin, message_id, data)
 
@@ -84,7 +84,7 @@ class GoogleErrorReprocessOperator(GoogleBaseEventOperator):
         }
         self.queue_hook.publish(
             project=get_config('GCP_PROJECT'),
-            topic=get_config('PUBSUB_TOPIC_EMAIL_SEND'),
+            topic=get_config('QUEUE_TOPIC_EMAIL_SEND'),
             data=email_message)
 
     def notify_slack(self, origin: str, message_id: str, data: Dict[str, Any]) -> None:
@@ -101,7 +101,7 @@ class GoogleErrorReprocessOperator(GoogleBaseEventOperator):
         }
         self.queue_hook.publish(
             project=get_config('GCP_PROJECT'),
-            topic=get_config('PUBSUB_TOPIC_SLACK_SEND'),
+            topic=get_config('QUEUE_TOPIC_SLACK_SEND'),
             data=slack_message)
 
     def prepare_row(self, row: Dict[str, Any], message_id: Optional[str], origin: Optional[str]) -> Dict[str, Any]:
