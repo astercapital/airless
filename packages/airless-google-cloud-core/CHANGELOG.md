@@ -1,5 +1,7 @@
 
 **unreleased**
+
+**v0.0.5**
 - [Feature] Automatically generate git tag when bumpversion is triggered
 - [Refactor] Add package name to bumpversion commit message
 - [Refactor] Change `pubsub_topic` pattern to `queue_topic`
