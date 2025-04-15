@@ -46,8 +46,6 @@ class RedirectOperator(BaseEventOperator):
         messages = data.get('messages', [{}])
         params = data.get('params', [])
 
-        self.logger.info(f"To topic: {to_topic} - Data: {data}")
-
         messages = self.add_params_to_messages(messages, params)
 
         for msg in messages:
