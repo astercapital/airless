@@ -95,7 +95,7 @@ class GcsHook(BaseHook):
         Returns:
             Any: The content of the JSON file.
         """
-        return json.loads(self.read(bucket, filepath, encoding))
+        return json.loads(self.read_as_string(bucket, filepath, encoding))
 
     def read_ndjson(self, bucket: str, filepath: str, encoding: Optional[str] = None) -> List[Any]:
         """Reads an NDJSON file from GCS.
@@ -108,7 +108,7 @@ class GcsHook(BaseHook):
         Returns:
             List[Any]: The content of the NDJSON file.
         """
-        return ndjson.loads(self.read(bucket, filepath, encoding))
+        return ndjson.loads(self.read_as_string(bucket, filepath, encoding))
 
     def upload_from_memory(
             self,

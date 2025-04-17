@@ -1,5 +1,6 @@
 
 **unreleased**
+- [Bugfix] GCS hook does not have a `read` function anymore, it was changed to `read_as_string`
 
 **v0.0.7**
 - [Bugfix] Add dynamic dependencies from `requirements.txt` to `pyproject.toml`
