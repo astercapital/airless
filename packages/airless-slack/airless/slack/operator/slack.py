@@ -3,6 +3,7 @@ from typing import Any, Dict, List, Optional
 
 from airless.core.operator import BaseEventOperator
 from airless.core.hook import SecretManagerHook
+from airless.core.utils import get_config
 from airless.google.cloud.secret_manager.hook import GoogleSecretManagerHook
 
 from airless.slack.hook import SlackHook
@@ -35,7 +36,7 @@ class SlackSendOperator(BaseEventOperator):
         response_type: Optional[str] = data.get('response_type')
         replace_original: Optional[bool] = data.get('replace_original')
 
-        token: str = self.secret_manager_hook.get_secret(secret_id, True)['bot_token']
+        token: str = self.secret_manager_hook.get_secret(get_config('GCP_PROJECT'), secret_id, True)['bot_token']
         self.slack_hook.set_token(token)
 
         if not channels and not response_url:
@@ -87,7 +88,7 @@ class SlackReactOperator(BaseEventOperator):
         reaction: str = data.get('reaction')
         ts: str = data.get('ts')
 
-        token: str = self.secret_manager_hook.get_secret(secret_id, True)['bot_token']
+        token: str = self.secret_manager_hook.get_secret(get_config('GCP_PROJECT'), secret_id, True)['bot_token']
         self.slack_hook.set_token(token)
 
         response = self.slack_hook.react(channel, reaction, ts)

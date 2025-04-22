@@ -15,7 +15,7 @@ class GoogleEmailHook(EmailHook):
         """Initializes the GoogleEmailHook."""
         super().__init__()
         secret_manager_hook = GoogleSecretManagerHook()
-        self.smtp = secret_manager_hook.get_secret(get_config('SECRET_SMTP'), parse_json=True)
+        self.smtp = secret_manager_hook.get_secret(get_config('GCP_PROJECT'), get_config('SECRET_SMTP'), parse_json=True)
 
     def send(self, subject: str, content: str, recipients: List[str], sender: str, attachments: List[dict], mime_type: str) -> None:
         """Sends an email.
