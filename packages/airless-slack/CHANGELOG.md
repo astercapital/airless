@@ -1,5 +1,7 @@
 
 **unreleased**
+
+**v0.0.5**
 - [Bugfix] Add `GCP_PROJECT` param to secret manager get_secret calls
 
 **v0.0.4**
