@@ -3,6 +3,7 @@
 - [Feature] Create a new command to generate automatically a tag to deploy a new package version
 - [Feature] Automatically generate git tag when bumpversion is triggered
 - [Refactor] Add package name to bumpversion commit message
+- [Bugfix] Add `GCP_PROJECT` param to secret manager get_secret calls
 
 **v0.0.5**
 - [Bugfix] Add dynamic dependencies from `requirements.txt` to `pyproject.toml`

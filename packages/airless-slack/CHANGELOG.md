@@ -1,5 +1,6 @@
 
 **unreleased**
+- [Bugfix] Add `GCP_PROJECT` param to secret manager get_secret calls
 
 **v0.0.4**
 - [Bugfix] Add dynamic dependencies from `requirements.txt` to `pyproject.toml`
