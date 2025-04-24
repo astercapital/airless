@@ -86,7 +86,7 @@ nav:
     - Providers:
       - Google Cloud:
         - Simple Example: examples/gcp/simple-example.md
-  - API:
+  - Api Reference:
     - airless-captcha:
       - providers: api/airless-captcha/providers.md
     - airless-core:
@@ -118,6 +118,3 @@ nav:
     - airless-slack:
       - operator: api/airless-slack/operator.md
       - hook: api/airless-slack/hook.md
-  - Contributing: contributing.md
-
-# https://github.com/mkdocstrings/python/blob/main/mkdocs.yml
