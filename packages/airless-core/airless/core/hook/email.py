@@ -26,7 +26,7 @@ class EmailHook(BaseHook):
         """
         super().__init__()
 
-    def build_message(self, subject: str, content: str, recipients: list, sender: str, attachments: list=[], mime_type: str='plain'):
+    def build_message(self, subject: str, content: str, recipients: list, sender: str, attachments: list = [], mime_type: str = 'plain') -> MIMEMultipart | MIMEText:
         """Builds an email message with optional attachments.
 
         Args:

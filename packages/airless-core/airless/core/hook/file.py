@@ -62,7 +62,7 @@ class FileHook(BaseHook):
             else:
                 f.write(str(data))
 
-    def extract_filename(self, filepath_or_url):
+    def extract_filename(self, filepath_or_url: str) -> str:
         """Extracts the filename from a filepath or URL.
 
         Args:
@@ -97,7 +97,7 @@ class FileHook(BaseHook):
             filename = f"{timestamp}_{uuid.uuid4().hex}_{filename}"
         return f'/tmp/{filename}'
 
-    def download(self, url, headers, timeout=500, proxies=None):
+    def download(self, url: str, headers: dict, timeout: int = 500, proxies: dict = None) -> str:
         """Downloads a file from a given URL and saves it to a temporary path.
 
         Args:
@@ -118,7 +118,7 @@ class FileHook(BaseHook):
                     f.write(chunk)
         return local_filename
 
-    def rename(self, from_filename, to_filename):
+    def rename(self, from_filename: str, to_filename: str) -> str:
         """Renames a file from the original filename to the new filename.
 
         Args:
@@ -145,7 +145,7 @@ class FileHook(BaseHook):
             for filename in files:
                 os.rename(os.path.join(root, filename), os.path.join(root, f'{prefix}_{filename}'))
 
-    def list_files(self, folder):
+    def list_files(self, folder: str) -> list:
         """Lists all files in a specified directory.
 
         Args:
@@ -198,7 +198,7 @@ class FtpHook(FileHook):
         if dir:
             self.ftp.cwd(dir)
 
-    def dir(self):
+    def dir(self) -> list:
         """Lists the files and directories in the current directory of the FTP server.
 
         This method retrieves a list of files and directories from the FTP server's 
@@ -214,7 +214,7 @@ class FtpHook(FileHook):
         return lines
 
 
-    def list(self, regex=None, updated_after=None, updated_before=None):
+    def list(self, regex: str = None, updated_after=None, updated_before=None) -> tuple:
         """Lists files in the current directory of the FTP server with optional filters.
 
         Args:
@@ -260,7 +260,7 @@ class FtpHook(FileHook):
 
         return files, directories
 
-    def download(self, dir, filename):
+    def download(self, dir: str, filename: str) -> str:
         """Downloads a file from the FTP server to a temporary local file.
 
         Args:

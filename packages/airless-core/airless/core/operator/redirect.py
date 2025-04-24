@@ -10,23 +10,14 @@ class RedirectOperator(BaseEventOperator):
     Operator that receives one event from a queue topic and publishes multiple 
     messages to another topic.
 
-    Parameters:
-        event: The event received from the queue topic.
-        project (str): The project where the destination queue is hosted.
-        topic (str): The queue topic to which the newly generated messages will be published.
-        messages (list): A list of messages to publish to the topic.
-        params (list of dict): A list of dictionaries containing a key and a list of values.
-
-    Returns:
-        list: A list of output messages, which will be the product of the initial messages 
-              and every list of values in params.
+    This operator takes a dictionary of event data and publishes messages to a specified topic.
     """
 
     def __init__(self):
         """Initializes the RedirectOperator."""
         super().__init__()
 
-    def execute(self, data: dict, topic: str):
+    def execute(self, data: dict, topic: str) -> None:
         """
         Executes the operator, publishing messages to a specified topic.
 
@@ -52,7 +43,7 @@ class RedirectOperator(BaseEventOperator):
         for msg in messages:
             self.queue_hook.publish(to_project, to_topic, msg)
 
-    def add_params_to_messages(self, messages: list, params: list):
+    def add_params_to_messages(self, messages: list, params: list) -> list:
         """
         Adds parameters to each message in a list of messages.
 
@@ -69,7 +60,7 @@ class RedirectOperator(BaseEventOperator):
             messages = self.add_param_to_messages(messages, param)
         return messages
 
-    def add_param_to_messages(self, messages: list, param: dict):
+    def add_param_to_messages(self, messages: list, param: dict) -> list:
         """
         Adds a single parameter to each message in a list of messages.
 
@@ -86,7 +77,7 @@ class RedirectOperator(BaseEventOperator):
             messages_with_param += self.add_param_to_message(message, param)
         return messages_with_param
 
-    def add_param_to_message(self, message: dict, param: dict):
+    def add_param_to_message(self, message: dict, param: dict) -> list:
         """
         Adds a parameter's values to a single message.
 
@@ -106,7 +97,7 @@ class RedirectOperator(BaseEventOperator):
             messages.append(tmp_message)
         return messages
 
-    def add_key(self, obj: dict, keys: list, value: Any):
+    def add_key(self, obj: dict, keys: list, value: Any) -> dict:
         """Adds a value to a nested dictionary at a specified key path.
 
         This method takes an object (dictionary), a list of keys representing 
