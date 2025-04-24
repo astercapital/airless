@@ -1,7 +1,7 @@
 
 # Airless
 
-![Placeholder](/assets/images/logo_resized.png)
+![Placeholder](assets/images/logo_resized.png)
 
 Airless is a package that aims to build a serverless and lightweight orchestration platform, creating workflows of multiple tasks being executed on serverless functions. It is build to be Cloud agnostic, so using any Cloud provider is possible
 
