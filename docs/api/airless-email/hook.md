@@ -1,0 +1,1 @@
+::: airless.email.hook
