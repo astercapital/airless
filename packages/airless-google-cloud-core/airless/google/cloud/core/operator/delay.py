@@ -7,5 +7,4 @@ class GoogleDelayOperator(GoogleBaseEventOperator, DelayOperator):
     """Operator that adds a delay to the pipeline."""
 
     def __init__(self) -> None:
-        """Initializes the GoogleDelayOperator."""
         super().__init__()
