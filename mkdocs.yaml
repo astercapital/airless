@@ -6,6 +6,7 @@ theme:
   favicon: assets/images/logo_resized.png
   features:
   - content.code.copy
+  - content.code.select
   - content.tooltips
   - content.code.annotate
   - navigation.instant.preview
@@ -80,12 +81,18 @@ markdown_extensions:
   - pymdownx.superfences     # nested code blocks inside tabs
 
 nav:
-  - Home: index.md
-  - Examples: 
-    - Simple Example: examples/simple-example.md
+  - Home:
+    - Airless: index.md
+    - About: about.md
+    - Infrastructure: infrastucture.md
+    - Installation: installation.md
+  - Tutorials:
+    - Quickstart Workflow: tutorials/quickstart.md
+    - Multi Step Workflow: tutorials/multistep.md
     - Providers:
       - Google Cloud:
-        - Simple Example: examples/gcp/simple-example.md
+        - Simple Workflow: tutorials/gcp/simple.md
+        - Multistep Workflow: tutorials/gcp/multistep.md
   - Api Reference:
     - airless-captcha:
       - providers: api/airless-captcha/providers.md
