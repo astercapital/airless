@@ -1,5 +1,6 @@
 
 **unreleased**
+- [Refactor] Update requirements.txt to get new `airless-core` version `0.2.1`
 
 **v0.0.5**
 - [Bugfix] Add `GCP_PROJECT` param to secret manager get_secret calls

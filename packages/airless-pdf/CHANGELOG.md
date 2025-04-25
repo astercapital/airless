@@ -1,5 +1,6 @@
 
 **unreleased**
+- [Refactor] Update requirements.txt to get new `airless-core` version `0.2.1`
 
 **v0.0.3**
 - [Bugfix] Add dynamic dependencies from `requirements.txt` to `pyproject.toml`

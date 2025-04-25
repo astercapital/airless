@@ -1,5 +1,6 @@
 
 **unreleased**
+- [Refactor] Update requirements.txt to get new `airless-core` version `0.2.1`
 
 **v0.0.6**
 - [Feature] Create a new command to generate automatically a tag to deploy a new package version
