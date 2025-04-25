@@ -22,6 +22,88 @@ Create the hook and operator folders like this:
 mkdir hook operator
 ```
 
+### Workflow Sequence Diagram
+
+The following diagram illustrates the interaction between the components when a request is processed by the `WeatherOperator`.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Client
+    participant WeatherOperator
+    participant ApiHook
+    participant GeocodeAPI
+    participant WeatherAPI
+    participant Logger
+
+    Client->>WeatherOperator: execute(data, topic)
+    Note right of WeatherOperator: 1. Start processing request.
+    WeatherOperator->>WeatherOperator: Determine request_type from data
+    Note right of WeatherOperator: 2. Check if 'city_lat_long' or 'temperature'.
+    WeatherOperator->>ApiHook: __init__()
+    Note right of WeatherOperator: 3. Instantiate the ApiHook.
+
+    alt request_type == 'city_lat_long'
+        WeatherOperator->>WeatherOperator: get_city_lat_long(data, topic)
+        Note right of WeatherOperator: 4a. Route to coordinate fetching method.
+        WeatherOperator->>ApiHook: get_lat_long_from_city(city_name)
+        Note right of ApiHook: 5a. Request coordinates for the city.
+        ApiHook->>GeocodeAPI: GET /city_name?json=1
+        Note right of ApiHook: 6a. Call geocode.xyz API.
+        GeocodeAPI-->>ApiHook: latitude, longitude response
+        ApiHook->>Logger: Log debug response
+        Note right of ApiHook: 7a. Log the raw API response (if DEBUG level).
+        ApiHook-->>WeatherOperator: return latitude, longitude
+        Note right of WeatherOperator: 8a. Receive coordinates.
+        WeatherOperator->>Logger: Log info result
+        Note right of WeatherOperator: 9a. Log successfully fetched coordinates.
+
+    else request_type == 'temperature'
+        WeatherOperator->>WeatherOperator: get_temperature(data, topic)
+        Note right of WeatherOperator: 4b. Route to temperature fetching method.
+        WeatherOperator->>ApiHook: get_temperature(lat, lon)
+        Note right of ApiHook: 5b. Request temperature for coordinates.
+        ApiHook->>WeatherAPI: GET /forecast?latitude=...&longitude=...&current=temperature_2m
+        Note right of ApiHook: 6b. Call open-meteo API.
+        WeatherAPI-->>ApiHook: temperature response
+        ApiHook->>Logger: Log debug response
+        Note right of ApiHook: 7b. Log the raw API response (if DEBUG level).
+        ApiHook-->>WeatherOperator: return temperature
+        Note right of WeatherOperator: 8b. Receive temperature.
+        WeatherOperator->>Logger: Log info result
+        Note right of WeatherOperator: 9b. Log successfully fetched temperature.
+
+    else Invalid request_type
+        WeatherOperator->>Logger: Log error
+        Note right of WeatherOperator: Handle unknown request type.
+    end
+
+```
+
+**Explanation of Steps:**
+
+1.  **Start Processing Request:** A client (like the `make` command via `uv run`) initiates the workflow by calling the `execute` method of the `WeatherOperator`, passing input `data` (containing `request_type` and other necessary parameters like `city_name` or `lat`/`lon`) and a `topic`.
+2.  **Determine Request Type:** The `WeatherOperator` reads the `request_type` field from the input `data` to decide which specific task to perform.
+3.  **Instantiate ApiHook:** The `WeatherOperator` creates an instance of the `ApiHook` to gain access to its methods for interacting with external APIs.
+4.  **Route Request:**
+    * **(4a)** If `request_type` is `'city_lat_long'`, the `execute` method calls the internal `get_city_lat_long` method.
+    * **(4b)** If `request_type` is `'temperature'`, the `execute` method calls the internal `get_temperature` method.
+5.  **Call Hook Method:**
+    * **(5a)** `get_city_lat_long` calls the `ApiHook`'s `get_lat_long_from_city` method, passing the `city_name`.
+    * **(5b)** `get_temperature` calls the `ApiHook`'s `get_temperature` method, passing the `lat` and `lon`.
+6.  **Interact with External API:**
+    * **(6a)** The `ApiHook` sends an HTTP GET request to the `geocode.xyz` API endpoint to retrieve coordinates for the given city.
+    * **(6b)** The `ApiHook` sends an HTTP GET request to the `open-meteo` API endpoint to retrieve the current temperature for the given coordinates.
+7.  **Log API Response (Debug):** If the `LOG_LEVEL` is set to `DEBUG`, the `ApiHook` logs the raw JSON response received from the external API for debugging purposes.
+8.  **Return Result to Operator:**
+    * **(8a)** The `ApiHook` parses the response from `geocode.xyz` and returns the extracted latitude and longitude to the `WeatherOperator`.
+    * **(8b)** The `ApiHook` parses the response from `open-meteo` and returns the extracted temperature to the `WeatherOperator`.
+9.  **Log Final Result (Info):**
+    * **(9a)** The `WeatherOperator` logs the successfully retrieved coordinates at the `INFO` level.
+    * **(9b)** The `WeatherOperator` logs the successfully retrieved temperature at the `INFO` level.
+
+If the `request_type` is not recognized, the `WeatherOperator` logs an error message.
+
 ## hook.py
 
 We will create a hook that interacts with two external APIs:

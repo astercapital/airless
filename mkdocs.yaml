@@ -74,13 +74,22 @@ plugins:
             inherited_members: true
 
 markdown_extensions:
+  - attr_list
+  - md_in_html
   - admonition                # call-outs
   - pymdownx.details          # makes them collapsible
-  - pymdownx.superfences      # nested code blocks inside tabs
+  - pymdownx.superfences:      # nested code blocks inside tabs
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
   - pymdownx.highlight:       # syntax highlighting
   - pymdownx.inlinehilite     # inline code highlighting
   - pymdownx.tabbed:          # horizontal tabs
       alternate_style: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
 
 nav:
   - Home:
@@ -93,6 +102,8 @@ nav:
     - Multi Step Workflow: tutorials/multistep.md
     - Providers:
       - Google Cloud:
+        - Overview: tutorials/gcp/overview.md
+        - Core Infrastructure: tutorials/gcp/core-infrastructure.md
         - Simple Workflow: tutorials/gcp/simple.md
         - Multistep Workflow: tutorials/gcp/multistep.md
   - Api Reference:

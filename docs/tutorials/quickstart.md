@@ -49,6 +49,58 @@ In `.env` file you need to add the following env vars
     If you're using uv you can pass the `.env` file when executing the code using the following code `uv run --env-file .env python ...`.
     If you're not using uv you can export this variables to you're current terminal session.
 
+### Workflow Sequence Diagram
+
+The interaction between the components when running the `make run` command follows this sequence:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Caller
+    participant WeatherOp as WeatherOperator
+    participant ApiHook as ApiHook
+    participant OpenMeteo as Open-Meteo API
+
+    Caller->>WeatherOp: execute(data={'request_type': 'temperature', ...})
+    WeatherOp->>WeatherOp: Check data['request_type']
+    WeatherOp->>WeatherOp: Call self.get_temperature(data, topic)
+    WeatherOp->>ApiHook: get_temperature(lat, lon)
+    ApiHook->>OpenMeteo: GET /v1/forecast?latitude=...&longitude=...&current=temperature_2m
+    OpenMeteo-->>ApiHook: JSON Response { current: { temperature_2m: T } }
+    ApiHook->>ApiHook: Check response status (raise_for_status)
+    ApiHook->>ApiHook: Parse JSON and extract temperature
+    Note right of ApiHook: Logs full response (DEBUG level)
+    ApiHook-->>WeatherOp: Return temperature (T)
+    Note right of WeatherOp: Logs received temperature (DEBUG level)
+    WeatherOp-->>Caller: Execution completes
+```
+
+**Explanation of the Diagram Steps:**
+
+1.  **Caller -> WeatherOperator: execute(...)**
+    An external system or caller invokes the `execute` method of an existing `WeatherOperator` instance (defined in `operator/weather.py`), providing the necessary data payload. When the `WeatherOperator` was instantiated (outside this sequence), it also created an instance of `ApiHook` (from `hook/api.py`).
+2.  **WeatherOperator -> WeatherOperator: Check data['request_type']**
+    Inside the `execute` method, the operator examines the `request_type` field within the provided `data` dictionary to decide the next action.
+3.  **WeatherOperator -> WeatherOperator: Call self.get_temperature(data, topic)**
+    As the `request_type` is 'temperature', the `execute` method proceeds to call the operator's own `get_temperature` method, passing the data.
+4.  **WeatherOperator -> ApiHook: get_temperature(lat, lon)**
+    The operator's `get_temperature` method retrieves the latitude (`lat`) and longitude (`lon`) from the data and invokes the `get_temperature` method on its associated `ApiHook` instance.
+5.  **ApiHook -> Open-Meteo API: GET /v1/forecast...**
+    The `ApiHook` formulates the request parameters and dispatches an HTTP GET request to the Open-Meteo API endpoint via the `requests` library, aiming to retrieve the current temperature for the specified coordinates.
+6.  **Open-Meteo API -->> ApiHook: JSON Response {...}**
+    The Open-Meteo API fulfills the request and returns a JSON formatted response containing the weather details, including the temperature data.
+7.  **ApiHook -> ApiHook: Check response status (raise_for_status)**
+    The hook validates the HTTP response status. If it indicates an error (e.g., 4xx or 5xx status code), an exception is raised. Otherwise, processing continues.
+8.  **ApiHook -> ApiHook: Parse JSON and extract temperature**
+    The hook processes the successful JSON response, navigating its structure to isolate the specific temperature value (`temperature_2m`). The complete response is also logged at the DEBUG level for diagnostics.
+9.  **ApiHook -->> WeatherOperator: Return temperature (T)**
+    The extracted temperature value is sent back as the return value from `ApiHook.get_temperature` to the waiting `WeatherOperator`.
+10. **WeatherOperator: Logs received temperature (DEBUG level)**
+    Upon receiving the temperature from the hook, the `WeatherOperator.get_temperature` method logs this value using its configured logger.
+11. **WeatherOperator -->> Caller: Execution completes**
+    With the temperature fetched and logged, the `get_temperature` and subsequently the `execute` methods complete their execution, returning control flow back to the original `Caller`.
+
+
 ## hook.py
 
 We will use the [open-meteo](https://open-meteo.com/) api to get the current weather giving a latitude and longitude.
