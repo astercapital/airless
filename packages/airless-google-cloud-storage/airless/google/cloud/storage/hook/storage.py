@@ -2,15 +2,13 @@
 import json
 import ndjson
 import os
-from typing import Any, Dict, List, Optional, Union, Tuple
+from typing import Any, List, Optional
 
-from datetime import datetime
 from google.cloud import storage
 from google.cloud.storage.retry import DEFAULT_RETRY
 import pyarrow as pa
 from pyarrow import fs, parquet
 
-from airless.core.utils import get_config
 from airless.core.hook import BaseHook, FileHook
 
 
@@ -390,107 +388,3 @@ class GcsHook(BaseHook):
             List[storage.Blob]: The list of blobs.
         """
         return [bucket.blob(f) for f in files]
-
-
-class GcsDatalakeHook(GcsHook):
-    """Hook for interacting with GCS Datalake."""
-
-    def __init__(self) -> None:
-        """Initializes the GcsDatalakeHook."""
-        super().__init__()
-
-    def build_metadata(self, message_id: Optional[int], origin: Optional[str]) -> Dict[str, Any]:
-        """Builds metadata for the data being sent.
-
-        Args:
-            message_id (Optional[int]): The message ID.
-            origin (Optional[str]): The origin of the data.
-
-        Returns:
-            Dict[str, Any]: The metadata dictionary.
-        """
-        return {
-            'event_id': message_id or 1234,
-            'resource': origin or 'local'
-        }
-
-    def prepare_row(self, row: Any, metadata: Dict[str, Any], now: datetime) -> Dict[str, Any]:
-        """Prepares a row for insertion into the datalake.
-
-        Args:
-            row (Any): The row data.
-            metadata (Dict[str, Any]): The metadata for the row.
-            now (datetime): The current timestamp.
-
-        Returns:
-            Dict[str, Any]: The prepared row.
-        """
-        return {
-            '_event_id': metadata['event_id'],
-            '_resource': metadata['resource'],
-            '_json': json.dumps({'data': row, 'metadata': metadata}),
-            '_created_at': str(now)
-        }
-
-    def prepare_rows(self, data: Any, metadata: Dict[str, Any]) -> Tuple[List[Dict[str, Any]], datetime]:
-        """Prepares multiple rows for insertion into the datalake.
-
-        Args:
-            data (Any): The data to prepare.
-            metadata (Dict[str, Any]): The metadata for the rows.
-
-        Returns:
-            Tuple[List[Dict[str, Any]], datetime]: The prepared rows and the current timestamp.
-        """
-        now = datetime.now()
-        prepared_rows = data if isinstance(data, list) else [data]
-        return [self.prepare_row(row, metadata, now) for row in prepared_rows], now
-
-    def send_to_landing_zone(self, data: Any, dataset: str, table: str, message_id: Optional[int], origin: Optional[str], time_partition: bool = False) -> Union[str, None]:
-        """Sends data to the landing zone in GCS.
-
-        Args:
-            data (Any): The data to send.
-            dataset (str): The dataset name.
-            table (str): The table name.
-            message_id (Optional[int]): The message ID.
-            origin (Optional[str]): The origin of the data.
-            time_partition (bool, optional): Whether to use time partitioning. Defaults to False.
-
-        Returns:
-            Union[str, None]: The path to the uploaded file or None.
-        """
-        if isinstance(data, list) and (len(data) == 0):
-            raise Exception(f'Trying to send empty list to landing zone: {dataset}.{table}')
-
-        if isinstance(data, dict) and (data == {}):
-            raise Exception(f'Trying to send empty dict to landing zone: {dataset}.{table}')
-
-        if get_config('ENV') == 'prod':
-            metadata = self.build_metadata(message_id, origin)
-            prepared_rows, now = self.prepare_rows(data, metadata)
-
-            if time_partition:
-                time_partition_name = 'date'
-                schema = pa.schema([
-                    ('_event_id', pa.int64()),
-                    ('_resource', pa.string()),
-                    ('_json', pa.string()),
-                    ('_created_at', pa.timestamp('us'))
-                ])
-                return self.upload_parquet_from_memory(
-                    data=prepared_rows,
-                    bucket=get_config('GCS_BUCKET_LANDING_ZONE'),
-                    directory=f'{dataset}/{table}/{time_partition_name}={now.strftime("%Y-%m-%d")}',
-                    filename='tmp.parquet',
-                    add_timestamp=True,
-                    schema=schema)
-            else:
-                return self.upload_from_memory(
-                    data=prepared_rows,
-                    bucket=get_config('GCS_BUCKET_LANDING_ZONE'),
-                    directory=f'{dataset}/{table}',
-                    filename='tmp.json',
-                    add_timestamp=True)
-        else:
-            self.logger.debug(f'[DEV] Uploading to {dataset}.{table}, Data: {data}')

@@ -1,16 +1,21 @@
+
+import json
 import time
 
-from airless.core.dto.base import BaseDto
+from typing import Dict, Any
+
+from airless.core.hook import DatalakeHook
 from airless.core.operator import BaseEventOperator
+from airless.core.utils import get_config
 
 
 class ErrorReprocessOperator(BaseEventOperator):
     """Operator to handle processing of erroneous events.
 
     This operator manages the retry logic for events that fail.
-    It can reprocess events based on configured retries and intervals, 
-    and if the maximum retries are exceeded, it forwards the error 
-    details to a specified destination.
+    It can reprocess events based on configured retries and intervals,
+    and if the maximum retries are exceeded, it saves the error
+    details to the datalake
     """
     
     def __init__(self):
@@ -20,6 +25,7 @@ class ErrorReprocessOperator(BaseEventOperator):
         initialization.  
         """
         super().__init__()
+        self.datalake_hook = DatalakeHook()
 
     def execute(self, data, topic):
         """Executes the error processing logic for the given data.
@@ -33,8 +39,8 @@ class ErrorReprocessOperator(BaseEventOperator):
 
         This method retrieves necessary metadata from the input data, 
         handles retries based on the specified parameters, and publishes 
-        either the retried event back to the original topic or the 
-        error details to the destination topic if maximum retries have 
+        either the retried event back to the original topic or saves the
+        error details to the datalake if maximum retries have
         been exceeded.
         """
         
@@ -50,10 +56,8 @@ class ErrorReprocessOperator(BaseEventOperator):
         retries = metadata.get('retries', 0)
         max_retries = metadata.get('max_retries', 2)
         max_interval = metadata.get('max_interval', 480)
-
-        destination_topic = metadata['destination']
-        dataset = metadata['dataset']
-        table = metadata['table']
+        error_dataset = metadata.get('dataset')
+        error_table = metadata.get('table')
 
         if (input_type == 'event') and (retries < max_retries):
             time.sleep(min(retry_interval ** retries, max_interval))
@@ -64,18 +68,53 @@ class ErrorReprocessOperator(BaseEventOperator):
                 data=original_data)
 
         else:
-            dto = BaseDto(
-                event_id=message_id,
-                resource=origin,
-                to_project=project,
-                to_dataset=dataset,
-                to_table=table,
-                to_schema=None,
-                to_partition_column='_created_at',
-                to_extract_to_cols=False,
-                to_keys_format=None,
-                data=data)
+            self.datalake_hook.send_to_landing_zone(
+                data=data,
+                dataset=error_dataset or get_config('ERROR_DATASET'),
+                table=error_table or get_config('ERROR_TABLE'),
+                message_id=message_id,
+                origin=origin,
+                time_partition=True)
+
+            self._notify_email(origin=origin, message_id=message_id, data=data)
+            self._notify_slack(origin=origin, message_id=message_id, data=data)
+
+    def _notify_email(self, origin: str, message_id: str, data: Dict[str, Any]) -> None:
+        """Sends an error notification to email if the env var `QUEUE_TOPIC_EMAIL_SEND` is defined
+
+        Args:
+            origin (str): The origin of the error.
+            message_id (str): The ID of the message.
+            data (Dict[str, Any]): The data related to the error.
+        """
+        email_send_topic = get_config('QUEUE_TOPIC_EMAIL_SEND', False)
+        if email_send_topic and (origin != email_send_topic):
+            email_message = {
+                'sender': get_config('EMAIL_SENDER_ERROR'),
+                'recipients': eval(get_config('EMAIL_RECIPIENTS_ERROR')),
+                'subject': f'{origin} | {message_id}',
+                'content': f'Input Type: {data["input_type"]} Origin: {origin}\nMessage ID: {message_id}\n\n {json.dumps(data["data"])}\n\n{data["error"]}'
+            }
             self.queue_hook.publish(
-                project=project,
-                topic=destination_topic,
-                data=dto.as_dict())
+                project=get_config('EMAIL_OPERATOR_PROJECT'),
+                topic=email_send_topic,
+                data=email_message)
+
+    def _notify_slack(self, origin: str, message_id: str, data: Dict[str, Any]) -> None:
+        """Sends an error notification to Slack if the env var `QUEUE_TOPIC_SLACK_SEND` is defined
+
+        Args:
+            origin (str): The origin of the error.
+            message_id (str): The ID of the message.
+            data (Dict[str, Any]): The data related to the error.
+        """
+        slack_send_topic = get_config('QUEUE_TOPIC_SLACK_SEND', False)
+        if slack_send_topic and (origin != slack_send_topic):
+            slack_message = {
+                'channels': eval(get_config('SLACK_CHANNELS_ERROR')),
+                'message': f'{origin} | {message_id}\n\n{json.dumps(data["data"])}\n\n{data["error"]}'
+            }
+            self.queue_hook.publish(
+                project=get_config('SLACK_OPERATOR_PROJECT'),
+                topic=slack_send_topic,
+                data=slack_message)
