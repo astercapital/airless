@@ -1,5 +1,7 @@
 
 **unreleased**
+
+**v0.1.0**
 - [Feature] Automatically generate git tag when bumpversion is triggered
 - [Refactor] Add package name to bumpversion commit message
 - [Refactor] Update requirements.txt to get new `airless-core` version `0.2.1`
