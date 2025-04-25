@@ -3,7 +3,6 @@ import os
 import unittest
 from unittest.mock import MagicMock, patch
 
-# from airless.core.dto.base import BaseDto
 from airless.core.operator import ErrorReprocessOperator
 
 
