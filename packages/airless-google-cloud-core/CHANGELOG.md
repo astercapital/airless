@@ -1,5 +1,7 @@
 
 **unreleased**
+- [Refactor] Remove `GoogleErrorReprocessOperator` from `airless-google-cloud-core` because it is being moved to `airless-google-cloud-storage`
+- [Refactor] Upgrade `airless-core` to version `0.2.1`
 
 **v0.0.5**
 - [Feature] Automatically generate git tag when bumpversion is triggered
