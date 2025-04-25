@@ -1,3 +1,4 @@
+from .error import (GoogleErrorReprocessOperator)
 from .file import (FileUrlToGcsOperator)
 from .ftp import (FtpToGcsOperator)
 from .storage import (
@@ -16,4 +17,5 @@ __all__ = [
     'BatchWriteProcessOperator',
     'FileDeleteOperator',
     'FileMoveOperator',
+    'GoogleErrorReprocessOperator'
 ]

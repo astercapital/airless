@@ -1,6 +1,9 @@
 
 **unreleased**
 
+**v0.2.1**
+- [Feature] Add methods to `DatalakeHook` to normalize data before storing to datalake
+
 **v0.2.0**
 - [Deprecation] Remove deprecated class `BaseDto`
 - [Feature] `ErrorReprocessOperator` now sends error data directly to datalake instead of sending to another topic, so another operator can send to the datalake
