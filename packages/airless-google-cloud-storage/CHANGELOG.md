@@ -1,6 +1,7 @@
 
 **unreleased**
 - [Bugfix] Rollback Google Cloud Storage Operators that were mistakenly deleted
+- [Feature] Create `GoogleErrorReprocessOperator` that was previously in `airless-google-cloud-core` package and now was moved to `airless-google-cloud-storage` in order to be able to save error data directly to datalake
 
 **v0.0.8**
 - [Bugfix] GCS hook does not have a `read` function anymore, it was changed to `read_as_string`
