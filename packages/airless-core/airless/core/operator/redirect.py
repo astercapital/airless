@@ -130,7 +130,6 @@ class RedirectOperator(BaseEventOperator):
             # result will be {'a': {'b': 1, 'c': 2}}
         """
 
-        print(obj)
         tmp_obj = obj.copy()
         if len(keys) == 1:
             tmp_obj[keys[0]] = value
