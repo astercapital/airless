@@ -3,6 +3,7 @@
 - [Feature] Create a new command to generate automatically a tag to deploy a new package version
 - [Feature] Automatically generate git tag when bumpversion is triggered
 - [Refactor] Add package name to bumpversion commit message
+- [Bugfix] Remove `print` from `add_key` method in `RedirectOperator`
 
 **v0.1.4**
 - [Bugfix] Add dynamic dependencies from `requirements.txt` to `pyproject.toml`
