@@ -1,5 +1,7 @@
 
 **unreleased**
+
+**v0.1.0**
 - [Feature] Create a new command to generate automatically a tag to deploy a new package version
 - [Feature] Automatically generate git tag when bumpversion is triggered
 - [Refactor] Add package name to bumpversion commit message
