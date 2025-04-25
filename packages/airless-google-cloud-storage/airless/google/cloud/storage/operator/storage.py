@@ -1,495 +1,280 @@
 
-import json
-import ndjson
 import os
-from typing import Any, Dict, List, Optional, Tuple, Union
 
-from datetime import datetime
-from google.cloud import storage
-from google.cloud.storage.retry import DEFAULT_RETRY
-import pyarrow as pa
-from pyarrow import fs, parquet
+from datetime import datetime, timedelta
+from deprecation import deprecated
+from google.api_core.exceptions import NotFound
 
 from airless.core.utils import get_config
-from airless.core.hook import BaseHook, FileHook
+from airless.core.hook import FileHook
+from airless.google.cloud.core.operator import GoogleBaseFileOperator, GoogleBaseEventOperator
+from airless.google.cloud.storage.hook import GcsHook
 
 
-class GcsHook(BaseHook):
-    """Hook for interacting with Google Cloud Storage."""
+class FileDetectOperator(GoogleBaseFileOperator):
 
-    def __init__(self) -> None:
-        """Initializes the GcsHook."""
+    def __init__(self):
         super().__init__()
-        self.storage_client = storage.Client()
-        self.file_hook = FileHook()
+        self.gcs_hook = GcsHook()
 
-    def build_filepath(self, bucket: str, filepath: str) -> str:
-        """Builds the full GCS file path.
+    def execute(self, bucket, filepath):
+        success_messages = self.build_success_message(bucket, filepath)
 
-        Args:
-            bucket (str): The name of the GCS bucket.
-            filepath (str): The file path.
+        for success_message in success_messages:
+            self.queue_hook.publish(
+                project=get_config('GCP_PROJECT'),
+                topic=get_config('QUEUE_TOPIC_FILE_TO_BQ'),
+                data=success_message)
 
-        Returns:
-            str: The full GCS file path.
-        """
-        return f'gs://{bucket}/{filepath}'
+    def build_success_message(self, bucket, filepath):
+        dataset, table, mode, separator, skip_leading_rows, \
+            file_format, schema, run_next, quote_character, encoding, \
+            column_names, time_partitioning, processing_method, \
+            gcs_table_name, sheet_name, arguments, options = self.get_ingest_config(filepath)
 
-    def read_as_string(self, bucket: str, filepath: str, encoding: Optional[str] = None) -> str:
-        """Reads a file from GCS as a string.
+        metadatas = []
+        for idx in range(len(file_format)):
+            metadatas.append({
+                'metadata': {
+                    'destination_dataset': dataset,
+                    'destination_table': table,
+                    'file_format': file_format[idx],
+                    'mode': mode,
+                    'bucket': bucket,
+                    'file': filepath,
+                    'separator': separator[idx],
+                    'skip_leading_rows': skip_leading_rows[idx],
+                    'quote_character': quote_character[idx],
+                    'encoding': encoding[idx],
+                    'schema': schema[idx],
+                    'run_next': run_next[idx],
+                    'column_names': column_names[idx],
+                    'time_partitioning': time_partitioning[idx],
+                    'processing_method': processing_method[idx],
+                    'gcs_table_name': gcs_table_name[idx],
+                    'sheet_name': sheet_name[idx],
+                    'arguments': arguments[idx],
+                    'options': options[idx]
+                }
+            })
 
-        Args:
-            bucket (str): The name of the GCS bucket.
-            filepath (str): The file path.
-            encoding (Optional[str]): The encoding to use. Defaults to None.
+        return metadatas
 
-        Returns:
-            str: The content of the file as a string.
-        """
-        bucket = self.storage_client.get_bucket(bucket)
+    def get_ingest_config(self, filepath):
+        dataset, table, mode = self.split_filepath(filepath)
 
-        blob = bucket.blob(filepath)
-        content = blob.download_as_string()
-        if encoding:
-            return content.decode(encoding)
+        metadata = self.read_config_file(dataset, table)
+
+        # Verifying if config file hava multiple configs or not
+        if isinstance(metadata, list):
+            metadata = metadata
+        elif isinstance(metadata, dict):
+            metadata = [metadata]
         else:
-            return content.decode()
+            raise NotImplementedError()
 
-    def read_as_bytes(self, bucket: str, filepath: str) -> bytes:
-        """Reads a file from GCS as bytes.
+        # Instanciate all values
+        # inputs
+        file_format = []
+        separator = []
+        skip_leading_rows = []
+        quote_character = []
+        encoding = []
+        sheet_name = []
+        arguments = []
+        options = []
 
-        Args:
-            bucket (str): The name of the GCS bucket.
-            filepath (str): The file path.
+        # outputs
+        schema = []
+        column_names = []
+        time_partitioning = []
+        processing_method = []
+        gcs_table_name = []
+        run_next = []
 
-        Returns:
-            bytes: The content of the file as bytes.
-        """
-        bucket = self.storage_client.get_bucket(bucket)
+        for config in metadata:
+            # input
+            file_format.append(config.get('file_format', 'csv'))
+            separator.append(config.get('separator'))
+            skip_leading_rows.append(config.get('skip_leading_rows'))
+            quote_character.append(config.get('quote_character'))
+            encoding.append(config.get('encoding', None))
+            sheet_name.append(config.get('sheet_name', None))
+            arguments.append(config.get('arguments', None))
+            options.append(config.get('options', None))
 
-        blob = bucket.blob(filepath)
-        return blob.download_as_bytes()
+            # output
+            schema.append(config.get('schema', None))
+            column_names.append(config.get('column_names', None))
+            time_partitioning.append(config.get('time_partitioning', None))
+            processing_method.append(config.get('processing_method', None))
+            gcs_table_name.append(config.get('gcs_table_name', None))
 
-    def download(self, bucket: str, filepath: str, target_filepath: Optional[str] = None) -> None:
-        """Downloads a file from GCS.
+            # after processing
+            run_next.append(config.get('run_next', []))
 
-        Args:
-            bucket (str): The name of the GCS bucket.
-            filepath (str): The file path.
-            target_filepath (Optional[str]): The target file path. Defaults to None.
-        """
-        bucket = self.storage_client.get_bucket(bucket)
+        return dataset, table, mode, separator, \
+            skip_leading_rows, file_format, schema, \
+            run_next, quote_character, encoding, column_names, \
+            time_partitioning, processing_method, gcs_table_name, \
+            sheet_name, arguments, options
 
-        filename = filepath.split('/')[-1]
-        blob = bucket.blob(filepath)
-        blob.download_to_filename(target_filepath or filename)
+    def split_filepath(self, filepath):
+        filepath_array = filepath.split('/')
+        if len(filepath_array) < 3:
+            raise Exception('Invalid file path. Must be added to directory {dataset}/{table}/{mode}')
 
-    def read_json(self, bucket: str, filepath: str, encoding: Optional[str] = None) -> Any:
-        """Reads a JSON file from GCS.
+        dataset = filepath_array[0]
+        table = filepath_array[1]
+        mode = filepath_array[2]
+        return dataset, table, mode
 
-        Args:
-            bucket (str): The name of the GCS bucket.
-            filepath (str): The file path.
-            encoding (Optional[str]): The encoding to use. Defaults to None.
-
-        Returns:
-            Any: The content of the JSON file.
-        """
-        return json.loads(self.read(bucket, filepath, encoding))
-
-    def read_ndjson(self, bucket: str, filepath: str, encoding: Optional[str] = None) -> List[Any]:
-        """Reads an NDJSON file from GCS.
-
-        Args:
-            bucket (str): The name of the GCS bucket.
-            filepath (str): The file path.
-            encoding (Optional[str]): The encoding to use. Defaults to None.
-
-        Returns:
-            List[Any]: The content of the NDJSON file.
-        """
-        return ndjson.loads(self.read(bucket, filepath, encoding))
-
-    def upload_from_memory(
-            self,
-            data: Any,
-            bucket: str,
-            directory: str,
-            filename: str,
-            **kwargs: Any
-        ) -> str:
-        """Uploads data from memory to GCS.
-
-        Args:
-            data (Any): The data to upload.
-            bucket (str): The name of the GCS bucket.
-            directory (str): The directory within the bucket.
-            filename (str): The name of the file to create.
-
-        Kwargs:
-            add_timestamp (bool, optional): If True, adds a timestamp to the filename. Defaults to True.
-            use_ndjson (bool, optional): If True, writes data in NDJSON format. Defaults to False.
-            mode (str, optional): The mode for opening the file. Defaults to 'w'.
-
-        Returns:
-            str: The path to the uploaded file.
-        """
-        local_filename = self.file_hook.get_tmp_filepath(filename, **kwargs)
+    def read_config_file(self, dataset, table):
         try:
-            self.file_hook.write(local_filename, data, **kwargs)
-            return self.upload(local_filename, bucket, directory)
-
-        finally:
-            if os.path.exists(local_filename):
-                os.remove(local_filename)
-
-    def upload_parquet_from_memory(
-            self,
-            data: Any,
-            bucket: str,
-            directory: str,
-            filename: str,
-            **kwargs: Any
-        ) -> str:
-        """Uploads Parquet data from memory to GCS.
-
-        Args:
-            data (Any): The data to upload.
-            bucket (str): The name of the GCS bucket.
-            directory (str): The directory within the bucket.
-            filename (str): The name of the Parquet file to create.
-
-        Kwargs:
-            schema (pa.Schema, optional): The schema for the Parquet table. Defaults to None.
-            add_timestamp (bool, optional): If True, adds a timestamp to the filename. Defaults to True.
-
-        Returns:
-            str: The path to the uploaded Parquet file.
-        """
-        schema = kwargs.get('schema', None)
-
-        gcs = fs.GcsFileSystem()
-        table = pa.Table.from_pylist(data)
-        table_casted = table.cast(schema) if schema else table
-        local_filename = self.file_hook.get_tmp_filepath(filename, **kwargs)
-        local_filename = local_filename.split('/')[-1]
-
-        output_filepath = f'{bucket}/{directory}/{local_filename}'
-
-        parquet.write_table(
-            table_casted,
-            output_filepath,
-            compression='GZIP',
-            filesystem=gcs
-        )
-        return output_filepath
-
-    def upload(self, local_filepath: str, bucket_name: str, directory: str) -> str:
-        """Uploads a local file to GCS.
-
-        Args:
-            local_filepath (str): The path to the local file.
-            bucket_name (str): The name of the GCS bucket.
-            directory (str): The directory within the bucket.
-
-        Returns:
-            str: The path to the uploaded file in GCS.
-        """
-        filename = self.file_hook.extract_filename(local_filepath)
-        bucket = self.storage_client.bucket(bucket_name)
-        blob = bucket.blob(f"{directory}/{filename}")
-        blob.upload_from_filename(local_filepath)
-        return f"{bucket_name}/{directory}/{filename}"
-
-    def upload_folder(self, local_path: str, bucket: str, gcs_path: str) -> None:
-        """Uploads a folder to GCS.
-
-        Args:
-            local_path (str): The local folder path.
-            bucket (str): The name of the GCS bucket.
-            gcs_path (str): The GCS path to upload to.
-        """
-        for root, _, files in os.walk(local_path):
-            for file in files:
-                local_file_path = os.path.join(root, file)
-                gcs_blob_name = os.path.join(gcs_path, os.path.relpath(local_file_path, local_path))
-
-                bucket_ = self.storage_client.bucket(bucket)
-                blob = bucket_.blob(gcs_blob_name)
-                blob.upload_from_filename(local_file_path)
-
-    def check_existance(self, bucket: str, filepath: str) -> bool:
-        """Checks if a file exists in GCS.
-
-        Args:
-            bucket (str): The name of the GCS bucket.
-            filepath (str): The file path.
-
-        Returns:
-            bool: True if the file exists, False otherwise.
-        """
-        blobs = self.storage_client.list_blobs(bucket, prefix=filepath, max_results=1, page_size=1)
-        return len(list(blobs)) > 0
-
-    def move(self, from_bucket: str, from_prefix: str, to_bucket: str, to_directory: str, rewrite: bool) -> None:
-        """Moves files from one GCS location to another.
-
-        Args:
-            from_bucket (str): The source bucket.
-            from_prefix (str): The source prefix.
-            to_bucket (str): The destination bucket.
-            to_directory (str): The destination directory.
-            rewrite (bool): Whether to overwrite existing files.
-        """
-        bucket = self.storage_client.get_bucket(from_bucket)
-        dest_bucket = self.storage_client.bucket(to_bucket)
-
-        blobs = list(bucket.list_blobs(prefix=from_prefix, fields='items(name),nextPageToken'))
-        self.move_blobs(bucket, blobs, dest_bucket, to_directory, rewrite)
-
-    def move_files(self, from_bucket: str, files: List[str], to_bucket: str, to_directory: str, rewrite: bool) -> None:
-        """Moves specified files from one GCS location to another.
-
-        Args:
-            from_bucket (str): The source bucket.
-            files (List[str]): The list of files to move.
-            to_bucket (str): The destination bucket.
-            to_directory (str): The destination directory.
-            rewrite (bool): Whether to overwrite existing files.
-        """
-        bucket = self.storage_client.get_bucket(from_bucket)
-        dest_bucket = self.storage_client.bucket(to_bucket)
-
-        blobs = self.files_to_blobs(bucket, files)
-        self.move_blobs(bucket, blobs, dest_bucket, to_directory, rewrite)
-
-    def move_blobs(self, bucket: storage.Bucket, blobs: List[storage.Blob], to_bucket: storage.Bucket, to_directory: str, rewrite: bool) -> None:
-        """Moves blobs from one bucket to another.
-
-        Args:
-            bucket (storage.Bucket): The source bucket.
-            blobs (List[storage.Blob]): The list of blobs to move.
-            to_bucket (storage.Bucket): The destination bucket.
-            to_directory (str): The destination directory.
-            rewrite (bool): Whether to overwrite existing files.
-        """
-        if rewrite:
-            self.rewrite_blobs(blobs, to_bucket, to_directory)
-        else:
-            self.copy_blobs(bucket, blobs, to_bucket, to_directory)
-
-        self.delete_blobs(blobs)
-
-    def rewrite_blobs(self, blobs: List[storage.Blob], to_bucket: storage.Bucket, to_directory: str) -> None:
-        """Rewrites blobs in the destination bucket.
-
-        Args:
-            blobs (List[storage.Blob]): The list of blobs to rewrite.
-            to_bucket (storage.Bucket): The destination bucket.
-            to_directory (str): The destination directory.
-        """
-        for blob in blobs:
-            if not blob.name.endswith('/'):
-                rewrite_token = False
-                filename = blob.name.split('/')[-1]
-
-                dest_blob = to_bucket.blob(f'{to_directory}/{filename}')
-                while True:
-                    rewrite_token, bytes_rewritten, bytes_to_rewrite = dest_blob.rewrite(
-                        source=blob,
-                        token=rewrite_token,
-                        retry=DEFAULT_RETRY
-                    )
-                    self.logger.debug(f'{to_directory}/{filename} - Progress so far: {bytes_rewritten}/{bytes_to_rewrite} bytes')
-
-                    if not rewrite_token:
-                        break
-
-    def copy_blobs(self, bucket: storage.Bucket, blobs: List[storage.Blob], to_bucket: storage.Bucket, to_directory: str) -> None:
-        """Copies blobs from one bucket to another.
-
-        Args:
-            bucket (storage.Bucket): The source bucket.
-            blobs (List[storage.Blob]): The list of blobs to copy.
-            to_bucket (storage.Bucket): The destination bucket.
-            to_directory (str): The destination directory.
-        """
-        batch_size = 100
-        count = 0
-
-        while count < len(blobs):
-            with self.storage_client.batch():
-                for blob in blobs[count:count + batch_size]:
-                    if not blob.name.endswith('/'):
-                        filename = blob.name.split('/')[-1]
-                        bucket.copy_blob(
-                            blob=blob,
-                            destination_bucket=to_bucket,
-                            new_name=f'{to_directory}/{filename}',
-                            retry=DEFAULT_RETRY
-                        )
-                count = count + batch_size
-
-    def delete(self, bucket_name: str, prefix: Optional[str] = None, files: Optional[List[str]] = None) -> None:
-        """Deletes files from GCS.
-
-        Args:
-            bucket_name (str): The name of the GCS bucket.
-            prefix (Optional[str]): The prefix for files to delete. Defaults to None.
-            files (Optional[List[str]]): The list of specific files to delete. Defaults to None.
-        """
-        bucket = self.storage_client.get_bucket(bucket_name)
-        if files:
-            blobs = self.files_to_blobs(bucket, files)
-        else:
-            blobs = list(bucket.list_blobs(prefix=prefix, fields='items(name),nextPageToken'))
-
-        self.delete_blobs(blobs)
-
-    def delete_blobs(self, blobs: List[storage.Blob]) -> None:
-        """Deletes a list of blobs.
-
-        Args:
-            blobs (List[storage.Blob]): The list of blobs to delete.
-        """
-        batch_size = 100
-        count = 0
-
-        while count < len(blobs):
-            with self.storage_client.batch():
-                for blob in blobs[count:count + batch_size]:
-                    self.logger.debug(f'Deleting blob {blob.name}')
-                    blob.delete(retry=DEFAULT_RETRY)
-                count = count + batch_size
-
-    def list(self, bucket_name: str, prefix: Optional[str] = None) -> List[storage.Blob]:
-        """Lists blobs in a GCS bucket.
-
-        Args:
-            bucket_name (str): The name of the GCS bucket.
-            prefix (Optional[str]): The prefix to filter blobs. Defaults to None.
-
-        Returns:
-            List[storage.Blob]: The list of blobs.
-        """
-        return self.storage_client.list_blobs(
-            bucket_name,
-            prefix=prefix,
-            fields='items(name,size,timeCreated,timeDeleted),nextPageToken'
-        )
-
-    def files_to_blobs(self, bucket: storage.Bucket, files: List[str]) -> List[storage.Blob]:
-        """Converts a list of file names to blobs.
-
-        Args:
-            bucket (storage.Bucket): The GCS bucket.
-            files (List[str]): The list of file names.
-
-        Returns:
-            List[storage.Blob]: The list of blobs.
-        """
-        return [bucket.blob(f) for f in files]
+            config = self.gcs_hook.read_json(
+                bucket=get_config('GCS_BUCKET_LANDING_ZONE_LOADER_CONFIG'),
+                filepath=f'{dataset}/{table}.json')
+            return config
+        except NotFound:
+            return {'file_format': 'json', 'time_partitioning': {'type': 'DAY', 'field': '_created_at'}}
 
 
-class GcsDatalakeHook(GcsHook):
-    """Hook for interacting with GCS Datalake."""
+@deprecated(deprecated_in="0.0.5", removed_in="1.0.0",
+            details="This class will be deprecated. Please write files directly to datalake using `GcsDatalakeHook`")
+class BatchWriteDetectOperator(GoogleBaseEventOperator):
+    # Will be deprecreated
 
-    def __init__(self) -> None:
-        """Initializes the GcsDatalakeHook."""
+    def __init__(self):
         super().__init__()
+        self.file_hook = FileHook()
+        self.gcs_hook = GcsHook()
 
-    def build_metadata(self, message_id: Optional[int], origin: Optional[str]) -> Dict[str, Any]:
-        """Builds metadata for the data being sent.
+    def execute(self, data, topic):
+        bucket = data.get('bucket', get_config('GCS_BUCKET_LANDING_ZONE'))
+        prefix = data.get('prefix')
+        threshold = data['threshold']
 
-        Args:
-            message_id (Optional[int]): The message ID.
-            origin (Optional[str]): The origin of the data.
+        tables = {}
+        partially_processed_tables = []
 
-        Returns:
-            Dict[str, Any]: The metadata dictionary.
-        """
-        return {
-            'event_id': message_id or 1234,
-            'resource': origin or 'local'
-        }
+        for b in self.gcs_hook.list(bucket, prefix):
+            if b.time_deleted is None:
+                filepaths = b.name.split('/')
+                key = '/'.join(filepaths[:-1])  # dataset/table
+                filename = filepaths[-1]
 
-    def prepare_row(self, row: Any, metadata: Dict[str, Any], now: datetime) -> Dict[str, Any]:
-        """Prepares a row for insertion into the datalake.
+                if tables.get(key) is None:
+                    tables[key] = {
+                        'size': b.size,
+                        'files': [filename],
+                        'min_time_created': b.time_created
+                    }
+                else:
+                    tables[key]['size'] += b.size
+                    tables[key]['files'] += [filename]
+                    if b.time_created < tables[key]['min_time_created']:
+                        tables[key]['min_time_created'] = b.time_created
 
-        Args:
-            row (Any): The row data.
-            metadata (Dict[str, Any]): The metadata for the row.
-            now (datetime): The current timestamp.
+                if (tables[key]['size'] > threshold['size']) or (len(tables[key]['files']) > threshold['file_quantity']):
+                    self.send_to_process(bucket=bucket, directory=key, files=tables[key]['files'])
+                    tables[key] = None
+                    partially_processed_tables.append(key)
 
-        Returns:
-            Dict[str, Any]: The prepared row.
-        """
-        return {
-            '_event_id': metadata['event_id'],
-            '_resource': metadata['resource'],
-            '_json': json.dumps({'data': row, 'metadata': metadata}),
-            '_created_at': str(now)
-        }
+        # verify which dataset/table is ready to be processed
+        time_threshold = (datetime.now() - timedelta(minutes=threshold['minutes'])).strftime('%Y-%m-%d %H:%M')
+        for directory, v in tables.items():
+            if v is not None:
+                if (v['size'] > threshold['size']) or \
+                    (v['min_time_created'].strftime('%Y-%m-%d %H:%M') < time_threshold) or \
+                        (len(v['files']) > threshold['file_quantity']) or \
+                        (directory in partially_processed_tables):
+                    self.send_to_process(bucket=bucket, directory=directory, files=v['files'])
 
-    def prepare_rows(self, data: Any, metadata: Dict[str, Any]) -> Tuple[List[Dict[str, Any]], datetime]:
-        """Prepares multiple rows for insertion into the datalake.
+    def send_to_process(self, bucket, directory, files):
+        self.queue_hook.publish(
+            project=get_config('GCP_PROJECT'),
+            topic=get_config('PUBSUB_TOPIC_BATCH_WRITE_PROCESS'),
+            data={'bucket': bucket, 'directory': directory, 'files': files})
 
-        Args:
-            data (Any): The data to prepare.
-            metadata (Dict[str, Any]): The metadata for the rows.
 
-        Returns:
-            Tuple[List[Dict[str, Any]], datetime]: The prepared rows and the current timestamp.
-        """
-        now = datetime.now()
-        prepared_rows = data if isinstance(data, list) else [data]
-        return [self.prepare_row(row, metadata, now) for row in prepared_rows], now
+@deprecated(deprecated_in="0.0.5", removed_in="1.0.0",
+            details="This class will be deprecated. Please write files directly to datalake using `GcsDatalakeHook`")
+class BatchWriteProcessOperator(GoogleBaseEventOperator):
 
-    def send_to_landing_zone(self, data: Any, dataset: str, table: str, message_id: Optional[int], origin: Optional[str], time_partition: bool = False) -> Union[str, None]:
-        """Sends data to the landing zone in GCS.
+    def __init__(self):
+        super().__init__()
+        self.file_hook = FileHook()
+        self.gcs_hook = GcsHook()
 
-        Args:
-            data (Any): The data to send.
-            dataset (str): The dataset name.
-            table (str): The table name.
-            message_id (Optional[int]): The message ID.
-            origin (Optional[str]): The origin of the data.
-            time_partition (bool, optional): Whether to use time partitioning. Defaults to False.
+    def execute(self, data, topic):
+        from_bucket = data['bucket']
+        directory = data['directory']
+        files = data['files']
 
-        Returns:
-            Union[str, None]: The path to the uploaded file or None.
-        """
-        if isinstance(data, list) and (len(data) == 0):
-            raise Exception(f'Trying to send empty list to landing zone: {dataset}.{table}')
+        file_contents = self.read_files(from_bucket, directory, files)
 
-        if isinstance(data, dict) and (data == {}):
-            raise Exception(f'Trying to send empty dict to landing zone: {dataset}.{table}')
+        local_filepath = self.merge_files(file_contents)
 
-        if get_config('ENV') == 'prod':
-            metadata = self.build_metadata(message_id, origin)
-            prepared_rows, now = self.prepare_rows(data, metadata)
+        self.gcs_hook.upload(local_filepath, get_config('GCS_BUCKET_LANDING_ZONE_LOADER'), f'{directory}/append')
+        os.remove(local_filepath)
 
-            if time_partition:
-                time_partition_name = 'date'
-                schema = pa.schema([
-                    ('_event_id', pa.int64()),
-                    ('_resource', pa.string()),
-                    ('_json', pa.string()),
-                    ('_created_at', pa.timestamp('us'))
-                ])
-                return self.upload_parquet_from_memory(
-                    data=prepared_rows,
-                    bucket=get_config('GCS_BUCKET_LANDING_ZONE'),
-                    directory=f'{dataset}/{table}/{time_partition_name}={now.strftime("%Y-%m-%d")}',
-                    filename='tmp.parquet',
-                    add_timestamp=True,
-                    schema=schema)
+        file_paths = [directory + '/' + f for f in files]
+
+        self.gcs_hook.move_files(
+            from_bucket=from_bucket,
+            files=file_paths,
+            to_bucket=get_config('GCS_BUCKET_LANDING_ZONE_PROCESSED'),
+            to_directory=directory,
+            rewrite=False
+        )
+
+    def read_files(self, bucket, directory, files):
+        file_contents = []
+        for f in files:
+            obj = self.gcs_hook.read_json(
+                bucket=bucket,
+                filepath=f'{directory}/{f}')
+            if isinstance(obj, list):
+                file_contents += obj
+            elif isinstance(obj, dict):
+                file_contents.append(obj)
             else:
-                return self.upload_from_memory(
-                    data=prepared_rows,
-                    bucket=get_config('GCS_BUCKET_LANDING_ZONE'),
-                    directory=f'{dataset}/{table}',
-                    filename='tmp.json',
-                    add_timestamp=True)
-        else:
-            self.logger.debug(f'[DEV] Uploading to {dataset}.{table}, Data: {data}')
+                raise Exception(f'Cannot process file {directory}/{f}')
+        return file_contents
+
+    def merge_files(self, file_contents):
+        local_filepath = self.file_hook.get_tmp_filepath('merged.ndjson', add_timestamp=True)
+        self.file_hook.write(local_filepath=local_filepath, data=file_contents, use_ndjson=True)
+        return local_filepath
+
+
+class FileDeleteOperator(GoogleBaseEventOperator):
+
+    def __init__(self):
+        super().__init__()
+        self.gcs_hook = GcsHook()
+
+    def execute(self, data, topic):
+        bucket = data['bucket']
+        prefix = data.get('prefix')
+        files = data.get('files', [])
+
+        if (prefix is None) and (not files):
+            raise Exception('prefix or files parameter has to be defined!')
+
+        self.logger.info(f'Deleting from bucket {bucket}')
+        self.gcs_hook.delete(bucket, prefix, files)
+
+
+class FileMoveOperator(GoogleBaseEventOperator):
+
+    def __init__(self):
+        super().__init__()
+        self.gcs_hook = GcsHook()
+
+    def execute(self, data, topic):
+        origin_bucket = data['origin']['bucket']
+        origin_prefix = data['origin']['prefix']
+        dest_bucket = data['destination']['bucket']
+        dest_directory = data['destination']['directory']
+        self.gcs_hook.move(origin_bucket, origin_prefix, dest_bucket, dest_directory, True)
