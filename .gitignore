@@ -19,3 +19,5 @@ Pipfile
 .ruff_cache/
 .aider*
 docs/
+
+uv.lock
