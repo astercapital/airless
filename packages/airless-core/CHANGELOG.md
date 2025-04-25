@@ -1,5 +1,7 @@
 
 **unreleased**
+
+**v0.2.1**
 - [Feature] Add methods to `DatalakeHook` to normalize data before storing to datalake
 
 **v0.2.0**
