@@ -5,10 +5,10 @@ theme:
   logo: assets/images/logo_white_resized.png
   favicon: assets/images/logo_resized.png
   features:
+  - content.code.annotate
   - content.code.copy
   - content.code.select
   - content.tooltips
-  - content.code.annotate
   - navigation.instant.preview
   - navigation.path
   - navigation.sections
@@ -74,11 +74,13 @@ plugins:
             inherited_members: true
 
 markdown_extensions:
-  - admonition               # call-outs
-  - pymdownx.details         # makes them collapsible
-  - pymdownx.tabbed          # horizontal tabs
-  - pymdownx.highlight       # syntax highlighting
-  - pymdownx.superfences     # nested code blocks inside tabs
+  - admonition                # call-outs
+  - pymdownx.details          # makes them collapsible
+  - pymdownx.superfences      # nested code blocks inside tabs
+  - pymdownx.highlight:       # syntax highlighting
+  - pymdownx.inlinehilite     # inline code highlighting
+  - pymdownx.tabbed:          # horizontal tabs
+      alternate_style: true
 
 nav:
   - Home:
