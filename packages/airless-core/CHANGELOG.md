@@ -1,5 +1,7 @@
 
 **unreleased**
+- [Deprecation] Remove deprecated class `BaseDto`
+- [Feature] `ErrorReprocessOperator` now sends error data directly to datalake instead of sending to another topic, so another operator can send to the datalake
 
 **v0.1.5**
 - [Feature] Create a new command to generate automatically a tag to deploy a new package version
