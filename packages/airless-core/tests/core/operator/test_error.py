@@ -214,6 +214,50 @@ class TestErrorReprocessOperator(unittest.TestCase):
             data=data
         )
 
+    @patch('time.sleep', return_value=None)  # Mock sleep to avoid actual delay
+    @patch('airless.core.operator.ErrorReprocessOperator._notify_email', return_value=None)
+    @patch('airless.core.operator.ErrorReprocessOperator._notify_slack', return_value=None)
+    def test_execute_error_from_error(self, notify_slack, notify_email, mock_sleep):
+        data = {
+            'project': 'test_project',
+            'input_type': 'event',
+            'origin': 'error-topic',
+            'event_id': '12345',
+            'data': {
+                'metadata': {
+                    'retry_interval': 2,
+                    'retries': 0,
+                    'max_retries': 2,
+                    'max_interval': 480,
+                    'dataset': 'error_dataset',
+                    'table': 'error_table'
+                }
+            }
+        }
+        
+        self.operator.execute(data, 'error-topic')
+
+        self.operator.datalake_hook.send_to_landing_zone.assert_called_once_with(
+            data=data,
+            dataset='error_dataset',
+            table='error_table',
+            message_id='12345',
+            origin='error-topic',
+            time_partition=True
+        )
+
+        notify_slack.assert_called_once_with(
+            origin='error-topic',
+            message_id='12345',
+            data=data
+        )
+
+        notify_email.assert_called_once_with(
+            origin='error-topic',
+            message_id='12345',
+            data=data
+        )
+
     def test_notify_email_queue_topic_not_set(self):
         origin = 'origin-topic'
         message_id = '12345'
@@ -224,7 +268,7 @@ class TestErrorReprocessOperator(unittest.TestCase):
             },
             'error': 'error msg'
         }
-        with patch.dict(os.environ, {}):
+        with patch.dict(os.environ, {'QUEUE_TOPIC_EMAIL_SEND': ''}):
             self.operator._notify_email(origin, message_id, data)
 
         self.operator.queue_hook.publish.assert_not_called()
@@ -287,7 +331,9 @@ class TestErrorReprocessOperator(unittest.TestCase):
         origin = 'origin-topic'
         message_id = '12345'
         data = {}
-        self.operator._notify_slack(origin, message_id, data)
+
+        with patch.dict(os.environ, {'QUEUE_TOPIC_SLACK_SEND': ''}):
+            self.operator._notify_slack(origin, message_id, data)
 
         self.operator.queue_hook.publish.assert_not_called()
 

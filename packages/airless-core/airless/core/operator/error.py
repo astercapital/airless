@@ -59,7 +59,7 @@ class ErrorReprocessOperator(BaseEventOperator):
         error_dataset = metadata.get('dataset')
         error_table = metadata.get('table')
 
-        if (input_type == 'event') and (retries < max_retries):
+        if (input_type == 'event') and (retries < max_retries) and (origin != topic):
             time.sleep(min(retry_interval ** retries, max_interval))
             original_data.setdefault('metadata', {})['retries'] = retries + 1
             self.queue_hook.publish(

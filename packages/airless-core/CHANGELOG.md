@@ -1,5 +1,6 @@
 
 **unreleased**
+- [Feature] Do not try to reprocess error from the error function to avoid an infinite loop
 
 **v0.2.2**
 - [Bugfix] Set error operator project as env var
