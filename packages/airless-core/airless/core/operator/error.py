@@ -44,7 +44,7 @@ class ErrorReprocessOperator(BaseEventOperator):
         been exceeded.
         """
         
-        project = data.get('project', 'undefined')
+        project = data.get('project')
 
         input_type = data['input_type']
         origin = data.get('origin', 'undefined')
@@ -63,7 +63,7 @@ class ErrorReprocessOperator(BaseEventOperator):
             time.sleep(min(retry_interval ** retries, max_interval))
             original_data.setdefault('metadata', {})['retries'] = retries + 1
             self.queue_hook.publish(
-                project=project,
+                project=project or get_config('ERROR_OPERATOR_PROJECT'),
                 topic=origin,
                 data=original_data)
 
