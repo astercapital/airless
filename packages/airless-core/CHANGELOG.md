@@ -1,5 +1,7 @@
 
 **unreleased**
+
+**v0.2.3**
 - [Feature] Do not try to reprocess error from the error function to avoid an infinite loop
 - [Refactor] If error, email or slack operator project env vars are not set, defaults to the function project, which must be set by the queue hook implementation
 
