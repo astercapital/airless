@@ -1,8 +1,11 @@
 
 **unreleased**
+
+**v0.1.0**
 - [Feature] Create a new command to generate automatically a tag to deploy a new package version
 - [Feature] Automatically generate git tag when bumpversion is triggered
 - [Refactor] Add package name to bumpversion commit message
+- [Refactor] Update requirements.txt to get new `airless-core` version `0.2.1`
 
 **v0.0.5**
 - [Bugfix] Add dynamic dependencies from `requirements.txt` to `pyproject.toml`
