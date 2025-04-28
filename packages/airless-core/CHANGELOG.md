@@ -1,6 +1,9 @@
 
 **unreleased**
 
+**v0.2.2**
+- [Bugfix] Set error operator project as env var
+
 **v0.2.1**
 - [Feature] Add methods to `DatalakeHook` to normalize data before storing to datalake
 
