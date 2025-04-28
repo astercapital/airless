@@ -63,7 +63,7 @@ class ErrorReprocessOperator(BaseEventOperator):
             time.sleep(min(retry_interval ** retries, max_interval))
             original_data.setdefault('metadata', {})['retries'] = retries + 1
             self.queue_hook.publish(
-                project=project or get_config('ERROR_OPERATOR_PROJECT'),
+                project=project or get_config('ERROR_OPERATOR_PROJECT', False),  # if not set, defaults to the function project
                 topic=origin,
                 data=original_data)
 
@@ -96,7 +96,7 @@ class ErrorReprocessOperator(BaseEventOperator):
                 'content': f'Input Type: {data["input_type"]} Origin: {origin}\nMessage ID: {message_id}\n\n {json.dumps(data["data"])}\n\n{data["error"]}'
             }
             self.queue_hook.publish(
-                project=get_config('EMAIL_OPERATOR_PROJECT'),
+                project=get_config('EMAIL_OPERATOR_PROJECT', False),  # if not set, defaults to the function project
                 topic=email_send_topic,
                 data=email_message)
 
@@ -115,6 +115,6 @@ class ErrorReprocessOperator(BaseEventOperator):
                 'message': f'{origin} | {message_id}\n\n{json.dumps(data["data"])}\n\n{data["error"]}'
             }
             self.queue_hook.publish(
-                project=get_config('SLACK_OPERATOR_PROJECT'),
+                project=get_config('SLACK_OPERATOR_PROJECT', False),  # if not set, defaults to the function project
                 topic=slack_send_topic,
                 data=slack_message)
