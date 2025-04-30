@@ -1,7 +1,7 @@
 google-cloud-storage>=2.17.0,<3.0.0
 ndjson>=0.3.0,<0.4.0
-pyarrow>=11.0.0,<=17.0.0
+pyarrow>=11.0.0,<=20.0.0
 deprecation>=2.1.0,<2.2.0
 
-airless-core>=0.2.1,<0.3.0
+airless-core>=0.2.4,<0.3.0
 airless-google-cloud-core>=0.1.0,<0.2.0
