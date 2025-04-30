@@ -1,5 +1,7 @@
 
 **unreleased**
+- [Refactor] Do not convert datetime to string when preparing rows to store in datalake
+- [Refactor] Force a serialization as string for data types json does not know how to serialize, f.i. datetime
 
 **v0.2.3**
 - [Feature] Do not try to reprocess error from the error function to avoid an infinite loop

@@ -51,7 +51,7 @@ class DatalakeHook(BaseHook):
             '_event_id': metadata['event_id'],
             '_resource': metadata['resource'],
             '_json': json.dumps({'data': row, 'metadata': metadata}),
-            '_created_at': str(now)
+            '_created_at': now
         }
 
     def prepare_rows(self, data: Any, metadata: Dict[str, Any]) -> Tuple[List[Dict[str, Any]], datetime]:

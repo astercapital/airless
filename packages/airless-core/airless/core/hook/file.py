@@ -58,7 +58,7 @@ class FileHook(BaseHook):
                 f.write(data)
             elif isinstance(data, (dict, list)):
                 dump = ndjson.dump if use_ndjson else json.dump
-                dump(data, f)
+                dump(data, f, default=str)
             else:
                 f.write(str(data))
 
