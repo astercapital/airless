@@ -1,5 +1,7 @@
 
 **unreleased**
+
+**v0.2.4**
 - [Refactor] Do not convert datetime to string when preparing rows to store in datalake
 - [Refactor] Force a serialization as string for data types json does not know how to serialize, f.i. datetime
 
