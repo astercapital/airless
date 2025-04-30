@@ -45,7 +45,7 @@ class TestDatalakeHook(unittest.TestCase):
             '_event_id': 1234,
             '_resource': 'local',
             '_json': '{"data": {"foo": "bar"}, "metadata": {"event_id": 1234, "resource": "local"}}',
-            '_created_at': '2025-01-01 09:30:00'
+            '_created_at': now
         }
 
         assert actual_output == expected_output

@@ -20,7 +20,7 @@ class TestFileHook(unittest.TestCase):
         self.file_hook.write(local_filepath, data)
 
         mock_file.assert_called_once_with(local_filepath, 'w')
-        mock_json_dump.assert_called_once_with(data, mock_file())
+        mock_json_dump.assert_called_once_with(data, mock_file(), default=str)
 
     @patch('ndjson.dump')
     @patch('builtins.open', new_callable=mock_open)
@@ -30,7 +30,7 @@ class TestFileHook(unittest.TestCase):
         self.file_hook.write(local_filepath, data, use_ndjson=True)
 
         mock_file.assert_called_once_with(local_filepath, 'w')
-        mocK_ndjson_dump.assert_called_once_with(data, mock_file())
+        mocK_ndjson_dump.assert_called_once_with(data, mock_file(), default=str)
 
     def test_extract_filename(self):
         url = 'http://example.com/path/to/file.txt?query=123'
