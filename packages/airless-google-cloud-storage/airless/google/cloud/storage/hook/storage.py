@@ -7,7 +7,7 @@ from typing import Any, List, Optional
 from google.cloud import storage
 from google.cloud.storage.retry import DEFAULT_RETRY
 import pyarrow as pa
-from pyarrow import fs, parquet
+from pyarrow import parquet
 
 from airless.core.hook import BaseHook, FileHook
 
@@ -166,21 +166,25 @@ class GcsHook(BaseHook):
         """
         schema = kwargs.get('schema', None)
 
-        gcs = fs.GcsFileSystem()
-        table = pa.Table.from_pylist(data)
-        table_casted = table.cast(schema) if schema else table
         local_filename = self.file_hook.get_tmp_filepath(filename, **kwargs)
-        local_filename = local_filename.split('/')[-1]
 
-        output_filepath = f'{bucket}/{directory}/{local_filename}'
+        try:
+            table = pa.Table.from_pylist(data, schema=schema)
+            pool = pa.default_memory_pool()
 
-        parquet.write_table(
-            table_casted,
-            output_filepath,
-            compression='GZIP',
-            filesystem=gcs
-        )
-        return output_filepath
+            parquet.write_table(
+                table,
+                local_filename,
+                compression='GZIP'
+            )
+
+            del table
+            pool.release_unused()
+
+            return self.upload(local_filename, bucket, directory)
+        finally:
+            if os.path.exists(local_filename):
+                os.remove(local_filename)
 
     def upload(self, local_filepath: str, bucket_name: str, directory: str) -> str:
         """Uploads a local file to GCS.

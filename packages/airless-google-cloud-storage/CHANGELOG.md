@@ -1,5 +1,8 @@
 
 **unreleased**
+- [Refactor] Write parquet to local file before uploading to GCS because it requires less memory
+- [Feature] Always release unused memory from pyarrow to avoid a memory leak
+- [Refactor] Force parquet schema when creating the parquet table instead of casting it after in order to use less memory
 
 **v0.1.0**
 - [Bugfix] Rollback Google Cloud Storage Operators that were mistakenly deleted

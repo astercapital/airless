@@ -1,7 +1,7 @@
 
-from typing import Any, Optional, Union
-
 import pyarrow as pa
+
+from typing import Any, Optional, Union
 
 from airless.core.utils import get_config
 from airless.core.hook import DatalakeHook
