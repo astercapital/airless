@@ -32,7 +32,7 @@ class DatalakeHook(BaseHook):
             Dict[str, Any]: The metadata dictionary.
         """
         return {
-            'event_id': message_id or 1234,
+            'event_id': int(message_id or 1234),
             'resource': origin or 'local'
         }
 
