@@ -1,5 +1,6 @@
 
 **unreleased**
+- [Bugfix] Update to `airless-core===0.2.5` because event id was being set as string when it should be an int
 
 **v0.1.1**
 - [Refactor] Write parquet to local file before uploading to GCS because it requires less memory
