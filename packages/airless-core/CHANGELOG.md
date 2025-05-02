@@ -1,5 +1,7 @@
 
 **unreleased**
+
+**v0.2.5**
 - [Bugfix] Force event id to be an integer
 
 **v0.2.4**
