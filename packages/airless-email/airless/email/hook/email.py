@@ -1,11 +1,15 @@
 
+import json
 import smtplib
+
 from typing import List
 
 from airless.core.hook import EmailHook
 from airless.core.utils import get_config
 
-from airless.google.cloud.secret_manager.hook import GoogleSecretManagerHook
+secret_locations = f'/secrets/{get_config("SECRET_SMTP")}'
+with open(secret_locations) as f:
+    SECRET = json.loads(f.read())
 
 
 class GoogleEmailHook(EmailHook):
@@ -14,8 +18,6 @@ class GoogleEmailHook(EmailHook):
     def __init__(self) -> None:
         """Initializes the GoogleEmailHook."""
         super().__init__()
-        secret_manager_hook = GoogleSecretManagerHook()
-        self.smtp = secret_manager_hook.get_secret(get_config('GCP_PROJECT'), get_config('SECRET_SMTP'), parse_json=True)
 
     def send(self, subject: str, content: str, recipients: List[str], sender: str, attachments: List[dict], mime_type: str) -> None:
         """Sends an email.
@@ -29,10 +31,10 @@ class GoogleEmailHook(EmailHook):
             mime_type (str): The MIME type of the email content.
         """
         msg = self.build_message(subject, content, recipients, sender, attachments, mime_type)
-        server = smtplib.SMTP_SSL(self.smtp['host'], self.smtp['port'])
+        server = smtplib.SMTP_SSL(SECRET['host'], SECRET['port'])
 
         try:
-            server.login(self.smtp['user'], self.smtp['password'])
+            server.login(SECRET['user'], SECRET['password'])
             server.sendmail(sender, recipients, msg.as_string())
         finally:
             server.close()

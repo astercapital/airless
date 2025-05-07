@@ -1,6 +1,9 @@
 
 **unreleased**
 
+**v1.0.0**
+- [Refactor] Get smtp secret from mounted secret instead of secret manager hook
+
 **v0.1.0**
 - [Refactor] Update requirements.txt to get new `airless-core` version `0.2.1`
 
