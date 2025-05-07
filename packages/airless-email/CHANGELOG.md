@@ -1,5 +1,7 @@
 
 **unreleased**
+
+**v1.0.0**
 - [Refactor] Get smtp secret from mounted secret instead of secret manager hook
 
 **v0.1.0**
