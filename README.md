@@ -6,6 +6,8 @@
 
 <!-- [![PyPI version](https://badge.fury.io/py/airless.svg)](https://badge.fury.io/py/airless) -->
 
+![Placeholder](docs/assets/images/logo_resized.png)
+
 Airless is a package that aims to build a serverless and lightweight orchestration platform, creating workflows of multiple tasks being executed on serverless functions. It is build to be Cloud agnostic, so using any Cloud provider is possible
 
 * [Google Cloud Functions](https://cloud.google.com/functions)

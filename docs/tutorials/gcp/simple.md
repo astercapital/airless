@@ -80,7 +80,7 @@ class ApiHook(BaseHook): # (1)!
     def __init__(self):
         """Initializes the WeatherApiHook."""
         super().__init__()
-        self.base_url = '[https://api.open-meteo.com/v1/forecast](https://api.open-meteo.com/v1/forecast)'
+        self.base_url = 'https://api.open-meteo.com/v1/forecast'
 
     def get_temperature(self, lat: float, lon: float) -> float:
         """
@@ -149,7 +149,7 @@ class WeatherOperator(GoogleBaseEventOperator): # (2)!
             self.get_temperature(data, topic)
         else:
             # Log a warning or raise a more specific error if needed
-            self.logger.warning(f"Request type '{request_type}' not implemented or missing in message data.")
+            self.logger.critical(f"Request type '{request_type}' not implemented or missing in message data.")
             # Optionally raise an exception to trigger error handling/retry
             # raise ValueError(f"Request type '{request_type}' not implemented")
 
@@ -184,40 +184,28 @@ This is the entry point for the GCP Cloud Function. It uses the `functions_frame
 
 ```python title="main.py"
 import functions_framework
-import gc
-import os # Import os to read environment variables
+import os
 
 from airless.core.utils import get_config
 
-# Dynamically import the operator specified in the environment variable
-# This allows reusing this entry point for different functions
-operator_import_path = get_config("OPERATOR_IMPORT", "from operator.weather import WeatherOperator") # Provide default
-exec(f'{operator_import_path} as op') # (1)!
+# Dynamically import the operator based on environment variable
+exec(f'{get_config("OPERATOR_IMPORT")} as OperatorClass') # (1)!
 
 @functions_framework.cloud_event # (2)!
 def route(cloud_event):
     """
-    GCP Cloud Function entry point triggered by a Cloud Event (e.g., Pub/Sub).
-
-    Args:
-        cloud_event: The Cloud Event object representing the trigger.
-                     Contains metadata and the message payload (base64 encoded).
+    Cloud Function entry point triggered by a Pub/Sub event.
+    Dynamically routes the event to the appropriate Airless operator.
     """
-    try:
-        instance = op() # Instantiate the operator
-        instance.run(cloud_event) # (3)! The base operator handles event parsing and calls execute
-    except Exception as e:
-        # Although the base operator handles error *routing*, log entry point failure
-        print(f"ERROR: Function execution failed at entry point: {e}") # Use print as logger might not be set up yet
-        # Re-raise to ensure GCP marks the function execution as failed
-        raise
-    finally:
-        gc.collect() # Suggest garbage collection
+    # Instantiate the dynamically loaded operator class
+    operator_instance = OperatorClass()
+    # Run the operator with the incoming event data
+    operator_instance.run(cloud_event) # (3)!
 ```
 
-1.  `exec(f'{operator_import_path} as op')` dynamically imports the operator class based on the `OPERATOR_IMPORT` environment variable (defined in Terraform). This makes the `main.py` reusable.
+1.  `exec(f'{get_config("OPERATOR_IMPORT")} as OperatorClass')` dynamically imports the operator class based on the `OPERATOR_IMPORT` environment variable (defined in Terraform). This makes the `main.py` reusable.
 2.  `@functions_framework.cloud_event` decorator registers this function to handle Cloud Events.
-3.  `instance.run(cloud_event)` is called. The `GoogleBaseEventOperator`'s `run` method parses the `cloud_event` (decoding the Pub/Sub message data) and then calls the `execute` method you defined in `WeatherOperator` with the extracted `data` and `topic`.
+3.  `operator_instance.run(cloud_event)` is called. The `GoogleBaseEventOperator`'s `run` method parses the `cloud_event` (decoding the Pub/Sub message data) and then calls the `execute` method you defined in `WeatherOperator` with the extracted `data` and `topic`.
 
 ## requirements.txt
 
@@ -283,40 +271,10 @@ variable "pubsub_topic_error_name" {
   default     = "dev-airless-error" # Example, adjust as needed
 }
 
-variable "operator_import_path" {
-  description = "Python import path for the operator in main.py."
-  type        = string
-  default     = "from operator.weather import WeatherOperator"
-}
-
 variable "function_name" {
   description = "Base name for the Cloud Function."
   type        = string
   default     = "weather-api"
-}
-
-variable "function_memory" {
-  description = "Memory allocation for the Cloud Function."
-  type        = string
-  default     = "256Mi"
-}
-
-variable "function_timeout" {
-  description = "Timeout in seconds for the Cloud Function."
-  type        = number
-  default     = 60 # Increased timeout for potential API calls
-}
-
-variable "scheduler_schedule" {
-  description = "Cron schedule for the Cloud Scheduler trigger."
-  type        = string
-  default     = "*/15 * * * *" # Trigger every 15 minutes for demo
-}
-
-variable "scheduler_timezone" {
-  description = "Timezone for the Cloud Scheduler trigger."
-  type        = string
-  default     = "America/Sao_Paulo"
 }
 
 variable "source_archive_exclude" {
@@ -340,11 +298,6 @@ This file defines variables like project ID, region, environment name, bucket na
 This file sets up the Google provider, creates the source code archive, uploads it to GCS, and defines the Cloud Scheduler job to trigger the workflow periodically.
 
 ```terraform title="main.tf"
-provider "google" {
-  project = var.project_id
-  region  = var.region
-}
-
 # Archive the source code directory into a zip file
 data "archive_file" "source" {
   type        = "zip"
@@ -356,66 +309,11 @@ data "archive_file" "source" {
   # For this structure, source_dir = "." works fine with excludes.
 }
 
-# Ensure the GCS bucket for source code exists
-# If you manage the bucket elsewhere, remove this and just use the var.function_bucket_name
-resource "google_storage_bucket" "function_source_bucket" {
-  name                        = var.function_bucket_name
-  location                    = var.region
-  uniform_bucket_level_access = true
-
-  # Optional: Add lifecycle rules, etc.
-}
-
 # Upload the zipped source code to GCS
 resource "google_storage_bucket_object" "zip" {
   name   = "${var.env}-${var.function_name}-src-${data.archive_file.source.output_md5}.zip"
   bucket = google_storage_bucket.function_source_bucket.name # Use the created bucket name
   source = data.archive_file.source.output_path
-
-  depends_on = [
-    data.archive_file.source,
-    google_storage_bucket.function_source_bucket # Ensure bucket exists before upload
-  ]
-}
-
-# Cloud Scheduler job to periodically trigger the function via Pub/Sub
-resource "google_cloud_scheduler_job" "trigger" {
-  name        = "${var.env}-${var.function_name}-trigger"
-  description = "Periodically trigger the weather API function"
-  schedule    = var.scheduler_schedule
-  time_zone   = var.scheduler_timezone
-
-  pubsub_target {
-    # google_pubsub_topic.main_topic is defined in function.tf
-    topic_name = google_pubsub_topic.main_topic.id
-    # Message payload expected by the operator's execute method
-    data = base64encode(jsonencode({
-      request_type = "temperature",
-      lat          = 40.7128, # Example: New York City
-      lon          = -74.0060
-    }))
-  }
-
-  depends_on = [
-    google_pubsub_topic.main_topic # Ensure topic exists before scheduling job
-  ]
-}
-
-# Output the function URL (if needed, though it's event-driven)
-output "cloud_function_uri" {
-  description = "The URI of the deployed Cloud Function."
-  value       = google_cloudfunctions2_function.main_function.service_config[0].uri
-  sensitive   = true # URIs can sometimes be sensitive
-}
-
-output "pubsub_topic_name" {
-  description = "The name of the Pub/Sub topic triggering the function."
-  value       = google_pubsub_topic.main_topic.id
-}
-
-output "scheduler_job_name" {
-  description = "The name of the Cloud Scheduler job."
-  value       = google_cloud_scheduler_job.trigger.name
 }
 ```
 
@@ -438,7 +336,7 @@ resource "google_cloudfunctions2_function" "main_function" {
   description = "Airless function to fetch weather data from API"
 
   build_config {
-    runtime     = "python39" # Or python310, python311, python312
+    runtime     = "python312" # Or python310, python311, python312
     entry_point = "route"    # Matches the function name in main.py
     source {
       storage_source {
@@ -450,15 +348,15 @@ resource "google_cloudfunctions2_function" "main_function" {
 
   service_config {
     max_instance_count = 3 # Limit concurrency
-    available_memory   = var.function_memory
-    timeout_seconds    = var.function_timeout
+    available_memory   = "256Mi"
+    timeout_seconds    = 60
     # Define environment variables needed by the function and airless core/gcp libs
     environment_variables = {
       ENV                  = var.env
       LOG_LEVEL            = var.log_level
       GCP_PROJECT          = var.project_id # Airless GCP libs might need this
       GCP_REGION           = var.region     # Airless GCP libs might need this
-      OPERATOR_IMPORT      = var.operator_import_path
+      OPERATOR_IMPORT      = "from operator.weather import WeatherOperator"
       QUEUE_TOPIC_ERROR    = var.pubsub_topic_error_name # For base operator error routing
       # Add any other specific env vars your operator/hook might need
     }
@@ -473,12 +371,26 @@ resource "google_cloudfunctions2_function" "main_function" {
     pubsub_topic   = google_pubsub_topic.main_topic.id
     retry_policy   = "RETRY_POLICY_RETRY" # Retry on failure
   }
+}
 
-  # Ensure the source code is uploaded before creating the function
-  depends_on = [
-    google_storage_bucket_object.zip,
-    google_pubsub_topic.main_topic
-  ]
+# Cloud Scheduler job to periodically trigger the function via Pub/Sub
+resource "google_cloud_scheduler_job" "trigger" {
+  name        = "${var.env}-${var.function_name}-trigger"
+  description = "Periodically trigger the weather API function"
+  schedule    = "*/15 * * * *" # Trigger every 15 minutes for demo
+  time_zone   = "America/Sao_Paulo"
+
+  pubsub_target {
+    # google_pubsub_topic.main_topic is defined in function.tf
+    topic_name = google_pubsub_topic.main_topic.id
+    # Message payload expected by the operator's execute method
+    # Example: New York City
+    data = base64encode(jsonencode({
+      "request_type" = "temperature",
+      "lat"          = 40.7128,
+      "lon"          = -74.0060
+    }))
+  }
 }
 ```
 
@@ -498,30 +410,11 @@ LOG_LEVEL=DEBUG
 # --- GCP Configuration ---
 # Replace with your actual GCP Project ID
 GCP_PROJECT="your-gcp-project-id"
+QUEUE_TOPIC_ERROR="dev-airless-error"
 
-# Replace with your desired GCP Region
-GCP_REGION="us-central1"
-
-# --- Terraform Variable Defaults (or overrides) ---
-# Bucket must be globally unique or match an existing one you own
-FUNCTION_BUCKET_NAME="your-unique-bucket-name-for-functions"
-
-# Optional: Override default names if needed
-# FUNCTION_NAME="weather-api"
-# TOPIC_NAME="dev-weather-api"
-# SCHEDULER_NAME="dev-weather-api-trigger"
-# PUBSUB_TOPIC_ERROR="dev-airless-error"
-
-# --- Operator Import ---
-# Matches the default in variables.tf
-OPERATOR_IMPORT="from operator.weather import WeatherOperator"
-
-# --- Variables derived from Terraform outputs (used by 'make trigger') ---
-# These will be dynamically populated if needed or can be fetched manually
-# FULL_TOPIC_NAME="projects/your-gcp-project-id/topics/dev-weather-api"
 ```
 
-Fill in your `GCP_PROJECT`, `GCP_REGION`, and a unique `FUNCTION_BUCKET_NAME`.
+Fill in your `GCP_PROJECT`, `GCP_REGION`
 
 ## Makefile
 
@@ -531,105 +424,39 @@ Create a `Makefile` to simplify deployment and testing commands.
     Remember that Makefiles use **tabs** for indentation, not spaces.
 
 ```makefile title="Makefile"
-# Load environment variables from .env file
-# Ensure .env exists and has values for GCP_PROJECT, GCP_REGION, TOPIC_NAME etc.
-include .env
-export $(shell sed 's/=.*//' .env)
 
-# Use variables defined in .env
-PROJECT_ID := $(GCP_PROJECT)
-REGION := $(GCP_REGION)
-ENV_NAME := $(ENV)
-FUNCTION := $(ENV_NAME)-$(FUNCTION_NAME) # Construct full function name if needed later
-TOPIC := $(ENV_NAME)-$(shell echo $(FUNCTION_NAME) | sed 's/_/-/g') # Construct topic name based on convention in function.tf
-FULL_TOPIC_NAME := projects/$(PROJECT_ID)/topics/$(TOPIC) # Construct full topic path
-
-.PHONY: help init plan deploy destroy trigger clean
-
-help:
-	@echo "Available commands:"
-	@echo "  init      - Initialize Terraform"
-	@echo "  plan      - Create Terraform execution plan"
-	@echo "  deploy    - Apply Terraform changes (deploy/update resources)"
-	@echo "  destroy   - Destroy Terraform-managed resources"
-	@echo "  trigger   - Publish a test message to the Pub/Sub topic"
-	@echo "  clean     - Remove temporary Terraform files"
-
-init:
-	@echo "Initializing Terraform..."
-	@terraform init
-
-plan:
-	@echo "Planning Terraform deployment..."
-	@terraform plan \
-		-var="project_id=$(PROJECT_ID)" \
-		-var="region=$(REGION)" \
-		-var="env=$(ENV_NAME)" \
-		-var="function_bucket_name=$(FUNCTION_BUCKET_NAME)" \
-		# Add other -var flags if needed to override tfvars or defaults
-
-deploy: init
-	@echo "Deploying resources with Terraform..."
-	@terraform apply -auto-approve \
-		-var="project_id=$(PROJECT_ID)" \
-		-var="region=$(REGION)" \
-		-var="env=$(ENV_NAME)" \
-		-var="function_bucket_name=$(FUNCTION_BUCKET_NAME)" \
-		# Add other -var flags if needed
-
-destroy:
-	@echo "Destroying resources with Terraform..."
-	@read -p "Are you sure you want to destroy all resources? [y/N] " confirm && [[ $$confirm == [yY] || $$confirm == [yY][eE][sS] ]] || exit 1
-	@terraform destroy -auto-approve \
-		-var="project_id=$(PROJECT_ID)" \
-		-var="region=$(REGION)" \
-		-var="env=$(ENV_NAME)" \
-		-var="function_bucket_name=$(FUNCTION_BUCKET_NAME)" \
-		# Add other -var flags if needed
-
-trigger:
-	@echo "Publishing test message to topic: $(FULL_TOPIC_NAME)"
-	@gcloud pubsub topics publish $(FULL_TOPIC_NAME) \
-		--message '{"request_type": "temperature", "lat": 51.5074, "lon": -0.1278}' # Example: London
-
-clean:
-	@echo "Cleaning up Terraform files..."
-	@rm -rf .terraform .terraform.lock.hcl /tmp/$(ENV_NAME)-$(FUNCTION_NAME)-source.zip
+run:
+  @python -c "from operator.weather import WeatherOperator; WeatherOperator().execute({'request_type': 'temperature', 'lat': 51.5074, 'lon': -0.1278})"
 
 ```
 
 This Makefile provides convenient targets:
 
-* `make init`: Initializes Terraform.
-* `make plan`: Shows the Terraform execution plan.
-* `make deploy`: Deploys or updates the GCP resources.
-* `make destroy`: Removes the GCP resources created by Terraform.
-* `make trigger`: Sends a sample message directly to the Pub/Sub topic to test the function independently of the scheduler.
-* `make clean`: Removes local Terraform state files and the temporary zip archive.
+* `make run`: Runs the operator locally.
 
 ## Deploy and Run
 
 1.  **Initialize Terraform:**
     ```bash
-    make init
+    terraform init
     ```
 
 2.  **Review Plan (Optional but Recommended):**
     ```bash
-    make plan
+    terraform plan
     ```
     Check the output to see what resources Terraform will create.
 
 3.  **Deploy Resources:**
     ```bash
-    make deploy
+    terraform apply
     ```
     This command will package your code, upload it, and create the GCS Bucket, Pub/Sub topic, Cloud Function, and Cloud Scheduler job on GCP. It might take a few minutes.
 
 4.  **Test Manually (Optional):**
     You can trigger the function immediately without waiting for the scheduler:
     ```bash
-    make trigger
+    gcloud pubsub topics publish dev-weather-api --message '{"request_type": "temperature", "lat": 51.5074, "lon": -0.1278}'
     ```
     Check the Cloud Function logs in the GCP Console to see the output and verify the temperature was logged.
 
@@ -640,7 +467,7 @@ This Makefile provides convenient targets:
 To remove all the GCP resources created by this example, run:
 
 ```bash
-make destroy
+terraform destroy
 ```
 Confirm the prompt to delete the resources.
 
@@ -648,11 +475,3 @@ Confirm the prompt to delete the resources.
 ## Simple Example
 
 Only return a message to pubsub but now using GCP pubsub.
-
-Quais precisa criar
-
-- Exemplo subindo o erro do GCP com o terraform e mensagem simples
-- Exemplo subindo o erro e email do GCP com o terraform pegando uma mensagem e mandando uma notificação por email
-- Exemplo subindo o erro e email do GCP com o terraform pegando uma mensagem, salvando no lake e mandando uma notificação por email
-- Exemplo subindo o erro e redirect do GCP com o terraform pegando uma mensagem e fazendo um map para o mesmo topic com outro request type e salvando no datalake no final
-- Exemplo subindo o erro e delay do GCP com o terraform pegando uma mensagem e fazendo delay para o mesmo topic com outro request type e salvando no datalake no final

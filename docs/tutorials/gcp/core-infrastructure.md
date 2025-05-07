@@ -151,8 +151,7 @@ modules/
 * Defines the inputs required by the module. This makes the module configurable.
 * Includes essential parameters like GCP `project_id`, `region`, `env` (environment name like 'dev' or 'prod'), `log_level`, buckets for function code and data (`function_bucket`, implicitly created `datalake_*`), error handling configuration (`error_config`), and dependencies like external queues (`queue_topic_pubsub_to_bq`).
 
-```terraform
-# modules/airless-core/variables.tf
+```terraform title="modules/airless-core/variables.tf"
 
 variable "project_id" {
   description = "GCP Project ID where resources will be deployed."
@@ -227,8 +226,7 @@ variable "error_config" {
 * `data "archive_file" "source_core"`: Zips the contents of the `../function/core` directory (relative to this `main.tf` file). It excludes files matching patterns in `var.source_archive_exclude`. The `output_path` is a temporary location for the zip file.
 * `resource "google_storage_bucket_object" "zip_core"`: Uploads the generated zip file (`data.archive_file.source_core.output_path`) to the GCS bucket specified by `var.function_bucket.name`. The object name includes the MD5 hash of the zip file (`data.archive_file.source_core.output_md5`) to ensure that changes in the source code result in a new object, triggering function updates.
 
-```terraform
-# modules/airless-core/main.tf
+```terraform title="modules/airless-core/main.tf"
 
 data "archive_file" "source_core" {
   type        = "zip"
@@ -260,8 +258,7 @@ resource "google_storage_bucket_object" "zip_core" {
 * It uses an environment variable `OPERATOR_IMPORT` (set in the Terraform resource definitions) to dynamically import the correct Airless operator class for the specific function (e.g., `GoogleErrorReprocessOperator`, `GoogleDelayOperator`).
 * The `route` function is triggered by the Cloud Event (e.g., Pub/Sub message) and calls the `run` method of the dynamically loaded operator instance.
 
-```python
-# modules/airless-core/function/core/main.py
+```python title="modules/airless-core/function/core/main.py"
 
 import functions_framework
 import os
@@ -288,8 +285,7 @@ def route(cloud_event):
 
 * Lists the Python packages required by the core functions. These will be installed when GCP builds the function environment.
 
-```text
-# modules/airless-core/function/core/requirements.txt
+```text title="modules/airless-core/function/core/requirements.txt"
 
 airless-google-cloud-secret-manager~=0.1.0
 airless-google-cloud-storage~=0.1.0
@@ -309,8 +305,7 @@ airless-email~=0.1.0
 * `lifecycle_rule`: Automatically manages objects in the bucket (e.g., moves objects older than 30 days to ARCHIVE storage class to save costs).
 * `force_destroy = false`: A safety measure to prevent accidental deletion of buckets containing data when running `terraform destroy`. Set to `true` only for temporary/test buckets.
 
-```terraform
-# modules/airless-core/storage.tf
+```terraform title="modules/airless-core/storage.tf"
 
 resource "google_storage_bucket" "datalake_raw" {
   project       = var.project_id
@@ -372,8 +367,7 @@ resource "google_storage_bucket" "datalake_landing" {
     * `event_trigger`: Configures the function to be triggered by messages published to the `google_pubsub_topic.error_reprocess.id` topic. `retry_policy = "RETRY_POLICY_RETRY"` means GCP will attempt redelivery on transient issues, but the operator logic handles application-level retries.
     * `depends_on`: Ensures the source code zip and necessary topics exist before creating the function.
 
-```terraform
-# modules/airless-core/error.tf
+```terraform title="modules/airless-core/error.tf"
 
 resource "google_pubsub_topic" "error_reprocess" {
   project = var.project_id
@@ -460,8 +454,7 @@ resource "google_cloudfunctions2_function" "error_reprocess" {
     * `QUEUE_TOPIC_ERROR`: Specifies where this function should send errors if it fails.
     * `retry_policy = "RETRY_POLICY_DO_NOT_RETRY"`: This function's core job *is* delay/retry logic; standard GCP retries might interfere. Failures should likely go straight to the error topic.
 
-```terraform
-# modules/airless-core/delay.tf
+```terraform title="modules/airless-core/delay.tf"
 
 resource "google_pubsub_topic" "delay" {
   project = var.project_id
@@ -532,8 +525,7 @@ resource "google_cloudfunctions2_function" "delay" {
     * `QUEUE_TOPIC_ERROR`: Specifies the error topic.
     * `retry_policy = "RETRY_POLICY_RETRY"`: Basic GCP retries are acceptable here.
 
-```terraform
-# modules/airless-core/redirect.tf
+```terraform title="modules/airless-core/redirect.tf"
 
 resource "google_pubsub_topic" "redirect" {
   project = var.project_id
@@ -659,8 +651,7 @@ resource "google_cloudfunctions2_function" "redirect_medium" {
     * `max_instance_count = 1`: Limits concurrency, often desirable for external notification systems to avoid rate limits or being flagged as spam.
     * `retry_policy = "RETRY_POLICY_RETRY"`: Allows GCP retries for transient SMTP issues.
 
-```terraform
-# modules/airless-core/email.tf
+```terraform title="modules/airless-core/email.tf"
 
 resource "google_pubsub_topic" "notification_email_send" {
   project = var.project_id
@@ -791,8 +782,7 @@ resource "google_cloudfunctions2_function" "error_notification_email_send" {
     * Environment variables point to the error topic. The operator likely expects Slack API tokens/details to be stored in Secret Manager (though the specific secret name isn't defined via env var here, the operator might have a default like `slack_alert` or `slack_token`).
     * `max_instance_count = 1` and short timeouts are common for notification functions.
 
-```terraform
-# modules/airless-core/slack.tf
+```terraform title="modules/airless-core/slack.tf"
 
 resource "google_pubsub_topic" "notification_slack_send" {
   project = var.project_id
@@ -972,8 +962,7 @@ resource "google_cloudfunctions2_function" "slack_react" {
 * Defines the outputs of the module. These expose the names and IDs of the created resources, making them easily accessible for use in other parts of your Terraform configuration or for external reference.
 * Outputs include bucket names and Pub/Sub topic details (both `id` and `name`).
 
-```terraform
-# modules/airless-core/output.tf
+```terraform title="modules/airless-core/output.tf"
 
 output "bucket_datalake_raw_name" {
   description = "Name of the raw data bucket."
