@@ -23,7 +23,7 @@ Terraform is an Infrastructure as Code (IaC) tool used to define and provision i
 
 ### The Need for `_raw` Storage
 
-In data processing pipelines like those often built with Airless, it's crucial to have intermediate storage layers. The `_raw` storage bucket (e.g., `${var.env}-aster-data-platform-raw` in `storage.tf`) serves several key purposes:
+In data processing pipelines like those often built with Airless, it's crucial to have intermediate storage layers. The `_raw` storage bucket (e.g., `${var.env}-datalake-raw` in `storage.tf`) serves several key purposes:
 
 1.  **Error Handling & Debugging:** When a function fails processing a message, the original message data and error details can be stored in the `_raw` bucket (or a dedicated error location). This prevents data loss and allows for later analysis and reprocessing. The Error function often coordinates this.
 2.  **Data Staging:** Functions might fetch data that needs to be temporarily stored before being processed by a subsequent task or loaded into a final destination. The `_raw` or `_landing_tmp` buckets act as these staging areas.
@@ -36,7 +36,7 @@ The provided `storage.tf` also includes lifecycle rules to transition older data
 
 The provided Terraform code is structured as a **module**. This is a best practice in Terraform that promotes reusability and organization. A module is a self-contained package of Terraform configurations that manages a set of related resources.
 
-* **Inputs:** The module defines input variables (`variables.tf`) like `project_id`, `region`, `env`, `error_config`, etc. This allows users of the module to customize the deployment without modifying the core code.
+* **Inputs:** The module defines input variables (`variables.tf`) like `project_id`, `region`, `env`, etc. This allows users of the module to customize the deployment without modifying the core code.
 * **Resources:** The module contains the resource definitions (`.tf` files like `error.tf`, `delay.tf`, `storage.tf`, etc.) that create the actual infrastructure (Cloud Functions, Pub/Sub topics, GCS buckets).
 * **Outputs:** The module defines outputs (`output.tf`) like bucket names and Pub/Sub topic names/IDs. These outputs expose key information about the created resources, which can be used by other Terraform configurations or for reference.
 
@@ -63,13 +63,16 @@ When using Terraform, you typically organize your code into several files. While
     }
     ```
 
-    **Root `main.tf`**
+    **`provider.tf`**
     ```terraform
     provider "google" {
       project = var.project_id
       region  = var.region
     }
+    ```
 
+    **Root `main.tf`**
+    ```terraform
     resource "google_storage_bucket" "function_code_bucket" {
       name     = "${var.env}-airless-function-code"
       location = var.region
@@ -103,20 +106,6 @@ When using Terraform, you typically organize your code into several files. While
         "__pycache__",
         "*.pyc"
       ]
-
-      error_config = {
-        bigquery = {
-          dataset = "airless_logs"
-          table   = "errors"
-        }
-        email = {
-          sender     = "noreply@example.com"
-          recipients = ["alerts-dev@example.com"]
-        }
-        slack = {
-          channels = ["#airless-alerts-dev"]
-        }
-      }
     }
     ```
 
@@ -124,9 +113,9 @@ When using Terraform, you typically organize your code into several files. While
 
 The Airless core infrastructure includes several specialized functions. Their importance generally follows this hierarchy:
 
-1.  **Error Function (`error.tf`):** This is arguably the **most critical** function. It acts as a centralized sink for all errors occurring in other functions. Its responsibilities include logging the error details (potentially to BigQuery via another queue/function and the `_raw` bucket), implementing retry logic (potentially using the Delay function), and triggering notifications. Without robust error handling, workflows become brittle and prone to data loss.
+1.  **Error Function (`error.tf`):** This is arguably the **most critical** function. It acts as a centralized sink for all errors occurring in other functions. Its responsibilities include logging the error details (to BigQuery via another queue/function or Google Cloud Storage in the `_raw` bucket), implementing retry logic (using the Delay function), and triggering notifications. Without robust error handling, workflows become brittle and prone to data loss.
 2.  **Delay Function (`delay.tf`) & Redirect Function (`redirect.tf`):** These enable core workflow patterns.
-    * **Delay:** Allows introducing controlled pauses in a workflow (e.g., for rate limiting, waiting for external processes, or implementing exponential backoff for retries directed by the Error function).
+    * **Delay:** Allows introducing controlled pauses in a workflow (e.g., for rate limiting, waiting for long external processes, or implementing exponential backoff for retries directed by the Error function).
     * **Redirect:** Enables fanning out tasks. A single message can be duplicated and sent to multiple different downstream topics/functions, facilitating parallel processing and complex branching logic.
 3.  **Email (`email.tf`) & Slack (`slack.tf`) Notification Functions:** These are primarily for monitoring and alerting. While important for operational visibility, the core workflow can often function without them (though you wouldn't know if something went wrong!). They decouple the notification logic (SMTP details, Slack API tokens) from the business logic functions, making the system cleaner. They are often triggered by the Error function or at specific success/milestone points in a workflow.
 
@@ -134,7 +123,7 @@ The Airless core infrastructure includes several specialized functions. Their im
 
 Below is the Terraform code based on the files you provided, structured as a module, along with explanations.
 
-**Assumed File Structure for the Module:**
+### File Structure for the Module
 
 ```
 modules/
@@ -157,10 +146,10 @@ modules/
 
 ---
 
-**`variables.tf`**
+### `variables.tf`
 
 * Defines the inputs required by the module. This makes the module configurable.
-* Includes essential parameters like GCP `project_id`, `region`, `env` (environment name like 'dev' or 'prod'), `log_level`, buckets for function code and data (`function_bucket`, implicitly created `aster_data_platform_*`), error handling configuration (`error_config`), and dependencies like external queues (`queue_topic_pubsub_to_bq`).
+* Includes essential parameters like GCP `project_id`, `region`, `env` (environment name like 'dev' or 'prod'), `log_level`, buckets for function code and data (`function_bucket`, implicitly created `datalake_*`), error handling configuration (`error_config`), and dependencies like external queues (`queue_topic_pubsub_to_bq`).
 
 ```terraform
 # modules/airless-core/variables.tf
@@ -232,7 +221,7 @@ variable "error_config" {
 
 ---
 
-**`main.tf`**
+### `main.tf`
 
 * This file handles the packaging and uploading of the Cloud Function source code.
 * `data "archive_file" "source_core"`: Zips the contents of the `../function/core` directory (relative to this `main.tf` file). It excludes files matching patterns in `var.source_archive_exclude`. The `output_path` is a temporary location for the zip file.
@@ -265,40 +254,22 @@ resource "google_storage_bucket_object" "zip_core" {
 
 *Note: Ensure the `function/core` directory exists adjacent to your module's `.tf` files and contains `main.py`, `requirements.txt`, and any other necessary Python code.*
 
-**`function/core/main.py`** (Example Entry Point)
+### `function/core/main.py` (Example Entry Point)
 
 * This Python code is the entry point for *all* the core Cloud Functions defined in this module.
 * It uses an environment variable `OPERATOR_IMPORT` (set in the Terraform resource definitions) to dynamically import the correct Airless operator class for the specific function (e.g., `GoogleErrorReprocessOperator`, `GoogleDelayOperator`).
 * The `route` function is triggered by the Cloud Event (e.g., Pub/Sub message) and calls the `run` method of the dynamically loaded operator instance.
-* `gc.collect()` helps manage memory in the serverless environment.
 
 ```python
 # modules/airless-core/function/core/main.py
 
 import functions_framework
-import gc
 import os
-import importlib
+
+from airless.core.utils import get_config
 
 # Dynamically import the operator based on environment variable
-operator_import_path = os.environ.get("OPERATOR_IMPORT", "")
-if not operator_import_path:
-    raise ValueError("OPERATOR_IMPORT environment variable not set.")
-
-try:
-    # Example: "from airless.google.cloud.core.operator import GoogleDelayOperator"
-    # Extracts module path and class name
-    parts = operator_import_path.split(" import ")
-    from_path = parts[0].replace("from ", "")
-    class_name = parts[1]
-
-    # Import the module and get the class
-    module = importlib.import_module(from_path)
-    OperatorClass = getattr(module, class_name)
-
-except (ImportError, AttributeError, IndexError, ValueError) as e:
-    raise ImportError(f"Could not import operator from '{operator_import_path}': {e}")
-
+exec(f'{get_config("OPERATOR_IMPORT")} as OperatorClass')
 
 @functions_framework.cloud_event
 def route(cloud_event):
@@ -310,39 +281,29 @@ def route(cloud_event):
     operator_instance = OperatorClass()
     # Run the operator with the incoming event data
     operator_instance.run(cloud_event)
-    # Explicitly run garbage collection
-    gc.collect()
 
 ```
 
-**`function/core/requirements.txt`** (Example Dependencies)
+### `function/core/requirements.txt` (Example Dependencies)
 
 * Lists the Python packages required by the core functions. These will be installed when GCP builds the function environment.
 
 ```text
 # modules/airless-core/function/core/requirements.txt
-functions-framework>=3.0.0 # Required by GCP for Python functions
-google-cloud-pubsub>=2.0.0
-google-cloud-storage>=2.0.0
-google-cloud-secret-manager>=2.0.0
-# Add the specific airless packages needed by the core operators
-airless-core~=0.1.5
-airless-google-cloud-core~=0.0.4
-airless-google-cloud-secret-manager~=0.0.4
-airless-google-cloud-storage~=0.0.7
-airless-google-cloud-bigquery~=0.0.5 # Likely needed by error operator
-airless-slack~=0.0.5
-airless-email~=0.0.6
 
+airless-google-cloud-secret-manager~=0.1.0
+airless-google-cloud-storage~=0.1.0
+airless-google-cloud-bigquery~=0.1.0
+airless-slack~=0.1.0
+airless-email~=0.1.0
 ```
 
 ---
 
-**`storage.tf`**
+### `storage.tf`
 
 * Defines the Google Cloud Storage (GCS) buckets.
 * `google_storage_bucket`: Creates buckets for different data stages:
-    * `landing_tmp`: Temporary area.
     * `raw`: For storing raw/error data, potentially with lifecycle rules.
     * `landing`: Main landing zone for incoming data.
 * `lifecycle_rule`: Automatically manages objects in the bucket (e.g., moves objects older than 30 days to ARCHIVE storage class to save costs).
@@ -351,18 +312,9 @@ airless-email~=0.0.6
 ```terraform
 # modules/airless-core/storage.tf
 
-resource "google_storage_bucket" "aster_data_platform_landing_tmp" {
+resource "google_storage_bucket" "datalake_raw" {
   project       = var.project_id
-  name          = "${var.env}-aster-data-platform-landing-tmp"
-  location      = var.region
-  force_destroy = false # Set to true only for non-production environments if needed
-
-  uniform_bucket_level_access = true
-}
-
-resource "google_storage_bucket" "aster_data_platform_raw" {
-  project       = var.project_id
-  name          = "${var.env}-aster-data-platform-raw"
+  name          = "${var.env}-datalake-raw"
   location      = var.region
   force_destroy = false
 
@@ -380,9 +332,9 @@ resource "google_storage_bucket" "aster_data_platform_raw" {
   }
 }
 
-resource "google_storage_bucket" "aster_data_platform_landing" {
+resource "google_storage_bucket" "datalake_landing" {
   project       = var.project_id
-  name          = "${var.env}-aster-data-platform-landing"
+  name          = "${var.env}-datalake-landing"
   location      = var.region
   force_destroy = false
 
@@ -403,7 +355,7 @@ resource "google_storage_bucket" "aster_data_platform_landing" {
 
 ---
 
-**`error.tf`**
+### `error.tf`
 
 * Defines the critical Error Handling function and its trigger topic.
 * `google_pubsub_topic "error_reprocess"`: Creates the Pub/Sub topic where other functions will send messages when they encounter errors.
@@ -498,7 +450,7 @@ resource "google_cloudfunctions2_function" "error_reprocess" {
 
 ---
 
-**`delay.tf`**
+### `delay.tf`
 
 * Defines the Delay function and its topic.
 * Structure is very similar to `error.tf`.
@@ -571,7 +523,7 @@ resource "google_cloudfunctions2_function" "delay" {
 
 ---
 
-**`redirect.tf`**
+### `redirect.tf`
 
 * Defines the Redirect function(s) and associated topics.
 * Includes two topics/functions (`redirect` and `redirect_medium`) potentially for different scaling/resource needs (e.g., `redirect_medium` has more memory `512Mi`). This allows routing redirection tasks based on expected fan-out load.
@@ -697,7 +649,7 @@ resource "google_cloudfunctions2_function" "redirect_medium" {
 
 ---
 
-**`email.tf`**
+### `email.tf`
 
 * Defines functions and topics for sending emails.
 * Separates topics/functions for regular notifications (`notification_email_send`) and error notifications (`error_notification_email_send`). This allows using different SMTP configurations (via Secret Manager secrets `smtp` vs `smtp_error`) or different scaling/retry policies if needed.
@@ -829,7 +781,7 @@ resource "google_cloudfunctions2_function" "error_notification_email_send" {
 
 ---
 
-**`slack.tf`**
+### `slack.tf`
 
 * Defines functions and topics for Slack notifications.
 * Includes separate topics/functions for standard (`notification_slack_send`) and error (`error_notification_slack_send`) messages, allowing different Slack App configurations/tokens (via secrets like `slack_alert`) if needed.
@@ -1015,7 +967,7 @@ resource "google_cloudfunctions2_function" "slack_react" {
 
 ---
 
-**`output.tf`**
+### `output.tf`
 
 * Defines the outputs of the module. These expose the names and IDs of the created resources, making them easily accessible for use in other parts of your Terraform configuration or for external reference.
 * Outputs include bucket names and Pub/Sub topic details (both `id` and `name`).
@@ -1023,19 +975,14 @@ resource "google_cloudfunctions2_function" "slack_react" {
 ```terraform
 # modules/airless-core/output.tf
 
-output "bucket_datalake_landing_tmp_name" {
-  description = "Name of the temporary landing bucket."
-  value       = google_storage_bucket.aster_data_platform_landing_tmp.name
-}
-
 output "bucket_datalake_raw_name" {
   description = "Name of the raw data bucket."
-  value       = google_storage_bucket.aster_data_platform_raw.name
+  value       = google_storage_bucket.datalake_raw.name
 }
 
 output "bucket_datalake_landing_name" {
   description = "Name of the main landing bucket."
-  value       = google_storage_bucket.aster_data_platform_landing.name
+  value       = google_storage_bucket.datalake_landing.name
 }
 
 # Outputting PubSub Topics (ID is often needed for triggers/permissions, name for reference/env vars)
