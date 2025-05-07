@@ -107,30 +107,25 @@ nav:
         - Simple Workflow: tutorials/gcp/simple.md
         - Multistep Workflow: tutorials/gcp/multistep.md
   - Api Reference:
-    - airless-captcha:
-      - providers: api/airless-captcha/providers.md
     - airless-core:
       - operator: api/airless-core/operator.md
       - hook: api/airless-core/hook.md
       - service: api/airless-core/service.md
       - dto: api/airless-core/dto.md
       - utils: api/airless-core/utils.md
-    - airless-email:
-      - operator: api/airless-email/operator.md
-      - hook: api/airless-email/hook.md
-    - airless-google-cloud-bigquery:
-      - operator: api/airless-google-cloud-bigquery/operator.md
-      - hook: api/airless-google-cloud-bigquery/hook.md
     - airless-google-cloud-core:
       - core:
         - operator: api/airless-google-cloud-core/core/operator.md
       - pubsub:
         - hook: api/airless-google-cloud-core/pubsub/hook.md
-    - airless-google-cloud-secret-manager:
-      - hook: api/airless-google-cloud-secret-manager/hook.md
     - airless-google-cloud-storage:
       - operator: api/airless-google-cloud-storage/operator.md
       - hook: api/airless-google-cloud-storage/hook.md
+    - airless-google-cloud-bigquery:
+      - operator: api/airless-google-cloud-bigquery/operator.md
+      - hook: api/airless-google-cloud-bigquery/hook.md
+    - airless-google-cloud-secret-manager:
+      - hook: api/airless-google-cloud-secret-manager/hook.md
     - airless-google-cloud-vertexai:
       - hook: api/airless-google-cloud-vertexai/hook.md
     - airless-pdf:
@@ -138,3 +133,8 @@ nav:
     - airless-slack:
       - operator: api/airless-slack/operator.md
       - hook: api/airless-slack/hook.md
+    - airless-email:
+      - operator: api/airless-email/operator.md
+      - hook: api/airless-email/hook.md
+    - airless-captcha:
+      - providers: api/airless-captcha/providers.md
