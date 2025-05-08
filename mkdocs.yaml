@@ -92,8 +92,8 @@ markdown_extensions:
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
 
 nav:
-  - Home:
-    - Airless: index.md
+  - Airless:
+    - Home: index.md
     - About: about.md
     - Infrastructure: infrastucture.md
     - Installation: installation.md
@@ -128,8 +128,6 @@ nav:
       - hook: api/airless-google-cloud-secret-manager/hook.md
     - airless-google-cloud-vertexai:
       - hook: api/airless-google-cloud-vertexai/hook.md
-    - airless-pdf:
-      - hook: api/airless-pdf/hook.md
     - airless-slack:
       - operator: api/airless-slack/operator.md
       - hook: api/airless-slack/hook.md
@@ -138,3 +136,5 @@ nav:
       - hook: api/airless-email/hook.md
     - airless-captcha:
       - providers: api/airless-captcha/providers.md
+    - airless-pdf:
+      - hook: api/airless-pdf/hook.md

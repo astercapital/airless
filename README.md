@@ -8,12 +8,24 @@
 
 ![Placeholder](docs/assets/images/logo_resized.png)
 
-Airless is a package that aims to build a serverless and lightweight orchestration platform, creating workflows of multiple tasks being executed on serverless functions. It is build to be Cloud agnostic, so using any Cloud provider is possible
+Airless is a suite of packages designed to build a modular, lightweight, serverless orchestration platform, creating workflows of multiple tasks being executed on serverless functions. It is build to be Cloud agnostic, so using any Cloud provider is possible.
 
 * [Google Cloud Functions](https://cloud.google.com/functions)
 * [AWS Lambda](https://aws.amazon.com/pm/lambda)
 * [Azure Functions](https://learn.microsoft.com/en-us/azure/azure-functions/)
 
+| Package | Version |
+|---------|---------|
+| [airless-core](packages/airless-core/README.md) | [![PyPI version](https://badge.fury.io/py/airless-core.svg)](https://badge.fury.io/py/airless-core) |
+| [airless-google-cloud-core](packages/airless-google-cloud-core/README.md) | [![PyPI version](https://badge.fury.io/py/airless-google-cloud-core.svg)](https://badge.fury.io/py/airless-google-cloud-core) |
+| [airless-google-cloud-storage](packages/airless-google-cloud-storage/README.md) | [![PyPI version](https://badge.fury.io/py/airless-google-cloud-storage.svg)](https://badge.fury.io/py/airless-google-cloud-storage) |
+| [airless-google-cloud-bigquery](packages/airless-google-cloud-bigquery/README.md) | [![PyPI version](https://badge.fury.io/py/airless-google-cloud-bigquery.svg)](https://badge.fury.io/py/airless-google-cloud-bigquery) |
+| [airless-google-cloud-secret-manager](packages/airless-google-cloud-secret-manager/README.md) | [![PyPI version](https://badge.fury.io/py/airless-google-cloud-secret-manager.svg)](https://badge.fury.io/py/airless-google-cloud-secret-manager) |
+| [airless-google-cloud-vertexai](packages/airless-google-cloud-vertexai/README.md) | [![PyPI version](https://badge.fury.io/py/airless-google-cloud-vertexai.svg)](https://badge.fury.io/py/airless-google-cloud-vertexai) |
+| [airless-slack](packages/airless-slack/README.md) | [![PyPI version](https://badge.fury.io/py/airless-slack.svg)](https://badge.fury.io/py/airless-slack) |
+| [airless-email](packages/airless-email/README.md) | [![PyPI version](https://badge.fury.io/py/airless-email.svg)](https://badge.fury.io/py/airless-email) |
+| [airless-captcha](packages/airless-captcha/README.md) | [![PyPI version](https://badge.fury.io/py/airless-captcha.svg)](https://badge.fury.io/py/airless-captcha) |
+| [airless-pdf](packages/airless-pdf/README.md) | [![PyPI version](https://badge.fury.io/py/airless-pdf.svg)](https://badge.fury.io/py/airless-pdf) |
 
 ## Why not just use [Apache Airflow](https://airflow.apache.org/)?
 
@@ -63,9 +75,3 @@ Airless builts its workflows based on serverless functions, queues and scheduler
 2. When a message is published to the queue it can trigger a serverless function and get executed with that message as an input
 3. This serverless function is able to publish as many messages as it wants to as many queue topics as it wants
 4. Repeat from 2
-
-## Getting Started
-
-* [Google Cloud Platform](example/gcp-getting-started)
-* Amazon Web Services
-* Microsoft Azure
