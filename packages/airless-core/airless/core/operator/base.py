@@ -34,7 +34,7 @@ class BaseOperator(BaseClass):
         self.message_id = None
         self.has_error = False
 
-    def extract_message_id(self, cloud_event):
+    def extract_message_id(self, cloud_event) -> str:
         """Extracts the message ID from the cloud event.
 
         Args:
@@ -142,7 +142,7 @@ class BaseFileOperator(BaseOperator):
         """
         raise NotImplementedError()
 
-    def run(self, cloud_event):
+    def run(self, cloud_event) -> None:
         """Processes the incoming cloud event and executes file logic.
 
         Args:
@@ -160,7 +160,7 @@ class BaseFileOperator(BaseOperator):
         except Exception as e:
             self.report_error(f'{str(e)}\n{traceback.format_exc()}')
 
-    def build_error_message(self, message: str, data: dict):
+    def build_error_message(self, message: str, data: dict) -> dict:
         """Builds an error message specific to file operations.
 
         Args:
@@ -213,7 +213,7 @@ class BaseEventOperator(BaseOperator):
         """
         raise NotImplementedError()
 
-    def run(self, cloud_event):
+    def run(self, cloud_event) -> None:
         """Processes the incoming cloud event and executes event logic.
 
         Args:
@@ -236,7 +236,7 @@ class BaseEventOperator(BaseOperator):
         except Exception as e:
             self.report_error(f'{str(e)}\n{traceback.format_exc()}')
 
-    def run_next(self, tasks: list):
+    def run_next(self, tasks: list) -> None:
         """Executes the next tasks in the pipeline.
 
         Args:
@@ -251,7 +251,7 @@ class BaseEventOperator(BaseOperator):
                 topic=t['topic'],
                 data=t['data'])
 
-    def build_error_message(self, message: str, data: dict):
+    def build_error_message(self, message: str, data: dict) -> dict:
         """Builds an error message specific to event operations.
 
         Args:
@@ -301,7 +301,7 @@ class BaseHttpOperator(BaseOperator):
         """
         raise NotImplementedError()
 
-    def run(self, request):
+    def run(self, request) -> None:
         """Processes the incoming HTTP request and executes processing logic.
 
         Args:
@@ -323,7 +323,7 @@ class BaseHttpOperator(BaseOperator):
         except Exception as e:
             self.report_error(f'{str(e)}\n{traceback.format_exc()}')
 
-    def build_error_message(self, message, request):
+    def build_error_message(self, message: str, request) -> dict:
         """Builds an error message specific to HTTP operations.
 
         Args:

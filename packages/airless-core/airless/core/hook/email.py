@@ -1,4 +1,6 @@
 
+from typing import Union
+
 from email import encoders
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
@@ -26,7 +28,7 @@ class EmailHook(BaseHook):
         """
         super().__init__()
 
-    def build_message(self, subject: str, content: str, recipients: list, sender: str, attachments: list=[], mime_type: str='plain'):
+    def build_message(self, subject: str, content: str, recipients: list, sender: str, attachments: list = [], mime_type: str = 'plain') -> Union[MIMEMultipart, MIMEText]:
         """Builds an email message with optional attachments.
 
         Args:
@@ -41,7 +43,7 @@ class EmailHook(BaseHook):
                 Defaults to 'plain'.
 
         Returns:
-            MIMEMultipart or MIMEText: The constructed email message object.
+            Union[MIMEMultipart, MIMEText]: The constructed email message object.
         """
 
         msg = MIMEText(content, mime_type)

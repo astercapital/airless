@@ -1,12 +1,7 @@
 
 # Airless
 
-<!-- Pytest Coverage Comment:Begin -->
-<!-- Pytest Coverage Comment:End -->
-
-<!-- [![PyPI version](https://badge.fury.io/py/airless.svg)](https://badge.fury.io/py/airless) -->
-
-![Placeholder](docs/assets/images/logo_resized.png)
+![Placeholder](assets/images/logo_resized.png)
 
 Airless is a package that aims to build a serverless and lightweight orchestration platform, creating workflows of multiple tasks being executed on serverless functions. It is build to be Cloud agnostic, so using any Cloud provider is possible
 
@@ -63,9 +58,3 @@ Airless builts its workflows based on serverless functions, queues and scheduler
 2. When a message is published to the queue it can trigger a serverless function and get executed with that message as an input
 3. This serverless function is able to publish as many messages as it wants to as many queue topics as it wants
 4. Repeat from 2
-
-## Getting Started
-
-* [Google Cloud Platform](example/gcp-getting-started)
-* Amazon Web Services
-* Microsoft Azure

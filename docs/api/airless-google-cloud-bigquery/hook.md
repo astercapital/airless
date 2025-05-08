@@ -1,0 +1,1 @@
+::: airless.google.cloud.bigquery.hook

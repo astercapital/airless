@@ -5,17 +5,10 @@ from airless.google.cloud.core.operator import GoogleBaseEventOperator
 
 class GoogleRedirectOperator(GoogleBaseEventOperator, RedirectOperator):
 
-    """
-    Operator that receives one event from a pubsub topic
-    and publish multiple messages to another topic.
+    """Google Cloud implementation of RedirectOperator.
 
-    It can receive 4 parameters:
-    project: the project where the destination pubsub is hosted
-    topic: the pubsub topic it must publish the newly generated messages
-    messages: a list of messages to publish the topic
-    params: a list of dicts containing a key and a list of values
-
-    The output messages will be the product of messages and every param values list
+    Operator that receives one event from a Google Pub/Sub topic and publishes 
+    multiple messages to another topic.
     """
 
     def __init__(self):

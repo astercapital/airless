@@ -1,0 +1,1 @@
+::: airless.google.cloud.secret_manager.hook

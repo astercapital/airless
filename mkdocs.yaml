@@ -1,21 +1,140 @@
 site_name: Airless
+
 theme:
   name: material
+  logo: assets/images/logo_white_resized.png
+  favicon: assets/images/logo_resized.png
+  features:
+  - content.code.annotate
+  - content.code.copy
+  - content.code.select
+  - content.tooltips
+  - navigation.instant.preview
+  - navigation.path
+  - navigation.sections
+  - navigation.tabs
+  - navigation.tabs.sticky
+  - navigation.top
+  - search.highlight
+  - search.suggest
   palette:
-    # Palette toggle for automatic mode
-    - media: "(prefers-color-scheme)"
-      toggle:
-        icon: material/brightness-auto
-        name: Switch to light mode
+    # # Palette toggle for automatic mode
+    # - media: "(prefers-color-scheme)"
+    #   toggle:
+    #     icon: material/brightness-auto
+    #     name: Switch to light mode
     # Palette toggle for light mode
     - media: "(prefers-color-scheme: light)"
       scheme: default
+      primary: deep purple
+      accent: teal
       toggle:
-        icon: material/brightness-7
+        icon: material/weather-sunny
         name: Switch to dark mode
     # Palette toggle for dark mode
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
+      primary: black
+      accent: deep orange
       toggle:
-        icon: material/brightness-4
+        icon: material/weather-night
         name: Switch to system preference
+
+plugins:
+  - search
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          paths:
+            - packages/airless-captcha
+            - packages/airless-core
+            - packages/airless-email
+            - packages/airless-google-cloud-bigquery
+            - packages/airless-google-cloud-core
+            - packages/airless-google-cloud-secret-manager
+            - packages/airless-google-cloud-storage
+            - packages/airless-google-cloud-vertexai
+            - packages/airless-pdf
+            - packages/airless-slack
+          options:
+            docstring_style: google
+            members: true
+            # show_bases: false
+            show_inheritance_diagram: true
+            show_root_heading: true
+            show_root_full_path: false
+            show_signature_annotations: true
+            show_source: false
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
+            signature_crossrefs: true
+            unwrap_annotated: true
+            # show_if_no_docstring: true
+            inherited_members: true
+
+markdown_extensions:
+  - attr_list
+  - md_in_html
+  - admonition                # call-outs
+  - pymdownx.details          # makes them collapsible
+  - pymdownx.superfences:      # nested code blocks inside tabs
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.highlight:       # syntax highlighting
+  - pymdownx.inlinehilite     # inline code highlighting
+  - pymdownx.tabbed:          # horizontal tabs
+      alternate_style: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+
+nav:
+  - Home:
+    - Airless: index.md
+    - About: about.md
+    - Infrastructure: infrastucture.md
+    - Installation: installation.md
+  - Tutorials:
+    - Quickstart Workflow: tutorials/quickstart.md
+    - Multi Step Workflow: tutorials/multistep.md
+    - Providers:
+      - Google Cloud:
+        - Overview: tutorials/gcp/overview.md
+        - Core Infrastructure: tutorials/gcp/core-infrastructure.md
+        - Simple Workflow: tutorials/gcp/simple.md
+        - Multistep Workflow: tutorials/gcp/multistep.md
+  - Api Reference:
+    - airless-core:
+      - operator: api/airless-core/operator.md
+      - hook: api/airless-core/hook.md
+      - service: api/airless-core/service.md
+      - dto: api/airless-core/dto.md
+      - utils: api/airless-core/utils.md
+    - airless-google-cloud-core:
+      - core:
+        - operator: api/airless-google-cloud-core/core/operator.md
+      - pubsub:
+        - hook: api/airless-google-cloud-core/pubsub/hook.md
+    - airless-google-cloud-storage:
+      - operator: api/airless-google-cloud-storage/operator.md
+      - hook: api/airless-google-cloud-storage/hook.md
+    - airless-google-cloud-bigquery:
+      - operator: api/airless-google-cloud-bigquery/operator.md
+      - hook: api/airless-google-cloud-bigquery/hook.md
+    - airless-google-cloud-secret-manager:
+      - hook: api/airless-google-cloud-secret-manager/hook.md
+    - airless-google-cloud-vertexai:
+      - hook: api/airless-google-cloud-vertexai/hook.md
+    - airless-pdf:
+      - hook: api/airless-pdf/hook.md
+    - airless-slack:
+      - operator: api/airless-slack/operator.md
+      - hook: api/airless-slack/hook.md
+    - airless-email:
+      - operator: api/airless-email/operator.md
+      - hook: api/airless-email/hook.md
+    - airless-captcha:
+      - providers: api/airless-captcha/providers.md

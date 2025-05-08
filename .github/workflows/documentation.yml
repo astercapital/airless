@@ -27,7 +27,5 @@ jobs:
       - uses: actions/setup-python@v2
       - run: pip install --upgrade pip && pip install -r requirements-dev.txt
       - run: git config user.name 'github-actions[bot]' && git config user.email 'github-actions[bot]@users.noreply.github.com'
-      - name: Generate docs
-        run: make generate-docs
-      - name: Publish docs
+      - name: Build and publish docs
         run: mkdocs gh-deploy
