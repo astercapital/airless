@@ -4,7 +4,6 @@ from typing import Any, Dict, List, Optional
 from airless.core.operator import BaseEventOperator
 from airless.core.hook import SecretManagerHook
 from airless.core.utils import get_config
-from airless.google.cloud.secret_manager.hook import GoogleSecretManagerHook
 
 from airless.slack.hook import SlackHook
 
@@ -93,21 +92,3 @@ class SlackReactOperator(BaseEventOperator):
 
         response = self.slack_hook.react(channel, reaction, ts)
         self.logger.debug(response)
-
-
-class GoogleSlackSendOperator(SlackSendOperator):
-    """Slack operator using Google Secret Manager to get secrets."""
-
-    def __init__(self) -> None:
-        """Initializes the GoogleSlackSendOperator."""
-        super().__init__()
-        self.secret_manager_hook = GoogleSecretManagerHook()
-
-
-class GoogleSlackReactOperator(SlackReactOperator):
-    """Slack operator using Google Secret Manager to get secrets."""
-
-    def __init__(self) -> None:
-        """Initializes the GoogleSlackReactOperator."""
-        super().__init__()
-        self.secret_manager_hook = GoogleSecretManagerHook()
