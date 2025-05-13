@@ -1,6 +1,6 @@
 
 **unreleased**
-- [Bugfix] Bugfix Google operators to inherit from `GoogleBaseEventOperator` to handle errors and use `queue_hook` attribute
+- [Bugfix] Refactor Google operators to inherit from `GoogleBaseEventOperator`, ensuring proper error handling and consistent use of the `queue_hook` attribute
 
 **v0.1.0**
 - [Refactor] Update requirements.txt to get new `airless-core` version `0.2.1`
