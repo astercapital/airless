@@ -1,5 +1,7 @@
 
 **unreleased**
+
+**v0.1.1**
 - [Bugfix] Refactor Google operators to inherit from `GoogleBaseEventOperator`, ensuring proper error handling and consistent use of the `queue_hook` attribute
 
 **v0.1.0**
