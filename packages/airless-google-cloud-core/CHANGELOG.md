@@ -1,5 +1,7 @@
 
 **unreleased**
+
+**v0.1.1**
 - [Feature] Default `json.dumps` conversion as `str` when publishing a message to pubsub. For instance, datetime will be converted to str
 
 **v0.1.0**
