@@ -1,5 +1,6 @@
 
 **unreleased**
+- [Feature] Default `json.dumps` conversion as `str` when publishing a message to pubsub. For instance, datetime will be converted to str
 
 **v0.1.0**
 - [Refactor] Remove `GoogleErrorReprocessOperator` from `airless-google-cloud-core` because it is being moved to `airless-google-cloud-storage`
