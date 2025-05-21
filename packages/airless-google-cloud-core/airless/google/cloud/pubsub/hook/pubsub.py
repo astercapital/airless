@@ -30,7 +30,7 @@ class GooglePubsubHook(QueueHook):
         if get_config('ENV') == 'prod':
             topic_path = self.publisher.topic_path(project or get_config('GCP_PROJECT'), topic)
 
-            message_bytes = json.dumps(data).encode('utf-8')
+            message_bytes = json.dumps(data, default=str).encode('utf-8')
 
             publish_future = self.publisher.publish(topic_path, data=message_bytes)
             publish_future.result(timeout=10)
