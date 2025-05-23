@@ -7,6 +7,12 @@ from airless.core.utils import get_config
 
 class GeminiApiHook(LLMHook):
     def __init__(self) -> None:
+        """Gemini api only hook
+
+        Note:
+            Requires the following environment variables to be set:
+            - GEMINI_API_KEY: Gemini api key string.
+        """
         super().__init__()
         self.api_key = get_config("GEMINI_API_KEY")
         self.base_url = "https://generativelanguage.googleapis.com/v1beta/models"
