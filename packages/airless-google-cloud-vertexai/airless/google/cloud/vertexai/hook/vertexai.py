@@ -11,13 +11,15 @@ from vertexai.generative_models import GenerativeModel
 class VertexAiHook(LLMHook):
     """Hook for interacting with Vertex AI Generative Models."""
 
-    def __init__(self, model_name: str, **kwargs: Any) -> None:
+    def __init__(self, model_name: str, **kwargs: dict[str, Any]) -> None:
         """Initializes the GenerativeModelHook.
 
         Note:
             Requires the following environment variables to be set:
+
               - GCP_PROJECT: The Google Cloud project ID.
               - GCP_REGION: The Google Cloud region.
+
             These are needed to initialize the Vertex AI client with the correct context.
 
         Args:
@@ -28,7 +30,7 @@ class VertexAiHook(LLMHook):
         vertexai.init(project=get_config('GCP_PROJECT'), location=get_config('GCP_REGION'))
         self.model = GenerativeModel(model_name, **kwargs)
 
-    def generate_content(self, content: str, **kwargs: Any) -> Any:
+    def generate_content(self, content: str, **kwargs: dict[str, Any]) -> Any:
         """Generates a content for the given content.
 
         Args:

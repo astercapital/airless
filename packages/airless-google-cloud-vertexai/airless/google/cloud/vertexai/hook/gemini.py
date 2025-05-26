@@ -1,5 +1,6 @@
 
 import requests
+from typing import Any
 
 from airless.core.hook import LLMHook
 from airless.core.utils import get_config
@@ -11,20 +12,45 @@ class GeminiApiHook(LLMHook):
 
         Note:
             Requires the following environment variables to be set:
+
             - GEMINI_API_KEY: Gemini api key string.
         """
         super().__init__()
         self.api_key = get_config("GEMINI_API_KEY")
         self.base_url = "https://generativelanguage.googleapis.com/v1beta/models"
 
-    def generate_content(self, model: str, prompt: str, **kwargs) -> dict:
+    def generate_content(self, model: str, prompt: str = None, **kwargs: dict[str, Any]) -> dict:
         """Generates content using the Gemini API via a POST request.
 
         Args:
             model: The name of the Gemini model to use.
-            prompt: The text prompt for generation.
-            **kwargs: Additional parameters to include in the request payload,
-                      such as systemInstruction or generationConfig.
+            prompt: Text prompt for generation.
+            **kwargs: Additional parameters to include in the request payload, such as systemInstruction or generationConfig.
+
+        Examples:
+            >>> response = gemini_hook.generate_content(
+            ...     model="gemini-2.0-flash-lite",
+            ...     prompt="Summarize this article about climate change...",
+            ...     systemInstruction={"parts": [{"text": "You are an expert summarizer. Provide a concise summary."}]},
+            ...     generationConfig={"responseMimeType": "text/plain", "temperature": 0.2}
+            ... )
+
+            Example with custom contents structure
+
+            >>> response = gemini_hook.generate_content(
+            ...     model="gemini-2.0-flash-lite",
+            ...     systemInstruction={
+            ...         "parts": [{"text": "You are an expert summarizer. Provide a concise summary in Portuguese."}]
+            ...     },
+            ...     contents=[{
+            ...         "role": "user",
+            ...         "parts": [
+            ...             {"text": "First part of the article..."},
+            ...             {"text": "Second part with more details..."}
+            ...         ]
+            ...     }],
+            ...     generationConfig={"responseMimeType": "text/plain", "temperature": 0.2}
+            ... )
 
         Returns:
             The full JSON response from the Gemini API as a dictionary.
@@ -43,13 +69,32 @@ class GeminiApiHook(LLMHook):
 
         return response.json()
 
-    def generate_content_with_pdf(self, model: str, prompt: str, pdf_files: list[str], **kwargs) -> dict:
+    def generate_content_with_pdf(self, model: str, prompt: str = None, pdf_files: list[str] = None, **kwargs: dict[str, Any]) -> dict:
         """Generates content using the Gemini API with PDF context via a POST request.
 
         Args:
-            model: The name of the Gemini model to use (e.g., 'gemini-pro-vision').
+            model: The name of the Gemini model to use.
             prompt: The text prompt for generation.
             pdf_files: A list of base64 encoded strings, each representing a PDF file.
+            **kwargs: Additional parameters to include in the request payload, such as systemInstruction or generationConfig.
+
+        Examples:
+            >>> response = gemini_hook.generate_content_with_pdf(
+            ...     model="gemini-2.5-pro",
+            ...     prompt="Summarize this article about climate change...",
+            ...     pdf_files=[base64_pdf1, base64_pdf2],
+            ...     systemInstruction={"parts": [{"text": "You are an expert summarizer. Provide a concise summary."}]},
+            ...     generationConfig={"responseMimeType": "text/plain", "temperature": 0.2}
+            ... )
+
+            Example with custom contents structure
+
+            >>> response = gemini_hook.generate_content_with_pdf(
+            ...     model="gemini-2.5-pro",
+            ...     pdf_files=[base64_pdf1, base64_pdf2],
+            ...     systemInstruction={"parts": [{"text": "You are an expert summarizer. Provide a concise summary."}]},
+            ...     generationConfig={"responseMimeType": "text/plain", "temperature": 0.2}
+            ... )
 
         Returns:
             The full JSON response from the Gemini API as a dictionary.

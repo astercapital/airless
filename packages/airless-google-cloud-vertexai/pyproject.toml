@@ -5,7 +5,7 @@ description = "Airless package to manage google cloud vertexai"
 readme = "README.md"
 requires-python = ">=3.9"
 dynamic = ["dependencies"]
-license = {text = "MIT License"}
+license = "MIT"
 
 [build-system]
 requires = ["setuptools", "wheel"]
