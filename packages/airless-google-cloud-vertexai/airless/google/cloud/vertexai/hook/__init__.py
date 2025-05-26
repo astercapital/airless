@@ -1,7 +1,7 @@
-from .generative_model import GenerativeModelHook
-from .api import GeminiApiHook
+from .vertexai import VertexAiHook
+from .gemini import GeminiApiHook
 
 __all__ = [
-    "GenerativeModelHook",
+    "VertexAiHook",
     "GeminiApiHook",
 ]
