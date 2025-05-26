@@ -137,7 +137,7 @@ class GeminiApiHook(LLMHook):
             response_json: The JSON response from the Gemini API as a dictionary.
 
         Returns:
-            The extracted text content if found, otherwise an empty string.
+            The extracted text content if found. Raises ValueError if extraction fails or the prompt was blocked.
         """
         try:
             if 'promptFeedback' in response_json:
