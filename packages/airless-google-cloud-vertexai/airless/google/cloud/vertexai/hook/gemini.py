@@ -56,11 +56,14 @@ class GeminiApiHook(LLMHook):
             The full JSON response from the Gemini API as a dictionary.
         """
         url = f"{self.base_url}/{model}:generateContent?key={self.api_key}"
-        payload = {
-            "contents": [{
-                "parts": [{"text": prompt}]
-            }]
-        }
+        payload = {}
+
+        if prompt:
+            payload = {
+                "contents": [{
+                    "parts": [{"text": prompt}]
+                }]
+            }
 
         payload.update(kwargs)
 
@@ -100,21 +103,26 @@ class GeminiApiHook(LLMHook):
             The full JSON response from the Gemini API as a dictionary.
         """
         url = f"{self.base_url}/{model}:generateContent?key={self.api_key}"
+        payload = {}
 
         api_parts = []
-        api_parts.append({"text": prompt})
+        if prompt:
+            api_parts.append({"text": prompt})
 
-        for pdf_base64 in pdf_files:
-            api_parts.append({
-                "inline_data": {
-                    "mime_type": "application/pdf",
-                    "data": pdf_base64
-                }
-            })
+        if pdf_files:
+            for pdf_base64 in pdf_files:
+                api_parts.append({
+                    "inline_data": {
+                        "mime_type": "application/pdf",
+                        "data": pdf_base64
+                    }
+                })
 
-        payload = {
-            "contents": [{"parts": api_parts}]
-        }
+        if api_parts:
+            payload = {
+                "contents": [{"parts": api_parts}]
+            }
+
         payload.update(kwargs)
 
         response = requests.post(url, json=payload)
