@@ -1,4 +1,4 @@
-## unreleased
+**unreleased**
 
 - Introduced `GeminiApiHook` for direct interaction with the Google Gemini API using `requests`. This hook allows generating content with text prompts and including PDF files in requests. It provides methods `generate_content`, `generate_content_with_pdf`, and `extract_text_from_response`.
 
