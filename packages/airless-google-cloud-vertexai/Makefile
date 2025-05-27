@@ -23,7 +23,7 @@ publish-dev-version:
     if [ -d "$$dir" ]; then rm -r "$$dir"; fi; \
     done
 	@echo "Build package"
-	@python -m build
+	@python3 -m build
 	@echo "Upload package to pypi"
 	@twine upload dist/*
 
