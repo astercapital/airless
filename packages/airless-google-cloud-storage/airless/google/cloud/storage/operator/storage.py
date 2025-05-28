@@ -12,12 +12,31 @@ from airless.google.cloud.storage.hook import GcsHook
 
 
 class FileDetectOperator(GoogleBaseFileOperator):
+    """Operator to detect files in GCS and send messages to a queue.
+
+    This operator is triggered when a new file is detected in a GCS bucket.
+    It reads configuration for the file, builds success messages, and publishes
+    them to a specified Google Cloud Pub/Sub topic.
+    """
 
     def __init__(self):
+        """Initializes the FileDetectOperator.
+
+        Sets up the GCS hook for interacting with Google Cloud Storage.
+        """
         super().__init__()
         self.gcs_hook = GcsHook()
 
     def execute(self, bucket, filepath):
+        """Executes the operator's logic.
+
+        Builds success messages based on the detected file and its configuration,
+        then publishes these messages to the configured Pub/Sub topic.
+
+        Args:
+            bucket (str): The GCS bucket where the file was detected.
+            filepath (str): The path to the detected file within the bucket.
+        """
         success_messages = self.build_success_message(bucket, filepath)
 
         for success_message in success_messages:
@@ -27,6 +46,16 @@ class FileDetectOperator(GoogleBaseFileOperator):
                 data=success_message)
 
     def build_success_message(self, bucket, filepath):
+        """Builds success messages based on the file's ingestion configuration.
+
+        Args:
+            bucket (str): The GCS bucket of the file.
+            filepath (str): The path to the file.
+
+        Returns:
+            list: A list of dictionaries, each representing a success message
+                  containing metadata for file processing.
+        """
         dataset, table, mode, separator, skip_leading_rows, \
             file_format, schema, run_next, quote_character, encoding, \
             column_names, time_partitioning, processing_method, \
@@ -61,6 +90,21 @@ class FileDetectOperator(GoogleBaseFileOperator):
         return metadatas
 
     def get_ingest_config(self, filepath):
+        """Retrieves ingestion configuration for a given filepath.
+
+        Parses the filepath to determine dataset, table, and mode.
+        Reads a configuration file from GCS based on dataset and table.
+        Handles single or multiple configurations within the config file.
+
+        Args:
+            filepath (str): The GCS path to the file.
+
+        Returns:
+            tuple: A tuple containing various configuration parameters.
+
+        Raises:
+            NotImplementedError: If the metadata format in the config file is not a list or dict.
+        """
         dataset, table, mode = self.split_filepath(filepath)
 
         metadata = self.read_config_file(dataset, table)
@@ -120,6 +164,17 @@ class FileDetectOperator(GoogleBaseFileOperator):
             sheet_name, arguments, options
 
     def split_filepath(self, filepath):
+        """Splits a GCS filepath into dataset, table, and mode.
+
+        Args:
+            filepath (str): The GCS filepath string.
+
+        Returns:
+            tuple: A tuple containing dataset (str), table (str), and mode (str).
+
+        Raises:
+            Exception: If the filepath format is invalid.
+        """
         filepath_array = filepath.split('/')
         if len(filepath_array) < 3:
             raise Exception('Invalid file path. Must be added to directory {dataset}/{table}/{mode}')
@@ -130,6 +185,17 @@ class FileDetectOperator(GoogleBaseFileOperator):
         return dataset, table, mode
 
     def read_config_file(self, dataset, table):
+        """Reads the ingestion configuration file from GCS.
+
+        If the config file is not found, returns a default configuration.
+
+        Args:
+            dataset (str): The dataset name.
+            table (str): The table name.
+
+        Returns:
+            dict or list: The configuration data, or a default config if not found.
+        """
         try:
             config = self.gcs_hook.read_json(
                 bucket=get_config('GCS_BUCKET_LANDING_ZONE_LOADER_CONFIG'),
@@ -142,14 +208,38 @@ class FileDetectOperator(GoogleBaseFileOperator):
 @deprecated(deprecated_in="0.0.5", removed_in="1.0.0",
             details="This class will be deprecated. Please write files directly to datalake using `GcsDatalakeHook`")
 class BatchWriteDetectOperator(GoogleBaseEventOperator):
-    # Will be deprecreated
+    """Operator to detect batches of files in GCS based on thresholds.
+
+    This operator lists files in a GCS bucket prefix and groups them by directory.
+    It checks if the accumulated size, file quantity, or age of files in a
+    directory exceeds predefined thresholds. If so, it sends a message to a
+    Pub/Sub topic to process the batch.
+
+    Note:
+        This class is deprecated and will be removed in a future version.
+        Use `GcsDatalakeHook` for writing files directly to the datalake.
+    """
 
     def __init__(self):
+        """Initializes the BatchWriteDetectOperator.
+
+        Sets up FileHook and GcsHook.
+        """
         super().__init__()
         self.file_hook = FileHook()
         self.gcs_hook = GcsHook()
 
     def execute(self, data, topic):
+        """Executes the batch detection logic.
+
+        Args:
+            data (dict): A dictionary containing parameters:
+                - bucket (str, optional): The GCS bucket. Defaults to `GCS_BUCKET_LANDING_ZONE`.
+                - prefix (str, optional): The GCS prefix to scan.
+                - threshold (dict): A dictionary with thresholds for 'size' (bytes),
+                  'file_quantity', and 'minutes' (age).
+            topic (str): The Pub/Sub topic to publish messages to (unused in current logic).
+        """
         bucket = data.get('bucket', get_config('GCS_BUCKET_LANDING_ZONE'))
         prefix = data.get('prefix')
         threshold = data['threshold']
@@ -191,6 +281,13 @@ class BatchWriteDetectOperator(GoogleBaseEventOperator):
                     self.send_to_process(bucket=bucket, directory=directory, files=v['files'])
 
     def send_to_process(self, bucket, directory, files):
+        """Sends a message to Pub/Sub to process a batch of files.
+
+        Args:
+            bucket (str): The GCS bucket of the files.
+            directory (str): The common directory (prefix) of the files.
+            files (list): A list of filenames in the batch.
+        """
         self.queue_hook.publish(
             project=get_config('GCP_PROJECT'),
             topic=get_config('PUBSUB_TOPIC_BATCH_WRITE_PROCESS'),
@@ -200,13 +297,37 @@ class BatchWriteDetectOperator(GoogleBaseEventOperator):
 @deprecated(deprecated_in="0.0.5", removed_in="1.0.0",
             details="This class will be deprecated. Please write files directly to datalake using `GcsDatalakeHook`")
 class BatchWriteProcessOperator(GoogleBaseEventOperator):
+    """Operator to process batches of files from GCS.
+
+    This operator reads multiple JSON files from a specified GCS location,
+    merges their content into a single local NDJSON file, uploads the merged
+    file to another GCS location, and then moves the original processed files
+    to an archive location.
+
+    Note:
+        This class is deprecated and will be removed in a future version.
+        Use `GcsDatalakeHook` for writing files directly to the datalake.
+    """
 
     def __init__(self):
+        """Initializes the BatchWriteProcessOperator.
+
+        Sets up FileHook and GcsHook.
+        """
         super().__init__()
         self.file_hook = FileHook()
         self.gcs_hook = GcsHook()
 
     def execute(self, data, topic):
+        """Executes the batch processing logic.
+
+        Args:
+            data (dict): A dictionary containing parameters:
+                - bucket (str): The source GCS bucket.
+                - directory (str): The directory within the source bucket.
+                - files (list): A list of filenames to process.
+            topic (str): The Pub/Sub topic from which the message was received (unused).
+        """
         from_bucket = data['bucket']
         directory = data['directory']
         files = data['files']
@@ -229,6 +350,19 @@ class BatchWriteProcessOperator(GoogleBaseEventOperator):
         )
 
     def read_files(self, bucket, directory, files):
+        """Reads multiple JSON files from GCS and concatenates their contents.
+
+        Args:
+            bucket (str): The GCS bucket.
+            directory (str): The directory within the bucket.
+            files (list): A list of filenames to read.
+
+        Returns:
+            list: A list containing the combined content of the JSON files.
+
+        Raises:
+            Exception: If a file content is not a list or dict.
+        """
         file_contents = []
         for f in files:
             obj = self.gcs_hook.read_json(
@@ -243,18 +377,43 @@ class BatchWriteProcessOperator(GoogleBaseEventOperator):
         return file_contents
 
     def merge_files(self, file_contents):
+        """Merges file contents into a local NDJSON file.
+
+        Args:
+            file_contents (list): A list of dictionaries or objects to write.
+
+        Returns:
+            str: The path to the created local NDJSON file.
+        """
         local_filepath = self.file_hook.get_tmp_filepath('merged.ndjson', add_timestamp=True)
         self.file_hook.write(local_filepath=local_filepath, data=file_contents, use_ndjson=True)
         return local_filepath
 
 
 class FileDeleteOperator(GoogleBaseEventOperator):
+    """Operator to delete files or prefixes in a GCS bucket."""
 
     def __init__(self):
+        """Initializes the FileDeleteOperator.
+
+        Sets up the GcsHook.
+        """
         super().__init__()
         self.gcs_hook = GcsHook()
 
     def execute(self, data, topic):
+        """Executes the file deletion logic.
+
+        Args:
+            data (dict): A dictionary containing parameters:
+                - bucket (str): The GCS bucket.
+                - prefix (str, optional): The prefix to delete.
+                - files (list, optional): A list of specific filepaths to delete.
+            topic (str): The Pub/Sub topic (unused).
+
+        Raises:
+            Exception: If neither 'prefix' nor 'files' is provided.
+        """
         bucket = data['bucket']
         prefix = data.get('prefix')
         files = data.get('files', [])
@@ -267,12 +426,25 @@ class FileDeleteOperator(GoogleBaseEventOperator):
 
 
 class FileMoveOperator(GoogleBaseEventOperator):
+    """Operator to move files or prefixes within or between GCS buckets."""
 
     def __init__(self):
+        """Initializes the FileMoveOperator.
+
+        Sets up the GcsHook.
+        """
         super().__init__()
         self.gcs_hook = GcsHook()
 
     def execute(self, data, topic):
+        """Executes the file moving logic.
+
+        Args:
+            data (dict): A dictionary containing parameters:
+                - origin (dict): Contains 'bucket' (str) and 'prefix' (str) for the source.
+                - destination (dict): Contains 'bucket' (str) and 'directory' (str) for the destination.
+            topic (str): The Pub/Sub topic (unused).
+        """
         origin_bucket = data['origin']['bucket']
         origin_prefix = data['origin']['prefix']
         dest_bucket = data['destination']['bucket']

@@ -7,8 +7,20 @@ from airless.core.utils import get_config
 
 
 class GeminiApiHook(LLMHook):
+    """Hook for interacting with the Google Gemini API.
+
+    This hook provides methods to generate content using various Gemini models,
+    including text-based prompts and prompts with PDF file context.
+    It handles the communication with the Gemini API and extracts
+    relevant information from the API's responses.
+
+    Note:
+        Requires the following environment variables to be set:
+
+        - GEMINI_API_KEY: Gemini api key string.
+    """
     def __init__(self) -> None:
-        """Gemini api only hook
+        """Initializes the GeminiApiHook.
 
         Note:
             Requires the following environment variables to be set:
