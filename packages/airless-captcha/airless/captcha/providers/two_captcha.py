@@ -104,11 +104,19 @@ class Solver2CaptchaService(CaptchaService):
         return response.json()
 
     def report_good_captcha(self) -> None:
-        """Reports a captcha as solved successfully."""
+        """Reports a captcha as solved successfully to the 2Captcha API.
+
+        This method should be called when a captcha provided by 2Captcha
+        was accepted by the target website.
+        """
         self._send_response_request('reportgood')
 
     def report_bad_captcha(self) -> None:
-        """Reports a captcha as unsolvable."""
+        """Reports a captcha as unsolvable to the 2Captcha API.
+
+        This method should be called when a captcha provided by 2Captcha
+        was rejected by the target website.
+        """
         self._send_response_request('reportbad')
 
     def solve(self, version: str, page_url: str, google_key: str, action: str = 'verify') -> str:
