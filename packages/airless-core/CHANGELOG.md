@@ -1,6 +1,9 @@
 
 **unreleased**
 
+**v0.2.6**
+- [Feature] Force a serialization as string when sending data to datalake for data types json does not know how to serialize, f.i. datetime
+
 **v0.2.5**
 - [Bugfix] Force event id to be an integer
 

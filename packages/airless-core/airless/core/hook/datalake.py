@@ -50,7 +50,7 @@ class DatalakeHook(BaseHook):
         return {
             '_event_id': metadata['event_id'],
             '_resource': metadata['resource'],
-            '_json': json.dumps({'data': row, 'metadata': metadata}),
+            '_json': json.dumps({'data': row, 'metadata': metadata}, default=str),
             '_created_at': now
         }
 
