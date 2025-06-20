@@ -6,15 +6,12 @@ from unittest.mock import MagicMock, mock_open, patch
 from airless.email.operator import GoogleEmailSendOperator
 
 
-@patch.dict(
-    os.environ,
-    {
-        'ENV': 'dev',
-        'QUEUE_TOPIC_ERROR': 'dev-error',
-        'DEFAULT_RECIPIENT_EMAIL_DOMAIN': 'domain.com',
-        'SECRET_SMTP': 'fake-smtp',
-    },
-)
+os.environ['ENV'] = 'dev'
+os.environ['QUEUE_TOPIC_ERROR'] = 'dev-error'
+os.environ['DEFAULT_RECIPIENT_EMAIL_DOMAIN'] = 'domain.com'
+os.environ['SECRET_SMTP'] = 'fake-smtp'
+
+
 class TestGoogleEmailSendOperatorOperator(unittest.TestCase):
     def setUp(self):
         self.operator = GoogleEmailSendOperator()
