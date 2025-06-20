@@ -5,18 +5,8 @@ from unittest.mock import MagicMock, mock_open, patch
 
 
 class TestGoogleEmailSendOperatorOperator(unittest.TestCase):
-    # @patch.dict(
-    #     os.environ,
-    #     {
-    #         'ENV': 'dev',
-    #         'SECRET_SMTP': 'fake-smtp-file.json',
-    #         'DEFAULT_RECIPIENT_EMAIL_DOMAIN': 'domain.com',
-    #         'QUEUE_TOPIC_ERROR': 'dev-error',
-    #     },
-    # )
     @patch('builtins.open', new_callable=mock_open)
     @patch('airless.google.cloud.storage.hook.GcsHook')
-    # @patch('airless.email.hook.GoogleEmailHook')
     @patch(
         'airless.google.cloud.core.operator.GoogleBaseEventOperator.__init__',
         return_value=None,
@@ -24,7 +14,6 @@ class TestGoogleEmailSendOperatorOperator(unittest.TestCase):
     def setUp(
         self,
         MockGoogleBaseEventOperatorInit,
-        # MockGoogleEmailHook,
         MockGcsHook,
         mock_open_file,
     ):
@@ -33,15 +22,9 @@ class TestGoogleEmailSendOperatorOperator(unittest.TestCase):
         os.environ['DEFAULT_RECIPIENT_EMAIL_DOMAIN'] = 'domain.com'
         os.environ['QUEUE_TOPIC_ERROR'] = 'dev-error'
 
-        # self.magic_email_hook_module = MagicMock()
-        # self.magic_email_hook_module.GoogleEmailHook = MagicMock()
-        # sys.modules['airless.email.hook'] = self.magic_email_hook_module
         mock_file_content = '{"user": "test_user", "password": "test_password", "host": "test_host", "port": 587}'
         mock_file_handle = mock_open_file.return_value
         mock_file_handle.read.return_value = mock_file_content
-
-        # self.mock_gcs_hook_instance = MockGcsHook.return_value
-        # self.mock_email_hook_instance = MockGoogleEmailHook.return_value
 
         from airless.email.operator import GoogleEmailSendOperator
 
@@ -51,7 +34,6 @@ class TestGoogleEmailSendOperatorOperator(unittest.TestCase):
         self.operator.gcs_hook = MagicMock()
 
         # Verify hooks were instantiated
-        # MockGoogleEmailHook.assert_called_once()
         MockGcsHook.assert_called_once()
         MockGoogleBaseEventOperatorInit.assert_called_once()
 
