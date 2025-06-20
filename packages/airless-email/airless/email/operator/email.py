@@ -47,7 +47,7 @@ class GoogleEmailSendOperator(GoogleBaseEventOperator):
             subject, content, recipients_array, sender, attachment_contents, mime_type
         )
 
-    def recipients_string_to_array(self, recipients) -> List[str]:
+    def recipients_string_to_array(self, recipients: List[str] | str) -> List[str]:
         default_domain = get_config('DEFAULT_RECIPIENT_EMAIL_DOMAIN')
 
         recipients_array = (
