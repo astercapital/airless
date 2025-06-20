@@ -1,6 +1,6 @@
 [project]
 name = "airless-email"
-version = "1.0.1.dev1"
+version = "1.0.0"
 description = "Airless package to manage email"
 readme = "README.md"
 requires-python = ">=3.9"
