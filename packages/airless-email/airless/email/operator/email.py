@@ -57,6 +57,7 @@ class GoogleEmailSendOperator(GoogleBaseEventOperator):
         )
 
         return [
-            (r.strip() if '@' in r else r.strip() + '@' + default_domain).lower()
+            (email if '@' in r else f'{email}@{default_domain}').lower()
             for r in recipients_array
+            if (email := r.strip())
         ]

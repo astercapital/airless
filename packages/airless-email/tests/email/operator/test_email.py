@@ -35,6 +35,17 @@ class TestGoogleEmailSendOperatorOperator(unittest.TestCase):
                 'input': ['complete', 'foo@bar.com'],
                 'expected_output': ['complete@domain.com', 'foo@bar.com'],
             },
+            {
+                'input': 'foo,,bar',
+                'expected_output': ['foo@domain.com', 'bar@domain.com'],
+            },
+            {'input': '  user@domain.com  ', 'expected_output': ['user@domain.com']},
+            {'input': '', 'expected_output': []},
+            {'input': [], 'expected_output': []},
+            {
+                'input': ['foo', '', 'bar'],
+                'expected_output': ['foo@domain.com', 'bar@domain.com'],
+            },
         ]
 
         for td in test_data:
