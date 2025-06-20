@@ -5,17 +5,33 @@ from unittest.mock import MagicMock, mock_open, patch
 
 
 class TestGoogleEmailSendOperatorOperator(unittest.TestCase):
+    @patch('airless.core.utils.get_config')
     @patch('builtins.open', new_callable=mock_open)
-    def setUp(self, mock_open_file):
+    @patch('airless.google.cloud.storage.hook.GcsHook')
+    @patch('airless.email.hook.GoogleEmailHook')
+    @patch(
+        'airless.google.cloud.core.operator.GoogleBaseEventOperator.__init__',
+        return_value=None,
+    )
+    def setUp(
+        self,
+        MockGoogleBaseEventOperatorInit,
+        MockGoogleEmailHook,
+        MockGcsHook,
+        mock_open_file,
+        mock_get_config,
+    ):
         os.environ['ENV'] = 'dev'
         os.environ['QUEUE_TOPIC_ERROR'] = 'dev-error'
         os.environ['DEFAULT_RECIPIENT_EMAIL_DOMAIN'] = 'domain.com'
         os.environ['SECRET_SMTP'] = 'fake-smtp'
-        os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = '{}'
 
         mock_file_content = '{"user": "test_user", "password": "test_password", "host": "test_host", "port": 587}'
         mock_file_handle = mock_open_file.return_value
         mock_file_handle.read.return_value = mock_file_content
+
+        self.mock_gcs_hook_instance = MockGcsHook.return_value
+        self.mock_email_hook_instance = MockGoogleEmailHook.return_value
 
         from airless.email.operator import GoogleEmailSendOperator
 
@@ -23,6 +39,11 @@ class TestGoogleEmailSendOperatorOperator(unittest.TestCase):
         self.operator.queue_hook = MagicMock()
         self.operator.email_hook = MagicMock()
         self.operator.gcs_hook = MagicMock()
+
+        # Verify hooks were instantiated
+        MockGoogleEmailHook.assert_called_once()
+        MockGcsHook.assert_called_once()
+        MockGoogleBaseEventOperatorInit.assert_called_once()
 
     def test_recipient_string_to_array(self):
         test_data = [
