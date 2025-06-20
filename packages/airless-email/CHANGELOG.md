@@ -1,5 +1,6 @@
 
 **unreleased**
+- [Feature] Create method `recipient_string_to_array` in `GoogleEmailSendOperator` to transform recipients into an email array
 
 **v1.0.0**
 - [Refactor] Get smtp secret from mounted secret instead of secret manager hook
