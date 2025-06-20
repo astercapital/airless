@@ -1,5 +1,7 @@
 
 **unreleased**
+
+**v1.1.0**
 - [Feature] Create method `recipient_string_to_array` in `GoogleEmailSendOperator` to transform recipients into an email array
 - [Refactor] Remove placeholder `test_fake`
 
