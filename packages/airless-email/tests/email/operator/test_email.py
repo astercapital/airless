@@ -7,21 +7,25 @@ from airless.email.operator import GoogleEmailSendOperator
 
 
 class TestGoogleEmailSendOperatorOperator(unittest.TestCase):
+    @patch.dict(
+        os.environ,
+        {
+            'ENV': 'dev',
+            'QUEUE_TOPIC_ERROR': 'dev-error',
+            'DEFAULT_RECIPIENT_EMAIL_DOMAIN': 'domain.com',
+            'SECRET_SMTP': 'fake-smtp',
+        },
+    )
     def setUp(self):
-        os.environ['ENV'] = 'dev'
-        os.environ['QUEUE_TOPIC_ERROR'] = 'dev-error'
-        os.environ['DEFAULT_RECIPIENT_EMAIL_DOMAIN'] = 'domain.com'
-        os.environ['SECRET_SMTP'] = 'fake-smtp'
-
         self.operator = GoogleEmailSendOperator()
         self.operator.queue_hook = MagicMock()
+        self.operator.email_hook = MagicMock()
+        self.operator.gcs_hook = MagicMock()
 
     @patch('builtins.open', new_callable=mock_open)
     def test_recipient_string_to_array(self, mock_open_file):
         mock_file_content = '{"user": "test_user", "password": "test_password", "host": "test_host", "port": 587}'
 
-        # Configure the mock_open_file to return our simulated content
-        # when its 'read' method is called.
         mock_file_handle = mock_open_file.return_value
         mock_file_handle.read.return_value = mock_file_content
 
