@@ -11,6 +11,7 @@ class TestGoogleEmailSendOperatorOperator(unittest.TestCase):
         os.environ['QUEUE_TOPIC_ERROR'] = 'dev-error'
         os.environ['DEFAULT_RECIPIENT_EMAIL_DOMAIN'] = 'domain.com'
         os.environ['SECRET_SMTP'] = 'fake-smtp'
+        os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = '{}'
 
         mock_file_content = '{"user": "test_user", "password": "test_password", "host": "test_host", "port": 587}'
         mock_file_handle = mock_open_file.return_value
