@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Union
 
 from airless.core.utils import get_config
 from airless.google.cloud.core.operator import GoogleBaseEventOperator
@@ -25,7 +25,7 @@ class GoogleEmailSendOperator(GoogleBaseEventOperator):
         """
         subject: str = data['subject']
         content: str = data['content']
-        recipients: List[str] | str = data['recipients']
+        recipients: Union[List[str], str] = data['recipients']
         sender: str = data.get('sender', 'Airless notification')
         attachments: List[dict] = data.get('attachments', [])
         mime_type: str = data.get('mime_type', 'plain')
@@ -47,7 +47,9 @@ class GoogleEmailSendOperator(GoogleBaseEventOperator):
             subject, content, recipients_array, sender, attachment_contents, mime_type
         )
 
-    def recipients_string_to_array(self, recipients: List[str] | str) -> List[str]:
+    def recipients_string_to_array(
+        self, recipients: Union[List[str], str]
+    ) -> List[str]:
         default_domain = get_config('DEFAULT_RECIPIENT_EMAIL_DOMAIN')
 
         recipients_array = (
