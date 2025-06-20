@@ -21,10 +21,12 @@ class TestGoogleEmailSendOperatorOperator(unittest.TestCase):
         mock_open_file,
         mock_get_config,
     ):
+        mock_get_config.side_effect = lambda key: {
+            'SECRET_SMTP': 'fake-smtp-file.json',
+            'DEFAULT_RECIPIENT_EMAIL_DOMAIN': 'domain.com',
+        }.get(key)
         os.environ['ENV'] = 'dev'
         os.environ['QUEUE_TOPIC_ERROR'] = 'dev-error'
-        os.environ['DEFAULT_RECIPIENT_EMAIL_DOMAIN'] = 'domain.com'
-        os.environ['SECRET_SMTP'] = 'fake-smtp'
 
         mock_file_content = '{"user": "test_user", "password": "test_password", "host": "test_host", "port": 587}'
         mock_file_handle = mock_open_file.return_value
