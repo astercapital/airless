@@ -50,6 +50,14 @@ class GoogleEmailSendOperator(GoogleBaseEventOperator):
     def recipients_string_to_array(
         self, recipients: Union[List[str], str]
     ) -> List[str]:
+        """Transforms input into an array of emails
+
+        @param recipients: Either a comma separated string with emails and/or usernames or a list of emails and/or usernames
+        @type  recipients: List[str] or str
+
+        @return: List of emails
+        @rtype : List[str]
+        """
         default_domain = get_config('DEFAULT_RECIPIENT_EMAIL_DOMAIN')
 
         recipients_array = (
