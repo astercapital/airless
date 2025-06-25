@@ -5,6 +5,8 @@ import traceback
 
 from base64 import b64decode
 
+from typing import Optional
+
 from airless.core import BaseClass
 from airless.core.utils import get_config
 from airless.core.hook import QueueHook
@@ -34,16 +36,23 @@ class BaseOperator(BaseClass):
         self.message_id = None
         self.has_error = False
 
-    def extract_message_id(self, cloud_event) -> str:
+    def extract_message_id(self, cloud_event) -> Optional[int]:
         """Extracts the message ID from the cloud event.
 
         Args:
             cloud_event (CloudEvent): The cloud event from which to extract the message ID.
 
         Returns:
-            str: The extracted message ID.
+            Optional[int]: The extracted message ID as an integer, or None if extraction fails.
         """
-        return cloud_event['id']
+        message_id_str = cloud_event.get('id')
+        if message_id_str:
+            try:
+                return int(message_id_str)
+            except ValueError:
+                self.logger.warning(f"Could not parse message_id '{message_id_str}' as an integer.")
+                return None
+        return None
 
     def report_error(self, message: str, data: dict=None):
         """Reports an error by logging it and publishing to a queue.
