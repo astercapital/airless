@@ -2,7 +2,7 @@
 import json
 import time
 
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 from airless.core.hook import DatalakeHook
 from airless.core.operator import BaseEventOperator
@@ -48,7 +48,20 @@ class ErrorReprocessOperator(BaseEventOperator):
 
         input_type = data['input_type']
         origin = data.get('origin', 'undefined')
-        message_id = data.get('event_id')
+        message_id_orig = data.get('event_id')
+        message_id_int: Optional[int] = None
+        if message_id_orig is not None:
+            if isinstance(message_id_orig, int):
+                message_id_int = message_id_orig
+            else:
+                try:
+                    message_id_int = int(str(message_id_orig))
+                except ValueError:
+                    self.logger.warning(
+                        f"Could not parse event_id '{message_id_orig}' as an integer for error reprocessing."
+                    )
+                    # message_id_int remains None
+
         original_data = data['data']
         metadata = original_data.get('metadata', {})
 
@@ -72,19 +85,19 @@ class ErrorReprocessOperator(BaseEventOperator):
                 data=data,
                 dataset=error_dataset or get_config('ERROR_DATASET'),
                 table=error_table or get_config('ERROR_TABLE'),
-                message_id=message_id,
+                message_id=message_id_int,
                 origin=origin,
                 time_partition=True)
 
-            self._notify_email(origin=origin, message_id=message_id, data=data)
-            self._notify_slack(origin=origin, message_id=message_id, data=data)
+            self._notify_email(origin=origin, message_id=message_id_int, data=data)
+            self._notify_slack(origin=origin, message_id=message_id_int, data=data)
 
-    def _notify_email(self, origin: str, message_id: str, data: Dict[str, Any]) -> None:
+    def _notify_email(self, origin: str, message_id: Optional[int], data: Dict[str, Any]) -> None:
         """Sends an error notification to email if the env var `QUEUE_TOPIC_EMAIL_SEND` is defined
 
         Args:
             origin (str): The origin of the error.
-            message_id (str): The ID of the message.
+            message_id (Optional[int]): The ID of the message.
             data (Dict[str, Any]): The data related to the error.
         """
         email_send_topic = get_config('QUEUE_TOPIC_EMAIL_SEND', False)
@@ -100,12 +113,12 @@ class ErrorReprocessOperator(BaseEventOperator):
                 topic=email_send_topic,
                 data=email_message)
 
-    def _notify_slack(self, origin: str, message_id: str, data: Dict[str, Any]) -> None:
+    def _notify_slack(self, origin: str, message_id: Optional[int], data: Dict[str, Any]) -> None:
         """Sends an error notification to Slack if the env var `QUEUE_TOPIC_SLACK_SEND` is defined
 
         Args:
             origin (str): The origin of the error.
-            message_id (str): The ID of the message.
+            message_id (Optional[int]): The ID of the message.
             data (Dict[str, Any]): The data related to the error.
         """
         slack_send_topic = get_config('QUEUE_TOPIC_SLACK_SEND', False)

@@ -20,7 +20,7 @@ class TestBaseOperator(unittest.TestCase):
     def test_extract_message_id(self):
         cloud_event = {'id': '12345'}
         message_id = self.operator.extract_message_id(cloud_event)
-        self.assertEqual(message_id, '12345')
+        self.assertEqual(message_id, 12345)
 
     def test_report_error(self):
         self.operator.build_error_message = MagicMock()

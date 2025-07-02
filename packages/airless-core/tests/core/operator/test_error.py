@@ -82,20 +82,20 @@ class TestErrorReprocessOperator(unittest.TestCase):
             data=data,
             dataset='error_dataset',
             table='error_table',
-            message_id='12345',
+            message_id=12345,
             origin='source_topic',
             time_partition=True
         )
 
         notify_slack.assert_called_once_with(
             origin='source_topic',
-            message_id='12345',
+            message_id=12345,
             data=data
         )
 
         notify_email.assert_called_once_with(
             origin='source_topic',
-            message_id='12345',
+            message_id=12345,
             data=data
         )
 
@@ -129,20 +129,20 @@ class TestErrorReprocessOperator(unittest.TestCase):
             data=data,
             dataset='env_error_dataset',
             table='env_error_table',
-            message_id='12345',
+            message_id=12345,
             origin='source_topic',
             time_partition=True
         )
 
         notify_slack.assert_called_once_with(
             origin='source_topic',
-            message_id='12345',
+            message_id=12345,
             data=data
         )
 
         notify_email.assert_called_once_with(
             origin='source_topic',
-            message_id='12345',
+            message_id=12345,
             data=data
         )
 
@@ -197,20 +197,20 @@ class TestErrorReprocessOperator(unittest.TestCase):
             data=data,
             dataset='error_dataset',
             table='error_table',
-            message_id='12345',
+            message_id=12345,
             origin='source_topic',
             time_partition=True
         )
 
         notify_slack.assert_called_once_with(
             origin='source_topic',
-            message_id='12345',
+            message_id=12345,
             data=data
         )
 
         notify_email.assert_called_once_with(
             origin='source_topic',
-            message_id='12345',
+            message_id=12345,
             data=data
         )
 
@@ -241,20 +241,20 @@ class TestErrorReprocessOperator(unittest.TestCase):
             data=data,
             dataset='error_dataset',
             table='error_table',
-            message_id='12345',
+            message_id=12345,
             origin='error-topic',
             time_partition=True
         )
 
         notify_slack.assert_called_once_with(
             origin='error-topic',
-            message_id='12345',
+            message_id=12345,
             data=data
         )
 
         notify_email.assert_called_once_with(
             origin='error-topic',
-            message_id='12345',
+            message_id=12345,
             data=data
         )
 
