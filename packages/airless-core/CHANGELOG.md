@@ -1,5 +1,6 @@
 
 **unreleased**
+- [Bugfix] Remove attachment type and always attach the file to email as binary
 
 **v0.3.0**
 - [Bugfix] Aligned `message_id` and `event_id` to be `int` type.
