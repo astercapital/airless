@@ -1,2 +1,2 @@
 airless-core>=0.3.0,<0.4.0
-airless-google-cloud-storage>=0.1.0,<0.3.0
+airless-google-cloud-storage>=0.2.0,<0.3.0
