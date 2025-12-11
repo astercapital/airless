@@ -1,5 +1,6 @@
 
 **unreleased**
+- [Refactor] Allow `airless-core<0.4.0` to work with `airless-google-cloud-storage`
 
 **v0.1.2**
 - [Bugfix] Update to `airless-core===0.2.5` because event id was being set as string when it should be an int
