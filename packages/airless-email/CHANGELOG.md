@@ -1,8 +1,6 @@
 
 **unreleased**
 
-**v1.2.1**
-
 **v1.2.0**
 - [Bugfix] Fix attachment name not being passed to `GoogleEmailHook`
 - [Feature] Allow `GoogleEmailSendOperator` to send Excel files as attachments (not text files)
