@@ -1,5 +1,6 @@
 
 **unreleased**
+- [Refactor] Remove airless dependency limitation
 
 **v1.4.0**
 - [Refactor] Set `airless-core` dependency to `<1.0.0`
