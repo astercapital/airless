@@ -58,12 +58,9 @@ class EmailHook(BaseHook):
         msg['From'] = sender
 
         for att in attachments:
-            if att.get('type', 'text') == 'text':
-                part = MIMEApplication(att['content'], Name=att['name'])
-            else:
-                part = MIMEBase('application', 'octet-stream')
-                part.set_payload(att['content'])
-                encoders.encode_base64(part)
+            part = MIMEBase('application', 'octet-stream')
+            part.set_payload(att['content'])
+            encoders.encode_base64(part)
             part['Content-Disposition'] = 'attachment; filename="%s"' % att['name']
             msg.attach(part)
         return msg
