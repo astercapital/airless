@@ -1,5 +1,7 @@
 
 **unreleased**
+
+**v1.3.1**
 - [Bugfix] Allow `airless-email` to work with `airless-google-cloud-storage>=0.2.0`
 
 **v1.3.0**
