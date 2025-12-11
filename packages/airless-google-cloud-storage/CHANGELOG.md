@@ -1,5 +1,7 @@
 
 **unreleased**
+
+**v0.4.0**
 - [Refactor] Remove airless dependency limitation
 
 **v0.3.0**
