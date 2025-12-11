@@ -1,5 +1,7 @@
 
 **unreleased**
+
+**v0.3.0**
 - [Bugfix] Aligned `message_id` and `event_id` to be `int` type.
 - [Bugfix] Send email body even when the email has an attachment
 
