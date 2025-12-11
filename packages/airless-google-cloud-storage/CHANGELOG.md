@@ -1,5 +1,7 @@
 
 **unreleased**
+
+**v0.2.0**
 - [Refactor] Allow `airless-core<0.4.0` to work with `airless-google-cloud-storage`
 
 **v0.1.2**
