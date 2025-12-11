@@ -1,5 +1,6 @@
 
 **unreleased**
+- [Refactor] Set `airless-core` dependency to `<1.0.0`
 
 **v0.1.0**
 - [Refactor] Update requirements.txt to get new `airless-core` version `0.2.1`

@@ -1,5 +1,7 @@
 
 **unreleased**
+- [Refactor] Set `airless-core` dependency to `<1.0.0`
+- [Refactor] Set `airless-google-cloud-storage` dependency to `<1.0.0`
 
 **v1.3.1**
 - [Bugfix] Allow `airless-email` to work with `airless-google-cloud-storage>=0.2.0`

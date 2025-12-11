@@ -1,5 +1,7 @@
 
 **unreleased**
+- [Refactor] Set `airless-google-cloud-core` dependency to `<1.0.0`
+- [Refactor] Set `airless-google-cloud-storage` dependency to `<1.0.0`
 
 **v0.1.0**
 - [Feature] Create a new command to generate automatically a tag to deploy a new package version

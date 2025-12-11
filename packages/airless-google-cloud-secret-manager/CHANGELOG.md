@@ -1,5 +1,6 @@
 
 **unreleased**
+- [Refactor] Set `airless-core` dependency to `<1.0.0`
 
 **v0.1.0**
 - [Feature] Automatically generate git tag when bumpversion is triggered

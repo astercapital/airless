@@ -1,5 +1,7 @@
 
 **unreleased**
+- [Refactor] Set `airless-google-cloud-core` dependency to `<1.0.0`
+- [Refactor] Set `airless-core` dependency to `<1.0.0`
 
 **v0.2.0**
 - [Refactor] Allow `airless-core<0.4.0` to work with `airless-google-cloud-storage`

@@ -1,5 +1,8 @@
 
 **unreleased**
+- [Refactor] Set `airless-core` dependency to `<1.0.0`
+- [Refactor] Set `airless-google-cloud-core` dependency to `<1.0.0`
+- [Refactor] Set `airless-google-cloud-secret-manager` dependency to `<1.0.0`
 
 **v0.1.1**
 - [Bugfix] Refactor Google operators to inherit from `GoogleBaseEventOperator`, ensuring proper error handling and consistent use of the `queue_hook` attribute
