@@ -1,4 +1,3 @@
-
 import json
 import smtplib
 
@@ -19,7 +18,15 @@ class GoogleEmailHook(EmailHook):
         """Initializes the GoogleEmailHook."""
         super().__init__()
 
-    def send(self, subject: str, content: str, recipients: List[str], sender: str, attachments: List[dict], mime_type: str) -> None:
+    def send(
+        self,
+        subject: str,
+        content: str,
+        recipients: List[str],
+        sender: str,
+        attachments: List[dict],
+        mime_type: str,
+    ) -> None:
         """Sends an email.
 
         Args:
@@ -30,7 +37,9 @@ class GoogleEmailHook(EmailHook):
             attachments (List[dict]): The list of attachments.
             mime_type (str): The MIME type of the email content.
         """
-        msg = self.build_message(subject, content, recipients, sender, attachments, mime_type)
+        msg = self.build_message(
+            subject, content, recipients, sender, attachments, mime_type
+        )
         server = smtplib.SMTP_SSL(SECRET['host'], SECRET['port'])
 
         try:

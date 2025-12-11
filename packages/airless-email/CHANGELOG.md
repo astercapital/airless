@@ -1,5 +1,7 @@
 
 **unreleased**
+- [Bugfix] Fix attachment name not being passed to `GoogleEmailHook`
+- [Feature] Allow `GoogleEmailSendOperator` to send Excel files as attachments (not text files)
 
 **v1.1.0**
 - [Feature] Create method `recipient_string_to_array` in `GoogleEmailSendOperator` to transform recipients into an email array

@@ -1,6 +1,3 @@
-
-from typing import Union
-
 from email import encoders
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
@@ -13,8 +10,8 @@ from airless.core.hook import BaseHook
 class EmailHook(BaseHook):
     """EmailHook class to build and send email messages.
 
-    This class is responsible for constructing email messages that may 
-    include attachments and other related information. However, the 
+    This class is responsible for constructing email messages that may
+    include attachments and other related information. However, the
     sending functionality is not implemented.
 
     Inherits from:
@@ -28,7 +25,15 @@ class EmailHook(BaseHook):
         """
         super().__init__()
 
-    def build_message(self, subject: str, content: str, recipients: list, sender: str, attachments: list = [], mime_type: str = 'plain') -> Union[MIMEMultipart, MIMEText]:
+    def build_message(
+        self,
+        subject: str,
+        content: str,
+        recipients: list,
+        sender: str,
+        attachments: list = [],
+        mime_type: str = 'plain',
+    ) -> MIMEMultipart:
         """Builds an email message with optional attachments.
 
         Args:
@@ -36,29 +41,25 @@ class EmailHook(BaseHook):
             content (str): The body content of the email.
             recipients (list): A list of recipient email addresses.
             sender (str): The email address of the sender.
-            attachments (list, optional): A list of attachment dictionaries. 
-                Each dictionary should contain 'name', 'content', and optionally 'type'. 
+            attachments (list, optional): A list of attachment dictionaries.
+                Each dictionary should contain 'name' and 'content'
                 Defaults to an empty list.
-            mime_type (str, optional): The MIME type of the email body content. 
+            mime_type (str, optional): The MIME type of the email body content.
                 Defaults to 'plain'.
 
         Returns:
-            Union[MIMEMultipart, MIMEText]: The constructed email message object.
+            MIMEMultipart: The constructed email message object.
         """
 
-        msg = MIMEText(content, mime_type)
-        if attachments:
-            msg = MIMEMultipart()
+        msg = MIMEMultipart()
+        msg.attach(MIMEText(content, mime_type))
         msg['Subject'] = subject
         msg['To'] = ','.join(recipients)
         msg['From'] = sender
 
         for att in attachments:
             if att.get('type', 'text') == 'text':
-                part = MIMEApplication(
-                    att['content'],
-                    Name=att['name']
-                )
+                part = MIMEApplication(att['content'], Name=att['name'])
             else:
                 part = MIMEBase('application', 'octet-stream')
                 part.set_payload(att['content'])
@@ -67,7 +68,15 @@ class EmailHook(BaseHook):
             msg.attach(part)
         return msg
 
-    def send(self, subject: str, content: str, recipients: list, sender: str, attachments: list, mime_type: str):
+    def send(
+        self,
+        subject: str,
+        content: str,
+        recipients: list,
+        sender: str,
+        attachments: list,
+        mime_type: str,
+    ):
         """Sends the constructed email message.
 
         This method is not implemented and will raise a NotImplementedError.
