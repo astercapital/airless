@@ -32,12 +32,21 @@ class GoogleEmailSendOperator(GoogleBaseEventOperator):
 
         attachment_contents: List[dict] = []
         for att in attachments:
+            attachment_type = att.get('type', 'text')
+            if attachment_type == 'text':
+                attachment_content = self.gcs_hook.read_as_string(
+                    att['bucket'], att['filepath'], att['encoding']
+                )
+            else:
+                attachment_content = self.gcs_hook.read_as_bytes(
+                    att['bucket'], att['filepath']
+                )
+
             attachment_contents.append(
                 {
-                    'type': att.get('type', 'text'),
-                    'content': self.gcs_hook.read_as_string(
-                        att['bucket'], att['filepath'], att['encoding']
-                    ),
+                    'type': attachment_type,
+                    'content': attachment_content,
+                    'name': att['filepath'].split('/')[-1],
                 }
             )
 
