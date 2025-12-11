@@ -1,5 +1,6 @@
 
 **unreleased**
+- [Refactor] Allow `airless-email` to work with `airless-google-cloud-storage<0.3.0`
 
 **v1.2.0**
 - [Bugfix] Fix attachment name not being passed to `GoogleEmailHook`
