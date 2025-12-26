@@ -2,7 +2,7 @@
 **unreleased**
 
 **v0.4.2**
-- [Bugfix] Rollback `BaseDto` which is still in use by `PubsubTopBigqueryOperator`
+- [Bugfix] Rollback `BaseDto` which is still in use by `PubsubToBigqueryOperator`
 
 **v0.4.1**
 * [Refactor] Remove dependency from `cgi` because it is being deprecated in python 3.13
