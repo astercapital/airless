@@ -1,4 +1,3 @@
-import cgi
 import json
 import ndjson
 import os
@@ -122,14 +121,13 @@ class FileHook(BaseHook):
         ) as r:
             r.raise_for_status()
 
-            # 1. Try to get filename from Content-Disposition header
+            filename = None
             if 'Content-Disposition' in r.headers:
-                _, params = cgi.parse_header(r.headers['Content-Disposition'])
-                filename = params.get('filename')
-                if filename and (filename.startswith('"') or filename.startswith("'")):
-                    filename = filename.strip('"\'')
-            else:
-                filename = None
+                matches = re.search(
+                    r'filename="?([^";]+)"?', r.headers['Content-Disposition']
+                )
+                if matches:
+                    filename = matches.group(1)
 
             local_filename = self.get_tmp_filepath(filename or url)
 
@@ -270,7 +268,6 @@ class FtpHook(FileHook):
             if updated_before and not (obj['updated_at'] <= updated_before):
                 continue
 
-            obj = {'name': tokens[3], 'updated_at': parser.parse(' '.join(tokens[:1]))}
             if tokens[2] == '<DIR>':
                 directories.append(obj)
             else:
