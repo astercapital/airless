@@ -1,5 +1,7 @@
 
 **unreleased**
+
+**v0.4.1**
 * [Refactor] Remove dependency from `cgi` because it is being deprecated in python 3.13
 
 **v0.4.0**
