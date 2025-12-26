@@ -1,6 +1,12 @@
 
 **unreleased**
 
+**v0.3.0**
+- [Refactor] Remove airless dependency limitation
+
+**v0.2.0**
+- [Refactor] Set `airless-core` dependency to `<1.0.0`
+
 **v0.1.1**
 - [Feature] Default `json.dumps` conversion as `str` when publishing a message to pubsub. For instance, datetime will be converted to str
 

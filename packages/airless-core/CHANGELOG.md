@@ -1,6 +1,12 @@
 
 **unreleased**
+
+**v0.3.1**
+- [Bugfix] Remove attachment type and always attach the file to email as binary
+
+**v0.3.0**
 - [Bugfix] Aligned `message_id` and `event_id` to be `int` type.
+- [Bugfix] Send email body even when the email has an attachment
 
 **v0.2.6**
 - [Feature] Force a serialization as string when sending data to datalake for data types json does not know how to serialize, f.i. datetime

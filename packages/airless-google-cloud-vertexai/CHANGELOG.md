@@ -1,5 +1,11 @@
 **unreleased**
 
+**v0.3.0**
+- [Refactor] Remove airless dependency limitation
+
+**v0.2.0**
+- [Refactor] Set `airless-core` dependency to `<1.0.0`
+
 **v0.1.1**
 
 - Introduced `GeminiApiHook` for direct interaction with the Google Gemini API using `requests`. This hook allows generating content with text prompts and including PDF files in requests. It provides methods `generate_content`, `generate_content_with_pdf`, and `extract_text_from_response`.
