@@ -1,4 +1,3 @@
-
 import json
 import ndjson
 import os
@@ -94,10 +93,12 @@ class FileHook(BaseHook):
         filename = self.extract_filename(filepath_or_url)
         if add_timestamp:
             timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-            filename = f"{timestamp}_{uuid.uuid4().hex}_{filename}"
+            filename = f'{timestamp}_{uuid.uuid4().hex}_{filename}'
         return f'/tmp/{filename}'
 
-    def download(self, url: str, headers: dict, timeout: int = 500, proxies: dict = None) -> str:
+    def download(
+        self, url: str, headers: dict, timeout: int = 500, proxies: dict = None
+    ) -> str:
         """Downloads a file from a given URL and saves it to a temporary path.
 
         Args:
@@ -110,9 +111,26 @@ class FileHook(BaseHook):
             str: The local filename where the downloaded file is saved.
         """
 
-        local_filename = self.get_tmp_filepath(url)
-        with requests.get(url, stream=True, verify=False, headers=headers, timeout=timeout, proxies=proxies) as r:
+        with requests.get(
+            url,
+            stream=True,
+            verify=False,
+            headers=headers,
+            timeout=timeout,
+            proxies=proxies,
+        ) as r:
             r.raise_for_status()
+
+            filename = None
+            if 'Content-Disposition' in r.headers:
+                matches = re.search(
+                    r'filename="?([^";]+)"?', r.headers['Content-Disposition']
+                )
+                if matches:
+                    filename = matches.group(1)
+
+            local_filename = self.get_tmp_filepath(filename or url)
+
             with open(local_filename, 'wb') as f:
                 for chunk in r.iter_content(chunk_size=8192):
                     f.write(chunk)
@@ -129,7 +147,9 @@ class FileHook(BaseHook):
             str: The new filename after renaming.
         """
 
-        to_filename_formatted = ('' if to_filename.startswith('/tmp/') else '/tmp/') + to_filename
+        to_filename_formatted = (
+            '' if to_filename.startswith('/tmp/') else '/tmp/'
+        ) + to_filename
         os.rename(from_filename, to_filename_formatted)
         return to_filename_formatted
 
@@ -143,7 +163,10 @@ class FileHook(BaseHook):
 
         for root, subdirs, files in os.walk(dir):
             for filename in files:
-                os.rename(os.path.join(root, filename), os.path.join(root, f'{prefix}_{filename}'))
+                os.rename(
+                    os.path.join(root, filename),
+                    os.path.join(root, f'{prefix}_{filename}'),
+                )
 
     def list_files(self, folder: str) -> list:
         """Lists all files in a specified directory.
@@ -201,18 +224,17 @@ class FtpHook(FileHook):
     def dir(self) -> list:
         """Lists the files and directories in the current directory of the FTP server.
 
-        This method retrieves a list of files and directories from the FTP server's 
-        current working directory. It populates a list with the directory entries 
+        This method retrieves a list of files and directories from the FTP server's
+        current working directory. It populates a list with the directory entries
         and returns it.
 
         Returns:
-            list: A list of directory entries as strings, each representing a file 
+            list: A list of directory entries as strings, each representing a file
             or directory in the FTP server's current working directory.
         """
         lines = []
-        self.ftp.dir("", lines.append)
+        self.ftp.dir('', lines.append)
         return lines
-
 
     def list(self, regex: str = None, updated_after=None, updated_before=None) -> tuple:
         """Lists files in the current directory of the FTP server with optional filters.
@@ -235,10 +257,7 @@ class FtpHook(FileHook):
 
         for line in lines:
             tokens = line.split()
-            obj = {
-                'name': tokens[3],
-                'updated_at': parser.parse(' '.join(tokens[:1]))
-            }
+            obj = {'name': tokens[3], 'updated_at': parser.parse(' '.join(tokens[:1]))}
 
             if regex and not re.search(regex, obj['name'], re.IGNORECASE):
                 continue
@@ -249,10 +268,6 @@ class FtpHook(FileHook):
             if updated_before and not (obj['updated_at'] <= updated_before):
                 continue
 
-            obj = {
-                'name': tokens[3],
-                'updated_at': parser.parse(' '.join(tokens[:1]))
-            }
             if tokens[2] == '<DIR>':
                 directories.append(obj)
             else:

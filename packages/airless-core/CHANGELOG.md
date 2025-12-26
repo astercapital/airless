@@ -1,6 +1,12 @@
 
 **unreleased**
 
+**v0.4.1**
+* [Refactor] Remove dependency from `cgi` because it is being deprecated in python 3.13
+
+**v0.4.0**
+- [Feature] Get `filename` when downloading a file from the `Content-Disposition` header
+
 **v0.3.1**
 - [Bugfix] Remove attachment type and always attach the file to email as binary
 
