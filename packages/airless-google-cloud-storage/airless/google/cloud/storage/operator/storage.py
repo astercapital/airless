@@ -1,4 +1,3 @@
-
 import os
 
 from datetime import datetime, timedelta
@@ -7,7 +6,10 @@ from google.api_core.exceptions import NotFound
 
 from airless.core.utils import get_config
 from airless.core.hook import FileHook
-from airless.google.cloud.core.operator import GoogleBaseFileOperator, GoogleBaseEventOperator
+from airless.google.cloud.core.operator import (
+    GoogleBaseFileOperator,
+    GoogleBaseEventOperator,
+)
 from airless.google.cloud.storage.hook import GcsHook
 
 
@@ -43,7 +45,8 @@ class FileDetectOperator(GoogleBaseFileOperator):
             self.queue_hook.publish(
                 project=get_config('GCP_PROJECT'),
                 topic=get_config('QUEUE_TOPIC_FILE_TO_BQ'),
-                data=success_message)
+                data=success_message,
+            )
 
     def build_success_message(self, bucket, filepath):
         """Builds success messages based on the file's ingestion configuration.
@@ -56,36 +59,53 @@ class FileDetectOperator(GoogleBaseFileOperator):
             list: A list of dictionaries, each representing a success message
                   containing metadata for file processing.
         """
-        dataset, table, mode, separator, skip_leading_rows, \
-            file_format, schema, run_next, quote_character, encoding, \
-            column_names, time_partitioning, processing_method, \
-            gcs_table_name, sheet_name, arguments, options = self.get_ingest_config(filepath)
+        (
+            dataset,
+            table,
+            mode,
+            separator,
+            skip_leading_rows,
+            file_format,
+            schema,
+            run_next,
+            quote_character,
+            encoding,
+            column_names,
+            time_partitioning,
+            processing_method,
+            gcs_table_name,
+            sheet_name,
+            arguments,
+            options,
+        ) = self.get_ingest_config(filepath)
 
         metadatas = []
         for idx in range(len(file_format)):
-            metadatas.append({
-                'metadata': {
-                    'destination_dataset': dataset,
-                    'destination_table': table,
-                    'file_format': file_format[idx],
-                    'mode': mode,
-                    'bucket': bucket,
-                    'file': filepath,
-                    'separator': separator[idx],
-                    'skip_leading_rows': skip_leading_rows[idx],
-                    'quote_character': quote_character[idx],
-                    'encoding': encoding[idx],
-                    'schema': schema[idx],
-                    'run_next': run_next[idx],
-                    'column_names': column_names[idx],
-                    'time_partitioning': time_partitioning[idx],
-                    'processing_method': processing_method[idx],
-                    'gcs_table_name': gcs_table_name[idx],
-                    'sheet_name': sheet_name[idx],
-                    'arguments': arguments[idx],
-                    'options': options[idx]
+            metadatas.append(
+                {
+                    'metadata': {
+                        'destination_dataset': dataset,
+                        'destination_table': table,
+                        'file_format': file_format[idx],
+                        'mode': mode,
+                        'bucket': bucket,
+                        'file': filepath,
+                        'separator': separator[idx],
+                        'skip_leading_rows': skip_leading_rows[idx],
+                        'quote_character': quote_character[idx],
+                        'encoding': encoding[idx],
+                        'schema': schema[idx],
+                        'run_next': run_next[idx],
+                        'column_names': column_names[idx],
+                        'time_partitioning': time_partitioning[idx],
+                        'processing_method': processing_method[idx],
+                        'gcs_table_name': gcs_table_name[idx],
+                        'sheet_name': sheet_name[idx],
+                        'arguments': arguments[idx],
+                        'options': options[idx],
+                    }
                 }
-            })
+            )
 
         return metadatas
 
@@ -157,11 +177,25 @@ class FileDetectOperator(GoogleBaseFileOperator):
             # after processing
             run_next.append(config.get('run_next', []))
 
-        return dataset, table, mode, separator, \
-            skip_leading_rows, file_format, schema, \
-            run_next, quote_character, encoding, column_names, \
-            time_partitioning, processing_method, gcs_table_name, \
-            sheet_name, arguments, options
+        return (
+            dataset,
+            table,
+            mode,
+            separator,
+            skip_leading_rows,
+            file_format,
+            schema,
+            run_next,
+            quote_character,
+            encoding,
+            column_names,
+            time_partitioning,
+            processing_method,
+            gcs_table_name,
+            sheet_name,
+            arguments,
+            options,
+        )
 
     def split_filepath(self, filepath):
         """Splits a GCS filepath into dataset, table, and mode.
@@ -177,7 +211,9 @@ class FileDetectOperator(GoogleBaseFileOperator):
         """
         filepath_array = filepath.split('/')
         if len(filepath_array) < 3:
-            raise Exception('Invalid file path. Must be added to directory {dataset}/{table}/{mode}')
+            raise Exception(
+                'Invalid file path. Must be added to directory {dataset}/{table}/{mode}'
+            )
 
         dataset = filepath_array[0]
         table = filepath_array[1]
@@ -199,14 +235,21 @@ class FileDetectOperator(GoogleBaseFileOperator):
         try:
             config = self.gcs_hook.read_json(
                 bucket=get_config('GCS_BUCKET_LANDING_ZONE_LOADER_CONFIG'),
-                filepath=f'{dataset}/{table}.json')
+                filepath=f'{dataset}/{table}.json',
+            )
             return config
         except NotFound:
-            return {'file_format': 'json', 'time_partitioning': {'type': 'DAY', 'field': '_created_at'}}
+            return {
+                'file_format': 'json',
+                'time_partitioning': {'type': 'DAY', 'field': '_created_at'},
+            }
 
 
-@deprecated(deprecated_in="0.0.5", removed_in="1.0.0",
-            details="This class will be deprecated. Please write files directly to datalake using `GcsDatalakeHook`")
+@deprecated(
+    deprecated_in='0.0.5',
+    removed_in='1.0.0',
+    details='This class will be deprecated. Please write files directly to datalake using `GcsDatalakeHook`',
+)
 class BatchWriteDetectOperator(GoogleBaseEventOperator):
     """Operator to detect batches of files in GCS based on thresholds.
 
@@ -257,7 +300,7 @@ class BatchWriteDetectOperator(GoogleBaseEventOperator):
                     tables[key] = {
                         'size': b.size,
                         'files': [filename],
-                        'min_time_created': b.time_created
+                        'min_time_created': b.time_created,
                     }
                 else:
                     tables[key]['size'] += b.size
@@ -265,20 +308,33 @@ class BatchWriteDetectOperator(GoogleBaseEventOperator):
                     if b.time_created < tables[key]['min_time_created']:
                         tables[key]['min_time_created'] = b.time_created
 
-                if (tables[key]['size'] > threshold['size']) or (len(tables[key]['files']) > threshold['file_quantity']):
-                    self.send_to_process(bucket=bucket, directory=key, files=tables[key]['files'])
+                if (tables[key]['size'] > threshold['size']) or (
+                    len(tables[key]['files']) > threshold['file_quantity']
+                ):
+                    self.send_to_process(
+                        bucket=bucket, directory=key, files=tables[key]['files']
+                    )
                     tables[key] = None
                     partially_processed_tables.append(key)
 
         # verify which dataset/table is ready to be processed
-        time_threshold = (datetime.now() - timedelta(minutes=threshold['minutes'])).strftime('%Y-%m-%d %H:%M')
+        time_threshold = (
+            datetime.now() - timedelta(minutes=threshold['minutes'])
+        ).strftime('%Y-%m-%d %H:%M')
         for directory, v in tables.items():
             if v is not None:
-                if (v['size'] > threshold['size']) or \
-                    (v['min_time_created'].strftime('%Y-%m-%d %H:%M') < time_threshold) or \
-                        (len(v['files']) > threshold['file_quantity']) or \
-                        (directory in partially_processed_tables):
-                    self.send_to_process(bucket=bucket, directory=directory, files=v['files'])
+                if (
+                    (v['size'] > threshold['size'])
+                    or (
+                        v['min_time_created'].strftime('%Y-%m-%d %H:%M')
+                        < time_threshold
+                    )
+                    or (len(v['files']) > threshold['file_quantity'])
+                    or (directory in partially_processed_tables)
+                ):
+                    self.send_to_process(
+                        bucket=bucket, directory=directory, files=v['files']
+                    )
 
     def send_to_process(self, bucket, directory, files):
         """Sends a message to Pub/Sub to process a batch of files.
@@ -290,12 +346,16 @@ class BatchWriteDetectOperator(GoogleBaseEventOperator):
         """
         self.queue_hook.publish(
             project=get_config('GCP_PROJECT'),
-            topic=get_config('PUBSUB_TOPIC_BATCH_WRITE_PROCESS'),
-            data={'bucket': bucket, 'directory': directory, 'files': files})
+            topic=get_config('QUEUE_TOPIC_BATCH_WRITE_PROCESS'),
+            data={'bucket': bucket, 'directory': directory, 'files': files},
+        )
 
 
-@deprecated(deprecated_in="0.0.5", removed_in="1.0.0",
-            details="This class will be deprecated. Please write files directly to datalake using `GcsDatalakeHook`")
+@deprecated(
+    deprecated_in='0.0.5',
+    removed_in='1.0.0',
+    details='This class will be deprecated. Please write files directly to datalake using `GcsDatalakeHook`',
+)
 class BatchWriteProcessOperator(GoogleBaseEventOperator):
     """Operator to process batches of files from GCS.
 
@@ -336,7 +396,11 @@ class BatchWriteProcessOperator(GoogleBaseEventOperator):
 
         local_filepath = self.merge_files(file_contents)
 
-        self.gcs_hook.upload(local_filepath, get_config('GCS_BUCKET_LANDING_ZONE_LOADER'), f'{directory}/append')
+        self.gcs_hook.upload(
+            local_filepath,
+            get_config('GCS_BUCKET_LANDING_ZONE_LOADER'),
+            f'{directory}/append',
+        )
         os.remove(local_filepath)
 
         file_paths = [directory + '/' + f for f in files]
@@ -346,7 +410,7 @@ class BatchWriteProcessOperator(GoogleBaseEventOperator):
             files=file_paths,
             to_bucket=get_config('GCS_BUCKET_LANDING_ZONE_PROCESSED'),
             to_directory=directory,
-            rewrite=False
+            rewrite=False,
         )
 
     def read_files(self, bucket, directory, files):
@@ -365,9 +429,7 @@ class BatchWriteProcessOperator(GoogleBaseEventOperator):
         """
         file_contents = []
         for f in files:
-            obj = self.gcs_hook.read_json(
-                bucket=bucket,
-                filepath=f'{directory}/{f}')
+            obj = self.gcs_hook.read_json(bucket=bucket, filepath=f'{directory}/{f}')
             if isinstance(obj, list):
                 file_contents += obj
             elif isinstance(obj, dict):
@@ -385,8 +447,12 @@ class BatchWriteProcessOperator(GoogleBaseEventOperator):
         Returns:
             str: The path to the created local NDJSON file.
         """
-        local_filepath = self.file_hook.get_tmp_filepath('merged.ndjson', add_timestamp=True)
-        self.file_hook.write(local_filepath=local_filepath, data=file_contents, use_ndjson=True)
+        local_filepath = self.file_hook.get_tmp_filepath(
+            'merged.ndjson', add_timestamp=True
+        )
+        self.file_hook.write(
+            local_filepath=local_filepath, data=file_contents, use_ndjson=True
+        )
         return local_filepath
 
 
@@ -449,4 +515,6 @@ class FileMoveOperator(GoogleBaseEventOperator):
         origin_prefix = data['origin']['prefix']
         dest_bucket = data['destination']['bucket']
         dest_directory = data['destination']['directory']
-        self.gcs_hook.move(origin_bucket, origin_prefix, dest_bucket, dest_directory, True)
+        self.gcs_hook.move(
+            origin_bucket, origin_prefix, dest_bucket, dest_directory, True
+        )

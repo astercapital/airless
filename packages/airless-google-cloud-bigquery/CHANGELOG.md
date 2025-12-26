@@ -1,6 +1,9 @@
 
 **unreleased**
 
+**v0.3.1**
+- [Bugfix] Remove unexisting import for `FileToBigqueryOperator`
+
 **v0.3.0**
 - [Refactor] Remove airless dependency limitation
 

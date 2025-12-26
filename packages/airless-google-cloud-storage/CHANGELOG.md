@@ -1,6 +1,9 @@
 
 **unreleased**
 
+**v0.4.1**
+- [Bugfix] Fix topic name to `QUEUE_TOPIC_BATCH_WRITE_PROCESS`
+
 **v0.4.0**
 - [Refactor] Remove airless dependency limitation
 
