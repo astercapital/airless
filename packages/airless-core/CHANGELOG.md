@@ -1,5 +1,7 @@
 
 **unreleased**
+
+**v0.4.2**
 - [Bugfix] Rollback `BaseDto` which is still in use by `PubsubTopBigqueryOperator`
 
 **v0.4.1**
