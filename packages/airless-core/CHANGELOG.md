@@ -1,5 +1,6 @@
 
 **unreleased**
+- [Feature] Get `filename` when downloading a file from the `Content-Disposition` header
 
 **v0.3.1**
 - [Bugfix] Remove attachment type and always attach the file to email as binary
