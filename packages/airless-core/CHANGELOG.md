@@ -1,5 +1,6 @@
 
 **unreleased**
+* [Refactor] Remove dependency from `cgi` because it is being deprecated in python 3.13
 
 **v0.4.0**
 - [Feature] Get `filename` when downloading a file from the `Content-Disposition` header
