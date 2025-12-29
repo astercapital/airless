@@ -1,6 +1,9 @@
 
 **unreleased**
 
+**v0.3.2**
+- [Bugfix] Set default GCP project ID when building bigquery table id
+
 **v0.3.1**
 - [Bugfix] Remove unexisting import for `FileToBigqueryOperator`
 

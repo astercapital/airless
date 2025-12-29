@@ -1,6 +1,6 @@
 [project]
 name = "airless-google-cloud-bigquery"
-version = "0.3.1"
+version = "0.3.2"
 description = "Airless package to works with google cloud bigquery"
 readme = "README.md"
 requires-python = ">=3.9"
