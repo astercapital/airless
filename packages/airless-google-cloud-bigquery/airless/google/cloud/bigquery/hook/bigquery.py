@@ -1,9 +1,9 @@
-
 from concurrent.futures._base import TimeoutError
 from google.cloud import bigquery
 from google.cloud.exceptions import NotFound
 
 from airless.core.hook import BaseHook
+from airless.core.utils import get_config
 
 
 class BigqueryHook(BaseHook):
@@ -32,7 +32,7 @@ class BigqueryHook(BaseHook):
         Returns:
             str: The fully qualified table ID in the format 'project.dataset.table'.
         """
-        return f'{project}.{dataset}.{table}'
+        return f'{project or get_config("GCP_PROJECT")}.{dataset}.{table}'
 
     def list_datasets(self):
         """Lists all datasets in the current project.
@@ -79,12 +79,14 @@ class BigqueryHook(BaseHook):
         except NotFound:
             table = bigquery.Table(
                 table_id,
-                schema=[bigquery.SchemaField(s['key'], s['type'], mode=s['mode']) for s in schema]
+                schema=[
+                    bigquery.SchemaField(s['key'], s['type'], mode=s['mode'])
+                    for s in schema
+                ],
             )
             if partition_column:
                 table.time_partitioning = bigquery.TimePartitioning(
-                    type_=bigquery.TimePartitioningType.DAY,
-                    field=partition_column
+                    type_=bigquery.TimePartitioningType.DAY, field=partition_column
                 )
             bq_table = self.bigquery_client.create_table(table, timeout=30)
             self.logger.debug(f'BQ table created {project}.{dataset}.{table}')
@@ -153,9 +155,16 @@ class BigqueryHook(BaseHook):
         return set([key for row in rows for key in list(row.keys())])
 
     def setup_job_config(
-            self,
-            from_file_format, from_separator, from_skip_leading_rows, from_quote_character, from_encoding,
-            to_mode, to_schema, to_time_partitioning):
+        self,
+        from_file_format,
+        from_separator,
+        from_skip_leading_rows,
+        from_quote_character,
+        from_encoding,
+        to_mode,
+        to_schema,
+        to_time_partitioning,
+    ):
         """Configures a BigQuery load job.
 
         Args:
@@ -176,8 +185,11 @@ class BigqueryHook(BaseHook):
             Exception: If the file format is not supported.
         """
         job_config = bigquery.LoadJobConfig(
-            write_disposition='WRITE_TRUNCATE' if to_mode == 'overwrite' else 'WRITE_APPEND',
-            max_bad_records=0)
+            write_disposition='WRITE_TRUNCATE'
+            if to_mode == 'overwrite'
+            else 'WRITE_APPEND',
+            max_bad_records=0,
+        )
 
         if to_schema is None:
             job_config.autodetect = True
@@ -186,8 +198,7 @@ class BigqueryHook(BaseHook):
 
         if to_time_partitioning:
             job_config.time_partitioning = bigquery.table.TimePartitioning(
-                type_=to_time_partitioning['type'],
-                field=to_time_partitioning['field']
+                type_=to_time_partitioning['type'], field=to_time_partitioning['field']
             )
 
         if from_file_format == 'csv':
@@ -212,7 +223,9 @@ class BigqueryHook(BaseHook):
 
         return job_config
 
-    def execute_load_job(self, from_filepath, to_project, to_dataset, to_table, job_config, timeout=240):
+    def execute_load_job(
+        self, from_filepath, to_project, to_dataset, to_table, job_config, timeout=240
+    ):
         """Executes a BigQuery load job from a URI.
 
         Args:
@@ -225,16 +238,25 @@ class BigqueryHook(BaseHook):
         """
         table_id = self.build_table_id(to_project, to_dataset, to_table)
         load_job = self.bigquery_client.load_table_from_uri(
-            from_filepath, table_id,
-            job_config=job_config,
-            timeout=timeout
+            from_filepath, table_id, job_config=job_config, timeout=timeout
         )
         load_job.result()  # Waits for the job to complete.
 
-    def load_file(self,
-                  from_filepath, from_file_format, from_separator, from_skip_leading_rows,
-                  from_quote_character, from_encoding,
-                  to_project, to_dataset, to_table, to_mode, to_schema, to_time_partitioning):
+    def load_file(
+        self,
+        from_filepath,
+        from_file_format,
+        from_separator,
+        from_skip_leading_rows,
+        from_quote_character,
+        from_encoding,
+        to_project,
+        to_dataset,
+        to_table,
+        to_mode,
+        to_schema,
+        to_time_partitioning,
+    ):
         """Loads data from a file in GCS to a BigQuery table.
 
         Args:
@@ -261,25 +283,36 @@ class BigqueryHook(BaseHook):
             from_encoding=from_encoding,
             to_mode=to_mode,
             to_schema=to_schema,
-            to_time_partitioning=to_time_partitioning)
+            to_time_partitioning=to_time_partitioning,
+        )
 
         self.execute_load_job(
             from_filepath=from_filepath,
             to_project=to_project,
             to_dataset=to_dataset,
             to_table=to_table,
-            job_config=job_config)
+            job_config=job_config,
+        )
 
         destination_table = self.get_table(
             project=to_project,
             dataset=to_dataset,
             table=to_table,
             schema=to_schema,
-            partition_column=(to_time_partitioning or {}).get('field'))
+            partition_column=(to_time_partitioning or {}).get('field'),
+        )
         self.logger.debug(f'Loaded {destination_table.num_rows} rows')
 
     def execute_query_job(
-            self, query, to_project, to_dataset, to_table, to_write_disposition, to_time_partitioning, timeout=480):
+        self,
+        query,
+        to_project,
+        to_dataset,
+        to_table,
+        to_write_disposition,
+        to_time_partitioning,
+        timeout=480,
+    ):
         """Executes a BigQuery query job.
 
         Args:
@@ -298,14 +331,17 @@ class BigqueryHook(BaseHook):
         job_config = bigquery.QueryJobConfig()
 
         if (to_dataset is not None) and (to_table is not None):
-            job_config.destination = self.build_table_id(to_project, to_dataset, to_table)
+            job_config.destination = self.build_table_id(
+                to_project, to_dataset, to_table
+            )
 
         if to_write_disposition is not None:
             job_config.write_disposition = to_write_disposition
 
         if to_time_partitioning is not None:
-            job_config.time_partitioning = \
+            job_config.time_partitioning = (
                 bigquery.table.TimePartitioning().from_api_repr(to_time_partitioning)
+            )
 
         job = self.bigquery_client.query(query, job_config=job_config)
         job.job_id
@@ -332,7 +368,7 @@ class BigqueryHook(BaseHook):
             self.get_table(from_project, from_dataset, from_table, None, None),
             to_filepath,
             job_config=job_config,
-            location='US'
+            location='US',
         )
         extract_job.result()
 
